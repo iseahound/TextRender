@@ -1224,34 +1224,6 @@ class TextRender {
       this.IsAdmin := A_IsAdmin
       return this.arg := terms
    }
-/*
-   ; Duality #1 - Safe wrapper for the GDI+ library during object instantiation.
-   __New(terms*) {
-      this.IO(terms*)
-
-      global pToken
-      if !(this.outer.Startup())
-         if !(pToken)
-            if !(this.pToken := Gdip_Startup())
-               throw Exception("Gdiplus failed to start. Please ensure you have gdiplus on your system.")
-
-      return this.CreateWindow(terms*)
-   }
-
-   ; Duality #1 - Safe wrapper for the GDI+ library during object garbage collection.
-   __Delete() {
-      if (this.hwnd)
-         this.DestroyWindow()
-
-      global pToken
-      if (this.outer.pToken)
-         return this.outer.Shutdown()
-      if (pToken)
-         return
-      if (this.pToken)
-         return Gdip_Shutdown(this.pToken)
-   }
-*/
 
    WindowProc(uMsg, wParam, lParam) {
       hwnd:=this

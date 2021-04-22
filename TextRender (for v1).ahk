@@ -1301,62 +1301,14 @@ class TextRender {
       this.RegisterClass("AutoHotkey2")
 
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
-      ; Extended Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
-      WS_OVERLAPPED             :=        0x0
-      WS_TILED                  :=        0x0
-      WS_TABSTOP                :=    0x10000
-      WS_MAXIMIZEBOX            :=    0x10000
-      WS_MINIMIZEBOX            :=    0x20000
-      WS_GROUP                  :=    0x20000
-      WS_SIZEBOX                :=    0x40000
-      WS_THICKFRAME             :=    0x40000
-      WS_SYSMENU                :=    0x80000
-      WS_HSCROLL                :=   0x100000
-      WS_VSCROLL                :=   0x200000
-      WS_DLGFRAME               :=   0x400000
-      WS_BORDER                 :=   0x800000
-      WS_MAXIMIZE               :=  0x1000000
-      WS_CLIPCHILDREN           :=  0x2000000
-      WS_CLIPSIBLINGS           :=  0x4000000
-      WS_DISABLED               :=  0x8000000
-      WS_VISIBLE                := 0x10000000
-      WS_ICONIC                 := 0x20000000
-      WS_MINIMIZE               := 0x20000000
-      WS_CHILD                  := 0x40000000
-      WS_CHILDWINDOW            := 0x40000000
       WS_POPUP                  := 0x80000000
-      WS_CAPTION                :=   0xC00000
-      WS_OVERLAPPEDWINDOW       :=   0xCF0000
-      WS_TILEDWINDOW            :=   0xCF0000
-      WS_POPUPWINDOW            := 0x80880000
+      WS_SYSMENU                :=    0x80000
 
-      WS_EX_LEFT                :=        0x0
-      WS_EX_LTRREADING          :=        0x0
-      WS_EX_RIGHTSCROLLBAR      :=        0x0
-      WS_EX_DLGMODALFRAME       :=        0x1
-      WS_EX_NOPARENTNOTIFY      :=        0x4
+      ; Extended Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
       WS_EX_TOPMOST             :=        0x8
-      WS_EX_ACCEPTFILES         :=       0x10
-      WS_EX_TRANSPARENT         :=       0x20
-      WS_EX_MDICHILD            :=       0x40
       WS_EX_TOOLWINDOW          :=       0x80
-      WS_EX_WINDOWEDGE          :=      0x100
-      WS_EX_CLIENTEDGE          :=      0x200
-      WS_EX_CONTEXTHELP         :=      0x400
-      WS_EX_RIGHT               :=     0x1000
-      WS_EX_RTLREADING          :=     0x2000
-      WS_EX_LEFTSCROLLBAR       :=     0x4000
-      WS_EX_CONTROLPARENT       :=    0x10000
-      WS_EX_STATICEDGE          :=    0x20000
-      WS_EX_APPWINDOW           :=    0x40000
       WS_EX_LAYERED             :=    0x80000
-      WS_EX_NOINHERITLAYOUT     :=   0x100000
-      WS_EX_NOREDIRECTIONBITMAP :=   0x200000
-      WS_EX_LAYOUTRTL           :=   0x400000
-      WS_EX_COMPOSITED          :=  0x2000000
       WS_EX_NOACTIVATE          :=  0x8000000
-      WS_EX_OVERLAPPEDWINDOW    :=      0x300
-      WS_EX_PALETTEWINDOW       :=      0x188
 
       vWinStyle := WS_POPUP | WS_SYSMENU ; start off hidden with WS_VISIBLE off
       vWinExStyle := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED | WS_EX_DLGMODALFRAME ; WS_EX_NOACTIVATE

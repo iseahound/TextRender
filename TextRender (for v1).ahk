@@ -1490,7 +1490,7 @@ class TextRender {
    }
 
    Hash() {
-      return Format("0x{:08x}", DllCall("ntdll\RtlComputeCrc32", "uint", 0, "ptr", this.pBits, "uint", this.size, "uint"))
+      return Format("{:08x}", DllCall("ntdll\RtlComputeCrc32", "uint", 0, "ptr", this.pBits, "uint", this.size, "uint"))
    }
 
    CopyToBuffer() {

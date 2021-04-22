@@ -113,12 +113,21 @@ class TextRender {
 
       if (this.t > 0) {
          ; Create a reference to the object held by a timer.
-         clear := ObjBindMethod(this, "clear") ; Calls Clear()
-         SetTimer % clear, % -this.t           ; Calls __Delete.
+         blank := ObjBindMethod(this, "blank", this.GUID) ; Calls Blank()
+         SetTimer % blank, % -this.t ; Calls __Delete.
       }
 
       this.drawing := false
       return this
+   }
+
+   Blank(GUID) {
+      ; Check to see if the state of the canvas has changed before clearing and updating.
+      if (this.GUID = GUID) {
+         DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF)
+         this.GUID := ComObjCreate("Scriptlet.TypeLib").GUID ; canvas changed.
+         this.UpdateLayeredWindow(this.BitmapLeft, this.BitmapTop, this.BitmapWidth, this.BitmapHeight)
+      }
    }
 
    Draw(data := "", styles*) {
@@ -136,6 +145,9 @@ class TextRender {
 
       ; Drawing
       obj := this.DrawOnGraphics(this.gfx, data, styles*)
+
+      ; Create a unique signature for each call to Draw().
+      this.GUID := ComObjCreate("Scriptlet.TypeLib").GUID
 
       ; Set bounds.
       this.t  := (this.t  == "") ? obj.t  : (this.t  > obj.t)  ? this.t  : obj.t
@@ -158,6 +170,7 @@ class TextRender {
       this.layers := {}
       this.x := this.y := this.x2 := this.y2 := this.w := this.h := ""
       DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF)
+      this.GUID := ComObjCreate("Scriptlet.TypeLib").GUID ; canvas changed.
       return this
    }
 

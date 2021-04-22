@@ -1489,7 +1489,7 @@ class TextRender {
       return this
    }
 
-   CRC32() {
+   Hash() {
       return Format("0x{:08x}", DllCall("ntdll\RtlComputeCrc32", "uint", 0, "ptr", this.pBits, "uint", this.size, "uint"))
    }
 

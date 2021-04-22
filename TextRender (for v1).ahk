@@ -1267,13 +1267,10 @@ class TextRender {
    }
 
    UnregisterClass(vWinClass) {
-      DllCall("UnregisterClass", "str", vWinClass, "ptr", 0)
-      return
+      return DllCall("UnregisterClass", "str", vWinClass, "ptr", 0)
    }
 
    CreateWindow(title := "") {
-      this.UnregisterClass("TextRender")
-
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       WS_POPUP                  := 0x80000000
       WS_SYSMENU                :=    0x80000

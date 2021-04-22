@@ -1258,9 +1258,9 @@ class TextRender {
          NumPut(          0, WNDCLASSEX, _ ? 72:44,    "ptr") ; hIconSm
 
       ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
-      if !DllCall("RegisterClassEx", "ptr", &WNDCLASSEX, "ushort")
+      if !(value := DllCall("RegisterClassEx", "ptr", &WNDCLASSEX, "ushort"))
          throw Exception("RegisterClassEx failed.")
-      return vWinClass
+      return value
    }
 
    UnregisterClass(vWinClass) {
@@ -1269,8 +1269,8 @@ class TextRender {
    }
 
    CreateWindow(title := "") {
-      this.UnregisterClass("AutoHotkey2")
-      this.RegisterClass("AutoHotkey2")
+      this.UnregisterClass("TextRender")
+
 
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       WS_POPUP                  := 0x80000000
@@ -1282,22 +1282,22 @@ class TextRender {
       WS_EX_LAYERED             :=    0x80000
       WS_EX_NOACTIVATE          :=  0x8000000
 
-      vWinStyle := WS_POPUP | WS_SYSMENU ; start off hidden with WS_VISIBLE off
-      vWinExStyle := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED ; WS_EX_NOACTIVATE
+      WindowStyle := WS_POPUP | WS_SYSMENU ; start off hidden with WS_VISIBLE off
+      WindowExStyle := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED ; WS_EX_NOACTIVATE
 
       this.hwnd := DllCall("CreateWindowEx"
-         ,   "uint", vWinExStyle           ; dwExStyle
-         ,    "str", "AutoHotkey2"  ; lpClassName
-         ,    "str", "TextRender"            ; lpWindowName
-         ,   "uint", vWinStyle             ; dwStyle
-         ,    "int", 0 ;this.BitmapLeft       ; X
-         ,    "int", 0 ;this.BitmapTop        ; Y
-         ,    "int", 0 ; A_ScreenWidth ;this.BitmapWidth      ; nWidth
-         ,    "int", 0 ; A_ScreenHeight ;this.BitmapHeight     ; nHeight
-         ,    "ptr", 0 ; A_ScriptHwnd                     ; hWndParent
-         ,    "ptr", 0                     ; hMenu
-         ,    "ptr", 0                     ; hInstance
-         ,    "ptr", 0                     ; lpParam
+         ,   "uint", WindowExStyle                     ; dwExStyle
+         ,    "ushort", this.RegisterClass("TextRender")  ; lpClassName
+         ,    "str", title         ; lpWindowName
+         ,   "uint", WindowStyle   ; dwStyle
+         ,    "int", 0             ; X
+         ,    "int", 0             ; Y
+         ,    "int", 0             ; nWidth
+         ,    "int", 0             ; nHeight
+         ,    "ptr", 0             ; hWndParent
+         ,    "ptr", 0             ; hMenu
+         ,    "ptr", 0             ; hInstance
+         ,    "ptr", 0             ; lpParam
          ,    "ptr")
 
       ;_show := (this.activateOnAdmin && !this.isDrawable()) ? 1 : 4

@@ -1316,7 +1316,7 @@ class TextRender {
       this.hwnd := DllCall("CreateWindowEx"
          ,   "uint", vWinExStyle           ; dwExStyle
          ,    "str", "AutoHotkey2"  ; lpClassName
-         ,    "str", "windowname" ; this.title            ; lpWindowName
+         ,    "str", "TextRender"            ; lpWindowName
          ,   "uint", vWinStyle             ; dwStyle
          ,    "int", 0 ;this.BitmapLeft       ; X
          ,    "int", 0 ;this.BitmapTop        ; Y

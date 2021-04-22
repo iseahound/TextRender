@@ -32,7 +32,10 @@ class TextRender {
 
       this.IO()
 
-      this.CreateWindow()
+      this.hwnd := this.CreateWindow()
+      ;_show := (this.activateOnAdmin && !this.isDrawable()) ? 1 : 4
+      ; Reminder: The window will be restored but not activated.
+      DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
 
       /*
       Gui, New, +LastFound +AlwaysOnTop -Caption -DPIScale +E0x80000 +ToolWindow +hwndhwnd
@@ -1271,7 +1274,6 @@ class TextRender {
    CreateWindow(title := "") {
       this.UnregisterClass("TextRender")
 
-
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       WS_POPUP                  := 0x80000000
       WS_SYSMENU                :=    0x80000
@@ -1285,26 +1287,20 @@ class TextRender {
       WindowStyle := WS_POPUP | WS_SYSMENU ; start off hidden with WS_VISIBLE off
       WindowExStyle := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED ; WS_EX_NOACTIVATE
 
-      this.hwnd := DllCall("CreateWindowEx"
+      return DllCall("CreateWindowEx"
          ,   "uint", WindowExStyle                     ; dwExStyle
-         ,    "ushort", this.RegisterClass("TextRender")  ; lpClassName
-         ,    "str", title         ; lpWindowName
-         ,   "uint", WindowStyle   ; dwStyle
-         ,    "int", 0             ; X
-         ,    "int", 0             ; Y
-         ,    "int", 0             ; nWidth
-         ,    "int", 0             ; nHeight
-         ,    "ptr", 0             ; hWndParent
-         ,    "ptr", 0             ; hMenu
-         ,    "ptr", 0             ; hInstance
-         ,    "ptr", 0             ; lpParam
+         , "ushort", this.RegisterClass("TextRender")  ; lpClassName
+         ,    "str", title                             ; lpWindowName
+         ,   "uint", WindowStyle                       ; dwStyle
+         ,    "int", 0                                 ; X
+         ,    "int", 0                                 ; Y
+         ,    "int", 0                                 ; nWidth
+         ,    "int", 0                                 ; nHeight
+         ,    "ptr", 0                                 ; hWndParent
+         ,    "ptr", 0                                 ; hMenu
+         ,    "ptr", 0                                 ; hInstance
+         ,    "ptr", 0                                 ; lpParam
          ,    "ptr")
-
-      ;_show := (this.activateOnAdmin && !this.isDrawable()) ? 1 : 4
-      ; Reminder: The window will be restored but not activated.
-      DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
-
-      ; return this.LoadMemory()
    }
 
    ; Duality #2 - Destroys a window.

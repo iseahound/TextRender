@@ -56,51 +56,9 @@ class TextRender {
    }
 
    Render(terms*) {
-
+      ; Check the terms to avoid drawing a default square.
       if (terms.1 != "" || terms.2 != "" || terms.3 != "") {
          this.Draw(terms*)
-         /*
-         ; Render objects that reside off screen.
-         if this.BitmapLeft > this.x || this.BitmapTop > this.y
-         || this.BitmapLeft + this.BitmapWidth < this.x2 || this.BitmapTop + this.BitmapHeight < this.y2 {
-            hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-            VarSetCapacity(bi, 40, 0)              ; sizeof(bi) = 40
-               NumPut(       40, bi,  0,   "uint") ; Size
-               NumPut(   this.w, bi,  4,   "uint") ; Width
-               NumPut(  -this.h, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
-               NumPut(        1, bi, 12, "ushort") ; Planes
-               NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
-            hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
-            obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-            gfx := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", gfx:=0) ? false : gfx
-
-            ; Set the origin to this.x and this.y
-            DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", gfx, "float", -this.x, "float", -this.y, "int", 0)
-
-            for i, layer in this.layers
-               this.DrawOnGraphics(gfx, layer[1], layer[2], layer[3], this.BitmapWidth, this.BitmapHeight)
-
-            DllCall("UpdateLayeredWindow"
-                     ,    "ptr", this.hwnd                                  ; hWnd
-                     ,    "ptr", 0                                          ; hdcDst
-                     ,"uint64*", this.x | this.y << 32     ; *pptDst
-                     ,"uint64*", this.w | this.h << 32 ; this.BitmapWidth | this.BitmapHeight << 32 ; *psize
-                     ,    "ptr", hdc                                   ; hdcSrc
-                     ,"uint64*", 0                                          ; *pptSrc
-                     ,   "uint", 0                                          ; crKey
-                     ,  "uint*", 0xFF << 16 | 0x01 << 24                    ; *pblend
-                     ,   "uint", 2)                                         ; dwFlags
-
-
-            DllCall("gdiplus\GdipDeleteGraphics", "ptr", gfx)
-            DllCall("SelectObject", "ptr", hdc, "ptr", obm)
-            DllCall("DeleteObject", "ptr", hbm)
-            DllCall("DeleteDC",     "ptr", hdc)
-
-         } else
-            this.UpdateLayeredWindow(this.x, this.y, this.w, this.h)
-         */
-
          ; Render: Off-Screen areas are not rendered. Clip objects that reside off screen.
          this.WindowLeft   := (this.BitmapLeft   > this.x)  ? this.BitmapLeft   : this.x
          this.WindowTop    := (this.BitmapTop    > this.y)  ? this.BitmapTop    : this.y
@@ -108,15 +66,20 @@ class TextRender {
          this.WindowBottom := (this.BitmapBottom < this.y2) ? this.BitmapBottom : this.y2
          this.WindowWidth  := this.WindowRight - this.WindowLeft
          this.WindowHeight := this.WindowBottom - this.WindowTop
+         ; Objects that reside partly off screen will not have those areas rendered.
          this.UpdateLayeredWindow(this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight)
       }
 
+      ; Create a timer that eventually clears the canvas.
       if (this.t > 0) {
          ; Create a reference to the object held by a timer.
          blank := ObjBindMethod(this, "blank", this.GUID) ; Calls Blank()
          SetTimer % blank, % -this.t ; Calls __Delete.
       }
 
+      ; Ensure that Flush() will be called at the start of a new drawing.
+      ; This approach keeps this.layers and the underlying graphics intact,
+      ; so that calls to Save() and Screenshot() will not encounter a blank canvas.
       this.drawing := false
       return this
    }
@@ -1373,6 +1336,53 @@ class TextRender {
          this.DrawOnGraphics(this.gfx, layer[1], layer[2], layer[3])
 
       return this
+   }
+
+   RenderOffScreen() {
+      ; Use the default rendering when the canvas coordinates fall within the bitmap area.
+      if this.BitmapLeft <= this.x && this.BitmapTop <= this.y
+      && this.BitmapRight >= this.x2 && this.BitmapBottom >= this.y2
+         return this.UpdateLayeredWindow(this.x, this.y, this.w, this.h)
+
+      ; Render objects that reside off screen.
+      ; Create a new bitmap using the width and height of the canvas object.
+      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+      VarSetCapacity(bi, 40, 0)              ; sizeof(bi) = 40
+         NumPut(       40, bi,  0,   "uint") ; Size
+         NumPut(   this.w, bi,  4,   "uint") ; Width
+         NumPut(  -this.h, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+         NumPut(        1, bi, 12, "ushort") ; Planes
+         NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+      gfx := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", gfx:=0) ? false : gfx
+
+      ; Set the origin to this.x and this.y
+      DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", gfx, "float", -this.x, "float", -this.y, "int", 0)
+
+      ; Draw on the canvas.
+      for i, layer in this.layers
+         this.DrawOnGraphics(gfx, layer[1], layer[2], layer[3], this.BitmapWidth, this.BitmapHeight)
+
+      ; Show the objects on screen.
+      ; This suffers from a windows limitation in that windows will appear in places that do not match the intended coordinates.
+      ; Therefore this is not the default rendering approach as style commands are not respected.
+      DllCall("UpdateLayeredWindow"
+               ,    "ptr", this.hwnd                                  ; hWnd
+               ,    "ptr", 0                                          ; hdcDst
+               ,"uint64*", this.x | this.y << 32     ; *pptDst
+               ,"uint64*", this.w | this.h << 32 ; this.BitmapWidth | this.BitmapHeight << 32 ; *psize
+               ,    "ptr", hdc                                   ; hdcSrc
+               ,"uint64*", 0                                          ; *pptSrc
+               ,   "uint", 0                                          ; crKey
+               ,  "uint*", 0xFF << 16 | 0x01 << 24                    ; *pblend
+               ,   "uint", 2)                                         ; dwFlags
+
+      ; Cleanup
+      DllCall("gdiplus\GdipDeleteGraphics", "ptr", gfx)
+      DllCall("SelectObject", "ptr", hdc, "ptr", obm)
+      DllCall("DeleteObject", "ptr", hbm)
+      DllCall("DeleteDC",     "ptr", hdc)
    }
 
    Hash() {

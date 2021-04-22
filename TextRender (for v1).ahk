@@ -37,14 +37,6 @@ class TextRender {
       ; Reminder: The window will be restored but not activated.
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
 
-      /*
-      Gui, New, +LastFound +AlwaysOnTop -Caption -DPIScale +E0x80000 +ToolWindow +hwndhwnd
-      this.hwnd := hwnd
-      ;this.title := (title != "") ? title : "Subtitle_" this.hwnd
-      DllCall("ShowWindow", "ptr", this.hwnd, "int", 8)
-      ;DllCall("SetWindowText", "ptr", this.hwnd, "str", this.title)
-      */
-
       this.history := {}
       this.layers := {}
       this.drawing := true

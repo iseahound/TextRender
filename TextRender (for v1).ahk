@@ -33,8 +33,6 @@ class TextRender {
       this.IO()
 
       this.hwnd := this.CreateWindow()
-      ;_show := (this.activateOnAdmin && !this.isDrawable()) ? 1 : 4
-      ; Reminder: The window will be restored but not activated.
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
 
       this.history := {}
@@ -1603,22 +1601,6 @@ class TextRender {
                ,   "uint", 0                        ; crKey
                ,  "uint*", 0xFF << 16 | 0x01 << 24  ; *pblend
                ,   "uint", 2)                       ; dwFlags
-   }
-
-   isDrawable(win := "A") {
-      static WM_KEYDOWN := 0x100
-      static WM_KEYUP := 0x101
-      static vk_to_use := 7
-      ; Test whether we can send keystrokes to this window.
-      ; Use a virtual keycode which is unlikely to do anything:
-      _win := (A_AhkVersion < 2) ? win : "win"
-      PostMessage WM_KEYDOWN, vk_to_use, 0,, %_win%
-      if !ErrorLevel
-      {   ; Seems best to post key-up, in case the window is keeping track.
-        PostMessage WM_KEYUP, vk_to_use, 0xC0000000,, %_win%
-        return true
-      }
-      return false
    }
 
    InBounds() {

@@ -1626,58 +1626,11 @@ if (A_LineFile == A_ScriptFullPath) {
    MsgBox heehee GUI
 }
 
-Resize() {
-   ; Size.
-   x := (x != "") ? x : 0
-   y := (y != "") ? y : 0
-   w := (w != "") ? w : this.w
-   h := (h != "") ? h : this.h
-
-   ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
-   hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-   VarSetCapacity(bi, 40, 0)              ; sizeof(bi) = 40
-      NumPut(       40, bi,  0,   "uint") ; Size
-      NumPut(        w, bi,  4,   "uint") ; Width
-      NumPut(       -h, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
-      NumPut(        1, bi, 12, "ushort") ; Planes
-      NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
-   hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
-   obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-   gfx := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", gfx:=0) ? false : gfx
-
-   ; Copy.
-   BitBlt(hdc, 0, 0, w, h, this.hdc, this.x, this.y)
-
-   ; Delete.
-   DllCall("gdiplus\GdipDeleteGraphics", "ptr", this.gfx)
-   DllCall("SelectObject", "ptr", this.hdc, "ptr", this.obm)
-   DllCall("DeleteObject", "ptr", this.hbm)
-   DllCall("DeleteDC",     "ptr", this.hdc)
-
-   ; Replace.
-   this.hdc := hdc
-   this.hbm := hbm
-   this.obm := obm
-   this.gfx := gfx
-   this.pBits := pBits
-
-   ; Update
-   this.BitmapLeft := x
-   this.BitmapTop := y
-   this.BitmapWidth := w
-   this.BitmapHeight := h
-
-   ; Normalize
-   this.x := 0
-   this.y := 0
-}
-
 DebugMemory() {
    loop {
       MsgBox % pixel := Format("0x{:08x}", NumGet(this.pBits, 4*(A_Index-1), "uint"))
    }
 }
-
 
 /*
 ; Check for previous FreeMemory() call.

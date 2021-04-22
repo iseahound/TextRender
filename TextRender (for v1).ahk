@@ -1311,7 +1311,7 @@ class TextRender {
       WS_EX_NOACTIVATE          :=  0x8000000
 
       vWinStyle := WS_POPUP | WS_SYSMENU ; start off hidden with WS_VISIBLE off
-      vWinExStyle := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED | WS_EX_DLGMODALFRAME ; WS_EX_NOACTIVATE
+      vWinExStyle := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED ; WS_EX_NOACTIVATE
 
       this.hwnd := DllCall("CreateWindowEx"
          ,   "uint", vWinExStyle           ; dwExStyle

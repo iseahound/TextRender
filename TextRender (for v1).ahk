@@ -1481,13 +1481,11 @@ class TextRender {
       this.BitmapHeight := A_ScreenHeight
       this.FreeMemory()
       this.LoadMemory()
-      this.Recover()
-      return this
-   }
 
-   Recover() {
+      ; Redraw graphics with new scaling from BitmapWidth and BitmapHeight.
       for i, layer in this.layers
-         this.DrawOnGraphics(gfx, layer[1], layer[2], layer[3])
+         this.DrawOnGraphics(this.gfx, layer[1], layer[2], layer[3])
+
       return this
    }
 

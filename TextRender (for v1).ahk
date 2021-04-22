@@ -1296,35 +1296,12 @@ class TextRender {
       return
    }
 
-   CreateWindow(title := "", window := "", activate := "") {
-      /*
-      ; Retrieve original arguments upon window creation.
-      title    := (title != "")    ? title    : "hi"
-      window   := (window != "")   ? window   : this.arg.2
-      activate := (activate != "") ? activate : this.arg.3
-
-      ; Tokenize window styles.
-      window := RegExReplace(window, "\s+", " ")
-      window := StrSplit(window, " ")
-      for i, token in window {
-         ;if (token ~= "i)")
-      }
-      */
+   CreateWindow(title := "") {
       this.UnregisterClass("AutoHotkey2")
       this.RegisterClass("AutoHotkey2")
 
-      /*
-      this.title := title
-      this.window := window
-      this.activate := activate
-      */
-
-      ;window := (window != "") ? window : " +AlwaysOnTop -Caption +ToolWindow"
-      ;window .= " +LastFound -DPIScale +E0x80000 +hwndhwnd"
-
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       ; Extended Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
-
       WS_OVERLAPPED             :=        0x0
       WS_TILED                  :=        0x0
       WS_TABSTOP                :=    0x10000
@@ -1384,17 +1361,6 @@ class TextRender {
       vWinStyle := WS_POPUP | WS_SYSMENU ; start off hidden with WS_VISIBLE off
       vWinExStyle := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED | WS_EX_DLGMODALFRAME ; WS_EX_NOACTIVATE
 
-      ; The difference between the screen and the bitmap is that the screen defines the viewable area
-      ; while the bitmap defines the current size of the memory buffer. In practice the bitmap could be
-      ; a small part of the screen. Thus the DrawOnGraphics() operations require the viewport width and height
-      ; calculated by 0.01*ScreenWidth and 0.01*ScreenHeight.
-      ; NOTE: DrawOnGraphics() does not accept offsets, which are defined by BitmapLeft and BitmapTop.
-      /*
-      this.BitmapLeft := 0
-      this.BitmapTop := 0
-      this.BitmapWidth := this.ScreenWidth
-      this.BitmapHeight := this.ScreenHeight
-      */
       this.hwnd := DllCall("CreateWindowEx"
          ,   "uint", vWinExStyle           ; dwExStyle
          ,    "str", "AutoHotkey2"  ; lpClassName

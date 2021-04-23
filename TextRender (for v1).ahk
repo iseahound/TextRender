@@ -646,24 +646,24 @@ class TextRender {
 
          ; Draw outline text.
          if (o.1) {
-            pPen := Gdip_CreatePen(o.2, o.1)
-            DllCall("gdiplus\GdipSetPenLineJoin", "ptr",pPen, "uint",2)
-            DllCall("gdiplus\GdipDrawPath", "ptr",gfx, "ptr",pPen, "ptr",pPath) ; DRAWING!
-            Gdip_DeletePen(pPen)
+            DllCall("gdiplus\GdipCreatePen1", "uint", o.2, "float", o.1, "int", 2, "ptr*", pPen:=0)
+            DllCall("gdiplus\GdipSetPenLineJoin", "ptr", pPen, "uint", 2)
+            DllCall("gdiplus\GdipDrawPath", "ptr", gfx, "ptr", pPen, "ptr", pPath) ; DRAWING!
+            DllCall("gdiplus\GdipDeletePen", "ptr", pPen)
          }
 
          ; Fill outline text.
-         pBrush := Gdip_BrushCreateSolid(c)
-         Gdip_SetCompositingMode(gfx, SourceCopy)
-         Gdip_FillPath(gfx, pBrush, pPath) ; DRAWING!
-         Gdip_SetCompositingMode(gfx, 0)
-         Gdip_DeleteBrush(pBrush)
-         Gdip_DeletePath(pPath)
+         DllCall("gdiplus\GdipCreateSolidFill", "uint", c, "ptr*", pBrush:=0)
+         DllCall("gdiplus\GdipSetCompositingMode", "ptr", gfx, "int", SourceCopy)
+         DllCall("gdiplus\GdipFillPath", "ptr", gfx, "ptr", pBrush, "ptr", pPath) ; DRAWING!
+         DllCall("gdiplus\GdipSetCompositingMode", "ptr", gfx, "int", 0)
+         DllCall("gdiplus\GdipDeleteBrush", "ptr", pBrush)
+         DllCall("gdiplus\GdipDeletePath", "ptr", pPath)
       }
 
       ; Draw text only when outline has not filled in the text.
       if (text != "" && o.void) {
-         DllCall("gdiplus\GdipSetCompositingMode",    "ptr", gfx, "int", SourceCopy)
+         DllCall("gdiplus\GdipSetCompositingMode", "ptr", gfx, "int", SourceCopy)
 
          VarSetCapacity(RectF, 16, 0)          ; sizeof(RectF) = 16
             NumPut(    x, RectF,  0,  "float") ; Left

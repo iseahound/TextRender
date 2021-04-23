@@ -751,180 +751,185 @@ class TextRender {
    class parse {
 
       color(c, default := 0xDD424242) {
-         static colorRGB  := "^0x([0-9A-Fa-f]{6})$"
-         static colorARGB := "^0x([0-9A-Fa-f]{8})$"
-         static hex6      :=   "^([0-9A-Fa-f]{6})$"
-         static hex8      :=   "^([0-9A-Fa-f]{8})$"
+         static xARGB := "^0x([0-9A-Fa-f]{8})$"
+         static xRGB  := "^0x([0-9A-Fa-f]{6})$"
+         static ARGB  :=   "^([0-9A-Fa-f]{8})$"
+         static RGB   :=   "^([0-9A-Fa-f]{6})$"
 
-         if !(c is integer) {
+         if ObjGetCapacity([c], 1) {
             c  := (c ~= "^#") ? SubStr(c, 2) : c
-            c  := ((___ := this.colorMap(c)) != "") ? ___ : c
-            c  := (c ~= colorRGB) ? "0xFF" RegExReplace(c, colorRGB, "$1") : (c ~= hex8) ? "0x" c : (c ~= hex6) ? "0xFF" c : c
-            c  := (c ~= colorARGB) ? c : default
+            c  := ((___ := this.colormap(c)) != "") ? ___ : c
+            c  := (c ~= xRGB) ? "0xFF" RegExReplace(c, xRGB, "$1") : (c ~= ARGB) ? "0x" c : (c ~= RGB) ? "0xFF" c : c
+            c  := (c ~= xARGB) ? c : default
          }
 
          return (c != "") ? c : default
       }
 
-      colorMap(c) {
-         static map
-
-         if !(map) {
-         color := [] ; 73 LINES MAX
-         color["Clear"] := color["Off"] := color["None"] := color["Transparent"] := "0x00000000"
-
-            color["AliceBlue"]             := "0xFFF0F8FF"
-         ,  color["AntiqueWhite"]          := "0xFFFAEBD7"
-         ,  color["Aqua"]                  := "0xFF00FFFF"
-         ,  color["Aquamarine"]            := "0xFF7FFFD4"
-         ,  color["Azure"]                 := "0xFFF0FFFF"
-         ,  color["Beige"]                 := "0xFFF5F5DC"
-         ,  color["Bisque"]                := "0xFFFFE4C4"
-         ,  color["Black"]                 := "0xFF000000"
-         ,  color["BlanchedAlmond"]        := "0xFFFFEBCD"
-         ,  color["Blue"]                  := "0xFF0000FF"
-         ,  color["BlueViolet"]            := "0xFF8A2BE2"
-         ,  color["Brown"]                 := "0xFFA52A2A"
-         ,  color["BurlyWood"]             := "0xFFDEB887"
-         ,  color["CadetBlue"]             := "0xFF5F9EA0"
-         ,  color["Chartreuse"]            := "0xFF7FFF00"
-         ,  color["Chocolate"]             := "0xFFD2691E"
-         ,  color["Coral"]                 := "0xFFFF7F50"
-         ,  color["CornflowerBlue"]        := "0xFF6495ED"
-         ,  color["Cornsilk"]              := "0xFFFFF8DC"
-         ,  color["Crimson"]               := "0xFFDC143C"
-         ,  color["Cyan"]                  := "0xFF00FFFF"
-         ,  color["DarkBlue"]              := "0xFF00008B"
-         ,  color["DarkCyan"]              := "0xFF008B8B"
-         ,  color["DarkGoldenRod"]         := "0xFFB8860B"
-         ,  color["DarkGray"]              := "0xFFA9A9A9"
-         ,  color["DarkGrey"]              := "0xFFA9A9A9"
-         ,  color["DarkGreen"]             := "0xFF006400"
-         ,  color["DarkKhaki"]             := "0xFFBDB76B"
-         ,  color["DarkMagenta"]           := "0xFF8B008B"
-         ,  color["DarkOliveGreen"]        := "0xFF556B2F"
-         ,  color["DarkOrange"]            := "0xFFFF8C00"
-         ,  color["DarkOrchid"]            := "0xFF9932CC"
-         ,  color["DarkRed"]               := "0xFF8B0000"
-         ,  color["DarkSalmon"]            := "0xFFE9967A"
-         ,  color["DarkSeaGreen"]          := "0xFF8FBC8F"
-         ,  color["DarkSlateBlue"]         := "0xFF483D8B"
-         ,  color["DarkSlateGray"]         := "0xFF2F4F4F"
-         ,  color["DarkSlateGrey"]         := "0xFF2F4F4F"
-         ,  color["DarkTurquoise"]         := "0xFF00CED1"
-         ,  color["DarkViolet"]            := "0xFF9400D3"
-         ,  color["DeepPink"]              := "0xFFFF1493"
-         ,  color["DeepSkyBlue"]           := "0xFF00BFFF"
-         ,  color["DimGray"]               := "0xFF696969"
-         ,  color["DimGrey"]               := "0xFF696969"
-         ,  color["DodgerBlue"]            := "0xFF1E90FF"
-         ,  color["FireBrick"]             := "0xFFB22222"
-         ,  color["FloralWhite"]           := "0xFFFFFAF0"
-         ,  color["ForestGreen"]           := "0xFF228B22"
-         ,  color["Fuchsia"]               := "0xFFFF00FF"
-         ,  color["Gainsboro"]             := "0xFFDCDCDC"
-         ,  color["GhostWhite"]            := "0xFFF8F8FF"
-         ,  color["Gold"]                  := "0xFFFFD700"
-         ,  color["GoldenRod"]             := "0xFFDAA520"
-         ,  color["Gray"]                  := "0xFF808080"
-         ,  color["Grey"]                  := "0xFF808080"
-         ,  color["Green"]                 := "0xFF008000"
-         ,  color["GreenYellow"]           := "0xFFADFF2F"
-         ,  color["HoneyDew"]              := "0xFFF0FFF0"
-         ,  color["HotPink"]               := "0xFFFF69B4"
-         ,  color["IndianRed"]             := "0xFFCD5C5C"
-         ,  color["Indigo"]                := "0xFF4B0082"
-         ,  color["Ivory"]                 := "0xFFFFFFF0"
-         ,  color["Khaki"]                 := "0xFFF0E68C"
-         ,  color["Lavender"]              := "0xFFE6E6FA"
-         ,  color["LavenderBlush"]         := "0xFFFFF0F5"
-         ,  color["LawnGreen"]             := "0xFF7CFC00"
-         ,  color["LemonChiffon"]          := "0xFFFFFACD"
-         ,  color["LightBlue"]             := "0xFFADD8E6"
-         ,  color["LightCoral"]            := "0xFFF08080"
-         ,  color["LightCyan"]             := "0xFFE0FFFF"
-         ,  color["LightGoldenRodYellow"]  := "0xFFFAFAD2"
-         ,  color["LightGray"]             := "0xFFD3D3D3"
-         ,  color["LightGrey"]             := "0xFFD3D3D3"
-            color["LightGreen"]            := "0xFF90EE90"
-         ,  color["LightPink"]             := "0xFFFFB6C1"
-         ,  color["LightSalmon"]           := "0xFFFFA07A"
-         ,  color["LightSeaGreen"]         := "0xFF20B2AA"
-         ,  color["LightSkyBlue"]          := "0xFF87CEFA"
-         ,  color["LightSlateGray"]        := "0xFF778899"
-         ,  color["LightSlateGrey"]        := "0xFF778899"
-         ,  color["LightSteelBlue"]        := "0xFFB0C4DE"
-         ,  color["LightYellow"]           := "0xFFFFFFE0"
-         ,  color["Lime"]                  := "0xFF00FF00"
-         ,  color["LimeGreen"]             := "0xFF32CD32"
-         ,  color["Linen"]                 := "0xFFFAF0E6"
-         ,  color["Magenta"]               := "0xFFFF00FF"
-         ,  color["Maroon"]                := "0xFF800000"
-         ,  color["MediumAquaMarine"]      := "0xFF66CDAA"
-         ,  color["MediumBlue"]            := "0xFF0000CD"
-         ,  color["MediumOrchid"]          := "0xFFBA55D3"
-         ,  color["MediumPurple"]          := "0xFF9370DB"
-         ,  color["MediumSeaGreen"]        := "0xFF3CB371"
-         ,  color["MediumSlateBlue"]       := "0xFF7B68EE"
-         ,  color["MediumSpringGreen"]     := "0xFF00FA9A"
-         ,  color["MediumTurquoise"]       := "0xFF48D1CC"
-         ,  color["MediumVioletRed"]       := "0xFFC71585"
-         ,  color["MidnightBlue"]          := "0xFF191970"
-         ,  color["MintCream"]             := "0xFFF5FFFA"
-         ,  color["MistyRose"]             := "0xFFFFE4E1"
-         ,  color["Moccasin"]              := "0xFFFFE4B5"
-         ,  color["NavajoWhite"]           := "0xFFFFDEAD"
-         ,  color["Navy"]                  := "0xFF000080"
-         ,  color["OldLace"]               := "0xFFFDF5E6"
-         ,  color["Olive"]                 := "0xFF808000"
-         ,  color["OliveDrab"]             := "0xFF6B8E23"
-         ,  color["Orange"]                := "0xFFFFA500"
-         ,  color["OrangeRed"]             := "0xFFFF4500"
-         ,  color["Orchid"]                := "0xFFDA70D6"
-         ,  color["PaleGoldenRod"]         := "0xFFEEE8AA"
-         ,  color["PaleGreen"]             := "0xFF98FB98"
-         ,  color["PaleTurquoise"]         := "0xFFAFEEEE"
-         ,  color["PaleVioletRed"]         := "0xFFDB7093"
-         ,  color["PapayaWhip"]            := "0xFFFFEFD5"
-         ,  color["PeachPuff"]             := "0xFFFFDAB9"
-         ,  color["Peru"]                  := "0xFFCD853F"
-         ,  color["Pink"]                  := "0xFFFFC0CB"
-         ,  color["Plum"]                  := "0xFFDDA0DD"
-         ,  color["PowderBlue"]            := "0xFFB0E0E6"
-         ,  color["Purple"]                := "0xFF800080"
-         ,  color["RebeccaPurple"]         := "0xFF663399"
-         ,  color["Red"]                   := "0xFFFF0000"
-         ,  color["RosyBrown"]             := "0xFFBC8F8F"
-         ,  color["RoyalBlue"]             := "0xFF4169E1"
-         ,  color["SaddleBrown"]           := "0xFF8B4513"
-         ,  color["Salmon"]                := "0xFFFA8072"
-         ,  color["SandyBrown"]            := "0xFFF4A460"
-         ,  color["SeaGreen"]              := "0xFF2E8B57"
-         ,  color["SeaShell"]              := "0xFFFFF5EE"
-         ,  color["Sienna"]                := "0xFFA0522D"
-         ,  color["Silver"]                := "0xFFC0C0C0"
-         ,  color["SkyBlue"]               := "0xFF87CEEB"
-         ,  color["SlateBlue"]             := "0xFF6A5ACD"
-         ,  color["SlateGray"]             := "0xFF708090"
-         ,  color["SlateGrey"]             := "0xFF708090"
-         ,  color["Snow"]                  := "0xFFFFFAFA"
-         ,  color["SpringGreen"]           := "0xFF00FF7F"
-         ,  color["SteelBlue"]             := "0xFF4682B4"
-         ,  color["Tan"]                   := "0xFFD2B48C"
-         ,  color["Teal"]                  := "0xFF008080"
-         ,  color["Thistle"]               := "0xFFD8BFD8"
-         ,  color["Tomato"]                := "0xFFFF6347"
-         ,  color["Turquoise"]             := "0xFF40E0D0"
-         ,  color["Violet"]                := "0xFFEE82EE"
-         ,  color["Wheat"]                 := "0xFFF5DEB3"
-         ,  color["White"]                 := "0xFFFFFFFF"
-         ,  color["WhiteSmoke"]            := "0xFFF5F5F5"
-            color["Yellow"]                := "0xFFFFFF00"
-         ,  color["YellowGreen"]           := "0xFF9ACD32"
-         map := color
+      colormap(c) {
+         static colors1 :=
+         ( LTrim Join
+         {
+            "Clear"                 : "0x00000000",
+            "None"                  : "0x00000000",
+            "Off"                   : "0x00000000",
+            "Transparent"           : "0x00000000",
+            "AliceBlue"             : "0xFFF0F8FF",
+            "AntiqueWhite"          : "0xFFFAEBD7",
+            "Aqua"                  : "0xFF00FFFF",
+            "Aquamarine"            : "0xFF7FFFD4",
+            "Azure"                 : "0xFFF0FFFF",
+            "Beige"                 : "0xFFF5F5DC",
+            "Bisque"                : "0xFFFFE4C4",
+            "Black"                 : "0xFF000000",
+            "BlanchedAlmond"        : "0xFFFFEBCD",
+            "Blue"                  : "0xFF0000FF",
+            "BlueViolet"            : "0xFF8A2BE2",
+            "Brown"                 : "0xFFA52A2A",
+            "BurlyWood"             : "0xFFDEB887",
+            "CadetBlue"             : "0xFF5F9EA0",
+            "Chartreuse"            : "0xFF7FFF00",
+            "Chocolate"             : "0xFFD2691E",
+            "Coral"                 : "0xFFFF7F50",
+            "CornflowerBlue"        : "0xFF6495ED",
+            "Cornsilk"              : "0xFFFFF8DC",
+            "Crimson"               : "0xFFDC143C",
+            "Cyan"                  : "0xFF00FFFF",
+            "DarkBlue"              : "0xFF00008B",
+            "DarkCyan"              : "0xFF008B8B",
+            "DarkGoldenRod"         : "0xFFB8860B",
+            "DarkGray"              : "0xFFA9A9A9",
+            "DarkGrey"              : "0xFFA9A9A9",
+            "DarkGreen"             : "0xFF006400",
+            "DarkKhaki"             : "0xFFBDB76B",
+            "DarkMagenta"           : "0xFF8B008B",
+            "DarkOliveGreen"        : "0xFF556B2F",
+            "DarkOrange"            : "0xFFFF8C00",
+            "DarkOrchid"            : "0xFF9932CC",
+            "DarkRed"               : "0xFF8B0000",
+            "DarkSalmon"            : "0xFFE9967A",
+            "DarkSeaGreen"          : "0xFF8FBC8F",
+            "DarkSlateBlue"         : "0xFF483D8B",
+            "DarkSlateGray"         : "0xFF2F4F4F",
+            "DarkSlateGrey"         : "0xFF2F4F4F",
+            "DarkTurquoise"         : "0xFF00CED1",
+            "DarkViolet"            : "0xFF9400D3",
+            "DeepPink"              : "0xFFFF1493",
+            "DeepSkyBlue"           : "0xFF00BFFF",
+            "DimGray"               : "0xFF696969",
+            "DimGrey"               : "0xFF696969",
+            "DodgerBlue"            : "0xFF1E90FF",
+            "FireBrick"             : "0xFFB22222",
+            "FloralWhite"           : "0xFFFFFAF0",
+            "ForestGreen"           : "0xFF228B22",
+            "Fuchsia"               : "0xFFFF00FF",
+            "Gainsboro"             : "0xFFDCDCDC",
+            "GhostWhite"            : "0xFFF8F8FF",
+            "Gold"                  : "0xFFFFD700",
+            "GoldenRod"             : "0xFFDAA520",
+            "Gray"                  : "0xFF808080",
+            "Grey"                  : "0xFF808080",
+            "Green"                 : "0xFF008000",
+            "GreenYellow"           : "0xFFADFF2F",
+            "HoneyDew"              : "0xFFF0FFF0",
+            "HotPink"               : "0xFFFF69B4",
+            "IndianRed"             : "0xFFCD5C5C",
+            "Indigo"                : "0xFF4B0082",
+            "Ivory"                 : "0xFFFFFFF0",
+            "Khaki"                 : "0xFFF0E68C",
+            "Lavender"              : "0xFFE6E6FA",
+            "LavenderBlush"         : "0xFFFFF0F5",
+            "LawnGreen"             : "0xFF7CFC00",
+            "LemonChiffon"          : "0xFFFFFACD",
+            "LightBlue"             : "0xFFADD8E6",
+            "LightCoral"            : "0xFFF08080",
+            "LightCyan"             : "0xFFE0FFFF",
+            "LightGoldenRodYellow"  : "0xFFFAFAD2",
+            "LightGray"             : "0xFFD3D3D3",
+            "LightGrey"             : "0xFFD3D3D3",
+            "LightGreen"            : "0xFF90EE90",
+            "LightPink"             : "0xFFFFB6C1",
+            "LightSalmon"           : "0xFFFFA07A",
+            "LightSeaGreen"         : "0xFF20B2AA",
+            "LightSkyBlue"          : "0xFF87CEFA",
+            "LightSlateGray"        : "0xFF778899",
+            "LightSlateGrey"        : "0xFF778899",
+            "LightSteelBlue"        : "0xFFB0C4DE",
+            "LightYellow"           : "0xFFFFFFE0",
+            "Lime"                  : "0xFF00FF00",
+            "LimeGreen"             : "0xFF32CD32",
+            "Linen"                 : "0xFFFAF0E6"
          }
-
-         return map[c]
+         )
+         static colors2 :=
+         ( LTrim Join
+         {
+            "Magenta"               : "0xFFFF00FF",
+            "Maroon"                : "0xFF800000",
+            "MediumAquaMarine"      : "0xFF66CDAA",
+            "MediumBlue"            : "0xFF0000CD",
+            "MediumOrchid"          : "0xFFBA55D3",
+            "MediumPurple"          : "0xFF9370DB",
+            "MediumSeaGreen"        : "0xFF3CB371",
+            "MediumSlateBlue"       : "0xFF7B68EE",
+            "MediumSpringGreen"     : "0xFF00FA9A",
+            "MediumTurquoise"       : "0xFF48D1CC",
+            "MediumVioletRed"       : "0xFFC71585",
+            "MidnightBlue"          : "0xFF191970",
+            "MintCream"             : "0xFFF5FFFA",
+            "MistyRose"             : "0xFFFFE4E1",
+            "Moccasin"              : "0xFFFFE4B5",
+            "NavajoWhite"           : "0xFFFFDEAD",
+            "Navy"                  : "0xFF000080",
+            "OldLace"               : "0xFFFDF5E6",
+            "Olive"                 : "0xFF808000",
+            "OliveDrab"             : "0xFF6B8E23",
+            "Orange"                : "0xFFFFA500",
+            "OrangeRed"             : "0xFFFF4500",
+            "Orchid"                : "0xFFDA70D6",
+            "PaleGoldenRod"         : "0xFFEEE8AA",
+            "PaleGreen"             : "0xFF98FB98",
+            "PaleTurquoise"         : "0xFFAFEEEE",
+            "PaleVioletRed"         : "0xFFDB7093",
+            "PapayaWhip"            : "0xFFFFEFD5",
+            "PeachPuff"             : "0xFFFFDAB9",
+            "Peru"                  : "0xFFCD853F",
+            "Pink"                  : "0xFFFFC0CB",
+            "Plum"                  : "0xFFDDA0DD",
+            "PowderBlue"            : "0xFFB0E0E6",
+            "Purple"                : "0xFF800080",
+            "RebeccaPurple"         : "0xFF663399",
+            "Red"                   : "0xFFFF0000",
+            "RosyBrown"             : "0xFFBC8F8F",
+            "RoyalBlue"             : "0xFF4169E1",
+            "SaddleBrown"           : "0xFF8B4513",
+            "Salmon"                : "0xFFFA8072",
+            "SandyBrown"            : "0xFFF4A460",
+            "SeaGreen"              : "0xFF2E8B57",
+            "SeaShell"              : "0xFFFFF5EE",
+            "Sienna"                : "0xFFA0522D",
+            "Silver"                : "0xFFC0C0C0",
+            "SkyBlue"               : "0xFF87CEEB",
+            "SlateBlue"             : "0xFF6A5ACD",
+            "SlateGray"             : "0xFF708090",
+            "SlateGrey"             : "0xFF708090",
+            "Snow"                  : "0xFFFFFAFA",
+            "SpringGreen"           : "0xFF00FF7F",
+            "SteelBlue"             : "0xFF4682B4",
+            "Tan"                   : "0xFFD2B48C",
+            "Teal"                  : "0xFF008080",
+            "Thistle"               : "0xFFD8BFD8",
+            "Tomato"                : "0xFFFF6347",
+            "Turquoise"             : "0xFF40E0D0",
+            "Violet"                : "0xFFEE82EE",
+            "Wheat"                 : "0xFFF5DEB3",
+            "White"                 : "0xFFFFFFFF",
+            "WhiteSmoke"            : "0xFFF5F5F5",
+            "Yellow"                : "0xFFFFFF00",
+            "YellowGreen"           : "0xFF9ACD32"
+         }
+         )
+         return colors1[c] ? colors1[c] : colors2[c]
       }
 
       dropShadow(d, vw, vh, width, height, font_size) {

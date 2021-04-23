@@ -929,7 +929,7 @@ class TextRender {
             "YellowGreen"           : "0xFF9ACD32"
          }
          )
-         return colors1[c] ? colors1[c] : colors2[c]
+         return colors1.HasKey(c) ? colors1[c] : colors2[c]
       }
 
       dropShadow(d, vw, vh, width, height, font_size) {

@@ -540,7 +540,7 @@ class TextRender {
             DropShadowG := Gdip_GraphicsFromImage(DropShadow)
             DllCall("gdiplus\GdipSetSmoothingMode",      "ptr", DropShadowG, "int", 3)
             DllCall("gdiplus\GdipSetTextRenderingHint",  "ptr", DropShadowG, "int",  1)
-            DllCall("gdiplus\GdipGraphicsClear", "ptr", gfx, "uint", 0xFFFFFFFF) ;d.4 & 0xFFFFFF)
+            DllCall("gdiplus\GdipGraphicsClear", "ptr", gfx, "uint", d.4 & 0xFFFFFF)
             VarSetCapacity(RectF, 16, 0)          ; sizeof(RectF) = 16
                NumPut(d.1+x, RectF,  0,  "float") ; Left
                NumPut(d.2+y, RectF,  4,  "float") ; Top

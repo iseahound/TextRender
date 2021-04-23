@@ -1509,7 +1509,7 @@ class TextRender {
 
    RenderToBitmap() {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.w, "int", this.h
-         , "int", 4*this.w, "uint", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
+         , "uint", 0, "uint", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
    	DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", pBitmap, "ptr*", gfx:=0)
       DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", gfx, "float", -this.x, "float", -this.y, "int", 0)
       for i, layer in this.layers

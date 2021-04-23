@@ -536,10 +536,12 @@ class TextRender {
          ; If blur is present, a second canvas must be seperately processed to apply the Gaussian Blur effect.
          if (true) {
             ;DropShadow := Gdip_CreateBitmap(w + 2*offset2, h + 2*offset2)
-            DropShadow := Gdip_CreateBitmap(A_ScreenWidth, A_ScreenHeight, 0xE200B)
-            DropShadowG := Gdip_GraphicsFromImage(DropShadow)
-            DllCall("gdiplus\GdipSetSmoothingMode",      "ptr", DropShadowG, "int", 3)
-            DllCall("gdiplus\GdipSetTextRenderingHint",  "ptr", DropShadowG, "int",  1)
+            ;DropShadow := Gdip_CreateBitmap(A_ScreenWidth, A_ScreenHeight, 0xE200B)
+            DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", A_ScreenWidth, "int", A_ScreenHeight
+               , "uint", 0, "uint", 0xE200B, "ptr", 0, "ptr*", DropShadow:=0)
+            DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", DropShadow, "ptr*", DropShadowG:=0)
+            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", 3)
+            DllCall("gdiplus\GdipSetTextRenderingHint", "ptr", DropShadowG, "int", 1)
             DllCall("gdiplus\GdipGraphicsClear", "ptr", gfx, "uint", d.4 & 0xFFFFFF)
             VarSetCapacity(RectF, 16, 0)          ; sizeof(RectF) = 16
                NumPut(d.1+x, RectF,  0,  "float") ; Left
@@ -563,7 +565,14 @@ class TextRender {
          {
             ; Use shadow solid brush.
             DllCall("gdiplus\GdipCreateSolidFill", "uint", d.4, "ptr*", pBrush:=0)
-            Gdip_DrawString(DropShadowG, Text, hFont, hFormat, pBrush, RectF) ; DRAWING!
+            DllCall("gdiplus\GdipDrawString"
+                     ,    "ptr", DropShadowG
+                     ,   "wstr", text
+                     ,    "int", -1
+                     ,    "ptr", hFont
+                     ,    "ptr", &RectF
+                     ,    "ptr", hFormat
+                     ,    "ptr", pBrush)
             DllCall("gdiplus\GdipDeleteBrush", "ptr", pBrush)
          }
          else ; Otherwise, use the below code if blur, size, and opacity are set.
@@ -585,24 +594,33 @@ class TextRender {
             DllCall("gdiplus\GdipDeletePen", "ptr", pPen)
 
             ; Fill in the outline. Turn off antialiasing and alpha blending so the gaps are 100% filled.
-            pBrush := Gdip_BrushCreateSolid(d.4)
-            Gdip_SetCompositingMode(DropShadowG, 1) ; Turn off alpha blending
-            Gdip_SetSmoothingMode(DropShadowG, 3)   ; Turn off anti-aliasing
-            Gdip_FillPath(DropShadowG, pBrush, pPath)
-            Gdip_DeleteBrush(pBrush)
-            Gdip_DeletePath(pPath)
-            Gdip_SetCompositingMode(DropShadowG, 0)
-            Gdip_SetSmoothingMode(DropShadowG, _q)
+            DllCall("gdiplus\GdipCreateSolidFill", "uint", d.4, "ptr*", pBrush:=0)
+            DllCall("gdiplus\GdipSetCompositingMode", "ptr", DropShadowG, "int", 1) ; Turn off alpha blending
+            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", 3) ; Turn off anti-aliasing
+            DllCall("gdiplus\GdipFillPath", "ptr", DropShadowG, "ptr", pBrush, "ptr", pPath) ; DRAWING!
+            DllCall("gdiplus\GdipDeleteBrush", "ptr", pBrush)
+            DllCall("gdiplus\GdipDeletePath", "ptr", pPath)
+            DllCall("gdiplus\GdipSetCompositingMode", "ptr", DropShadowG, "int", 0)
+            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", _q)
          }
 
          if (true) {
-            Gdip_DeleteGraphics(DropShadowG)
+            DllCall("gdiplus\GdipDeleteGraphics", "ptr", DropShadowG)
             this.filter.GaussianBlur(DropShadow, d.3, d.5)
-            Gdip_SetInterpolationMode(gfx, 5) ; NearestNeighbor
-            Gdip_SetSmoothingMode(gfx, 3) ; Turn off anti-aliasing
+            DllCall("gdiplus\GdipSetInterpolationMode", "ptr", gfx, "int", 5) ; NearestNeighbor
+            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", 3) ; Turn off anti-aliasing
             ;Gdip_DrawImage(gfx, DropShadow, x + d.1 - offset2, y + d.2 - offset2, w + 2*offset2, h + 2*offset2) ; DRAWING!
-            Gdip_DrawImage(gfx, DropShadow, 0, 0, A_Screenwidth, A_ScreenHeight) ; DRAWING!
-            Gdip_SetSmoothingMode(gfx, _q)
+            ;Gdip_DrawImage(gfx, DropShadow, 0, 0, A_Screenwidth, A_ScreenHeight) ; DRAWING!
+            DllCall("gdiplus\GdipDrawImageRectRectI" ; DRAWING!
+                     ,    "ptr", gfx
+                     ,    "ptr", DropShadow
+                     ,    "int", 0, "int", 0, "int", A_Screenwidth, "int", A_Screenwidth ; destination rectangle
+                     ,    "int", 0, "int", 0, "int", A_Screenwidth, "int", A_Screenwidth ; source rectangle
+                     ,    "int", 2  ; UnitPixel
+                     ,    "ptr", 0  ; imageAttributes
+                     ,    "ptr", 0  ; callback
+                     ,    "ptr", 0) ; callbackData
+            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", _q)
             DllCall("gdiplus\GdipDisposeImage", "ptr", DropShadow)
          }
       }

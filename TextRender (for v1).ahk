@@ -712,12 +712,12 @@ class TextRender {
       DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", gfx, "int", InterpolationMode)
       DllCall("gdiplus\GdipSetTextRenderingHint",  "ptr", gfx, "int", TextRenderingHint)
 
-      ; Define bounds. BROKEN!!!!
-      t_bound :=  t
-      x_bound := _x
-      y_bound := _y
-      w_bound := _w
-      h_bound := _h
+      ; Define canvas coordinates.
+      t_bound :=  t                              ; string/background boundary.
+      x_bound := (_c & 0xFF000000) ? _x : x
+      y_bound := (_c & 0xFF000000) ? _y : y
+      w_bound := (_c & 0xFF000000) ? _w : w
+      h_bound := (_c & 0xFF000000) ? _h : h
 
       o_bound := Ceil(0.5 * o.1 + o.3)                     ; outline boundary.
       x_bound := (x - o_bound < x_bound)        ? x - o_bound        : x_bound

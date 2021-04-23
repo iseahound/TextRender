@@ -66,6 +66,7 @@ class TextRender {
          this.WindowBottom := (this.BitmapBottom < this.y2) ? this.BitmapBottom : this.y2
          this.WindowWidth  := this.WindowRight - this.WindowLeft
          this.WindowHeight := this.WindowBottom - this.WindowTop
+         ; Only the visible screen area will be rendered.
          ; Objects that reside partly off screen will not have those areas rendered.
          this.UpdateLayeredWindow(this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight)
       }
@@ -112,7 +113,7 @@ class TextRender {
       ; Create a unique signature for each call to Draw().
       this.GUID := ComObjCreate("Scriptlet.TypeLib").GUID
 
-      ; Set bounds.
+      ; Set canvas coordinates.
       this.t  := (this.t  == "") ? obj.t  : (this.t  > obj.t)  ? this.t  : obj.t
       this.x  := (this.x  == "") ? obj.x  : (this.x  < obj.x)  ? this.x  : obj.x
       this.y  := (this.y  == "") ? obj.y  : (this.y  < obj.y)  ? this.y  : obj.y
@@ -1626,7 +1627,7 @@ class TextRender {
                ,   "uint", 2)                       ; dwFlags
    }
 
-   InBounds() {
+   InBounds() { ; Check if canvas coordinates are inside bitmap coordinates.
       return this.x < this.BitmapLeft
          and this.y < this.BitmapTop
          and this.w + this.x < this.BitmapWidth + this.BitmapLeft

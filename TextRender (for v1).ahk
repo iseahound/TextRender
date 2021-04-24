@@ -198,6 +198,7 @@ class TextRender {
          i  := (style2.italic != "")      ? style2.italic      : style2.i
          u  := (style2.underline != "")   ? style2.underline   : style2.u
          j  := (style2.justify != "")     ? style2.justify     : style2.j
+         j  := (style2.vertical != "")    ? style2.vertical    : style2.v
          n  := (style2.noWrap != "")      ? style2.noWrap      : style2.n
          z  := (style2.condensed != "")   ? style2.condensed   : style2.z
          d  := (style2.dropShadow != "")  ? style2.dropShadow  : style2.d
@@ -218,6 +219,7 @@ class TextRender {
          i  := ((___ := RegExReplace(style2, q1    "(i(talic)?)"        q2, "${value}")) != style2) ? ___ : ""
          u  := ((___ := RegExReplace(style2, q1    "(u(nderline)?)"     q2, "${value}")) != style2) ? ___ : ""
          j  := ((___ := RegExReplace(style2, q1    "(j(ustify)?)"       q2, "${value}")) != style2) ? ___ : ""
+         v  := ((___ := RegExReplace(style2, q1    "(v(ertical)?)"      q2, "${value}")) != style2) ? ___ : ""
          n  := ((___ := RegExReplace(style2, q1    "(n(oWrap)?)"        q2, "${value}")) != style2) ? ___ : ""
          z  := ((___ := RegExReplace(style2, q1    "(z|condensed)"      q2, "${value}")) != style2) ? ___ : ""
          d  := ((___ := RegExReplace(style2, q1    "(d(ropShadow)?)"    q2, "${value}")) != style2) ? ___ : ""
@@ -294,6 +296,10 @@ class TextRender {
       n  := (n) ? 0x4000 | 0x1000 : 0x4000 ; Defaults to text wrapping.
       j  := (j ~= "i)cent(er|re)") ? 1 : (j ~= "i)(far|right)") ? 2 : 1 ; Defaults to center justification.
 
+      ; Default vertical justification to top.
+      if (v < 0 || v > 2)
+         v  := (v ~= "i)cent(er|re)") ? 1 : (v ~= "i)(far|bottom)") ? 2 : 0
+
       ; Later when text x and w are finalized and it is found that x + width exceeds the screen,
       ; then the _redrawBecauseOfCondensedFont flag is set to true.
       static _redrawBecauseOfCondensedFont
@@ -308,7 +314,7 @@ class TextRender {
       DllCall("gdiplus\GdipCreateFont", "ptr", hFamily, "float", s, "int", style, "int", 0, "ptr*", hFont:=0)
       DllCall("gdiplus\GdipCreateStringFormat", "int", n, "int", 0, "ptr*", hFormat:=0)
       DllCall("gdiplus\GdipSetStringFormatAlign", "ptr", hFormat, "int", j) ; Left = 0, Center = 1, Right = 2
-
+      DllCall("gdiplus\GdipSetStringFormatLineAlign", "ptr", hFormat, "int", v) ; Top = 0, Center = 1, Bottom = 2
 
       ; Use the declared width and height of the text box if given.
       VarSetCapacity(RectF, 16, 0)                         ; sizeof(RectF) = 16
@@ -328,6 +334,8 @@ class TextRender {
                ,  "uint*", lines:=0)
 
       ; Extract the simulated width and height of the text string's bounding box...
+      left := NumGet(RectF, 0, "float")
+      top := NumGet(RectF, 4, "float")
       width := NumGet(RectF, 8, "float")
       height := NumGet(RectF, 12, "float")
       minimum := (width < height) ? width : height
@@ -432,7 +440,8 @@ class TextRender {
       x  := ( x ~= "i)vmin$") ? RegExReplace( x, "i)vmin$", "") * vmin :  x
       x  := ( x ~= "%$") ? RegExReplace( x, "%$", "") * 0.01 * _w :  x
 
-      y  := ( y ~= valid) ? RegExReplace( y, "\s", "") : _y ; Default text y is background y.
+      ; Default text y is background y + vertical align.
+      y  := ( y ~= valid) ? RegExReplace( y, "\s", "") : _y + top
       y  := ( y ~= "i)(pt|px)$") ? SubStr( y, 1, -2) :  y
       y  := ( y ~= "i)vw$") ? RegExReplace( y, "i)vw$", "") * vw :  y
       y  := ( y ~= "i)vh$") ? RegExReplace( y, "i)vh$", "") * vh :  y

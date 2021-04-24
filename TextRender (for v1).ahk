@@ -306,35 +306,33 @@ class TextRender {
       DllCall("gdiplus\GdipCreateStringFormat", "int", n, "int", 0, "ptr*", hFormat:=0)
       DllCall("gdiplus\GdipSetStringFormatAlign", "ptr", hFormat, "int", j) ; Left = 0, Center = 1, Right = 2
 
-      ; Simulate string width and height. This will get the exact width and height of the text.
-      VarSetCapacity(RectF, 16, 0)       ; sizeof(RectF) = 16
-      if (_w != "")
-         NumPut(_w, RectF,  8,  "float") ; Width
-      if (_h != "")
-         NumPut(_h, RectF, 12,  "float") ; Height
+
+      ; Use the declared width and height of the text box if given.
+      VarSetCapacity(RectF, 16, 0)                         ; sizeof(RectF) = 16
+         (_w != "") ? NumPut(_w, RectF,  8,  "float") : "" ; Width
+         (_h != "") ? NumPut(_h, RectF, 12,  "float") : "" ; Height
+
+      ; Otherwise simulate the drawing...
       DllCall("gdiplus\GdipMeasureString"
                ,    "ptr", gfx
                ,   "wstr", text
-               ,    "int", -1                 ; string length.
+               ,    "int", -1                 ; string length is null terminated.
                ,    "ptr", hFont
                ,    "ptr", &RectF             ; (in) layout RectF that bounds the string.
                ,    "ptr", hFormat
                ,    "ptr", &RectF             ; (out) simulated RectF that bounds the string.
-               ,  "uint*", Chars:=0
-               ,  "uint*", Lines:=0)
+               ,  "uint*", chars:=0
+               ,  "uint*", lines:=0)
 
-      ; Get simulated text width and height.
+      ; Extract the simulated width and height of the text string's bounding box...
       width := NumGet(RectF, 8, "float")
       height := NumGet(RectF, 12, "float")
       minimum := (width < height) ? width : height
       aspect := (height != 0) ? width / height : 0
 
-      ; Default background width and height.
-      if (_w == "")
-         _w := width
-      if (_h == "")
-         _h := height
-
+      ; And use those values for the background width and height.
+      (_w == "") ? _w := width : ""
+      (_h == "") ? _h := height : ""
 
 
       ; Get background anchor. This is where the origin of the image is located.
@@ -687,8 +685,8 @@ class TextRender {
                   ,    "ptr", &RectF             ; (in) layout RectF that bounds the string.
                   ,    "ptr", hFormat
                   ,    "ptr", &RectF             ; (out) simulated RectF that bounds the string.
-                  ,  "uint*", Chars:=0
-                  ,  "uint*", Lines:=0)
+                  ,  "uint*", chars:=0
+                  ,  "uint*", lines:=0)
 
          DllCall("gdiplus\GdipCreateSolidFill", "uint", c, "ptr*", pBrush:=0)
          DllCall("gdiplus\GdipDrawString"
@@ -739,7 +737,8 @@ class TextRender {
       w_bound := (w + 2 * d_bound > w_bound)    ? w + 2 * d_bound    : w_bound
       h_bound := (h + 2 * d_bound > h_bound)    ? h + 2 * d_bound    : h_bound
 
-      return {t:t_bound, x:x_bound, y:y_bound, w:w_bound, h:h_bound, x2:x_bound+w_bound, y2:y_bound+h_bound}
+      return {t:t_bound, x:x_bound, y:y_bound, w:w_bound, h:h_bound
+            , x2:x_bound+w_bound, y2:y_bound+h_bound, chars:chars, lines:lines}
    }
 
    DrawOnBitmap(pBitmap, text := "", style1 := "", style2 := "") {

@@ -49,6 +49,10 @@ class TextRender {
       ; Check the terms to avoid drawing a default square.
       if (terms.1 != "" || terms.2 != "" || terms.3 != "") {
          this.Draw(terms*)
+      }
+
+      ; Allow Render() to commit when previous Draw() has happened.
+      if this.layers.length() > 0 {
          ; Render: Off-Screen areas are not rendered. Clip objects that reside off screen.
          this.WindowLeft   := (this.BitmapLeft   > this.x)  ? this.BitmapLeft   : this.x
          this.WindowTop    := (this.BitmapTop    > this.y)  ? this.BitmapTop    : this.y
@@ -1396,7 +1400,7 @@ class TextRender {
             this.Draw(pixel, "x" _w*70 " y"  70*(_h) " w70 h70 m0 c" pixel)
       }
       }
-      this.Render("hi")
+      this.Render()
       return this
    }
 

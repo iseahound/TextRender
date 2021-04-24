@@ -1637,10 +1637,10 @@ class TextRender {
    }
 
    InBounds() { ; Check if canvas coordinates are inside bitmap coordinates.
-      return this.x < this.BitmapLeft
-         and this.y < this.BitmapTop
-         and this.w + this.x < this.BitmapWidth + this.BitmapLeft
-         and this.h + this.y < this.BitmapHeight + this.BitmapTop
+      return this.x >= this.BitmapLeft
+         and this.y >= this.BitmapTop
+         and this.x2 <= this.BitmapRight
+         and this.y2 <= this.BitmapBottom
    }
 
    Bounds(default := "") {

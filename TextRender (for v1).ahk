@@ -111,6 +111,8 @@ class TextRender {
       this.y2 := (this.y2 == "") ? obj.y2 : (this.y2 > obj.y2) ? this.y2 : obj.y2
       this.w  := this.x2 - this.x
       this.h  := this.y2 - this.y
+      this.chars := obj.chars
+      this.lines := obj.lines
 
       return this
    }

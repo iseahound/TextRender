@@ -294,7 +294,10 @@ class TextRender {
       style += (u) ? 4 : 0         ; underline
       style += (strikeout) ? 8 : 0 ; strikeout, not implemented.
       n  := (n) ? 0x4000 | 0x1000 : 0x4000 ; Defaults to text wrapping.
-      j  := (j ~= "i)cent(er|re)") ? 1 : (j ~= "i)(far|right)") ? 2 : 1 ; Defaults to center justification.
+
+      ; Defaults text justification to center.
+      if (j < 0 || j > 2)
+         j  := (j ~= "i)cent(er|re)") ? 1 : (j ~= "i)(far|right)") ? 2 : 1
 
       ; Default vertical justification to top.
       if (v < 0 || v > 2)
@@ -334,8 +337,6 @@ class TextRender {
                ,  "uint*", lines:=0)
 
       ; Extract the simulated width and height of the text string's bounding box...
-      left := NumGet(RectF, 0, "float")
-      top := NumGet(RectF, 4, "float")
       width := NumGet(RectF, 8, "float")
       height := NumGet(RectF, 12, "float")
       minimum := (width < height) ? width : height
@@ -408,10 +409,13 @@ class TextRender {
       h  := ( h ~= "i)vmin$") ? RegExReplace( h, "i)vmin$", "") * vmin :  h
       h  := ( h ~= "%$") ? RegExReplace( h, "%$", "") * 0.01 * _h :  h
 
+      ; Manually justify because text width and height may be set above.
       ; If text justification is set but x is not, align the justified text relative to the center
       ; or right of the backgound, after taking into account the text width.
       if (x == "")
          x  := (j = 1) ? _x + (_w/2) - (w/2) : (j = 2) ? _x + _w - w : x
+      if (y == "")
+         y  := (v = 1) ? _y + (_h/2) - (h/2) : (v = 2) ? _y + _h - h : y
 
       ; Get anchor.
       a  := RegExReplace( a, "\s", "")
@@ -432,16 +436,16 @@ class TextRender {
       x  := ( x ~= "i)left") ? _x : (x ~= "i)cent(er|re)") ? _x + 0.5*_w : (x ~= "i)right") ? _x + _w : x
       y  := ( y ~= "i)top") ? _y : (y ~= "i)cent(er|re)") ? _y + 0.5*_h : (y ~= "i)bottom") ? _y + _h : y
 
-      ; Get text x and y.
-      x  := ( x ~= valid) ? RegExReplace( x, "\s", "") : _x ; Default text x is background x.
+      ; Default text x is background x.
+      x  := ( x ~= valid) ? RegExReplace( x, "\s", "") : _x
       x  := ( x ~= "i)(pt|px)$") ? SubStr( x, 1, -2) :  x
       x  := ( x ~= "i)vw$") ? RegExReplace( x, "i)vw$", "") * vw :  x
       x  := ( x ~= "i)vh$") ? RegExReplace( x, "i)vh$", "") * vh :  x
       x  := ( x ~= "i)vmin$") ? RegExReplace( x, "i)vmin$", "") * vmin :  x
       x  := ( x ~= "%$") ? RegExReplace( x, "%$", "") * 0.01 * _w :  x
 
-      ; Default text y is background y + vertical align.
-      y  := ( y ~= valid) ? RegExReplace( y, "\s", "") : _y + top
+      ; Default text y is background y.
+      y  := ( y ~= valid) ? RegExReplace( y, "\s", "") : _y
       y  := ( y ~= "i)(pt|px)$") ? SubStr( y, 1, -2) :  y
       y  := ( y ~= "i)vw$") ? RegExReplace( y, "i)vw$", "") * vw :  y
       y  := ( y ~= "i)vh$") ? RegExReplace( y, "i)vh$", "") * vh :  y

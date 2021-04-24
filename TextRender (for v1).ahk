@@ -29,6 +29,8 @@ class TextRender {
       this.hwnd := this.CreateWindow()
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
 
+      ; LoadMemory() is called when Draw() is invoked to save memory.
+
       this.history := {}
       this.layers := {}
       this.drawing := true
@@ -38,6 +40,7 @@ class TextRender {
    }
 
    __Delete() {
+      ; FreeMemory() is called by DestroyWindow().
       this.DestroyWindow()
       this.gdiplusShutdown()
    }

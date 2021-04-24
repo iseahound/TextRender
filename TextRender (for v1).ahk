@@ -444,9 +444,9 @@ class TextRender {
       x  -= (mod(a-1,3) == 0) ? 0 : (mod(a-1,3) == 1) ? w/2 : (mod(a-1,3) == 2) ? w : 0
       y  -= (((a-1)//3) == 0) ? 0 : (((a-1)//3) == 1) ? h/2 : (((a-1)//3) == 2) ? h : 0
 
-      ; Get margin.
+      ; Get margin. Default margin is 1vmin.
       m  := this.parse.margin_and_padding( m, vw, vh)
-      _m := this.parse.margin_and_padding(_m, vw, vh, (m.void) ? "1vmin" : "") ; Default margin is 1vmin.
+      _m := this.parse.margin_and_padding(_m, vw, vh, (m.void && _w > 0 && _h > 0) ? "1vmin" : "")
 
       ; Modify _x, _y, _w, _h with margin and padding, increasing the size of the background.
       _w += Round(_m.2) + Round(_m.4) + Round(m.2) + Round(m.4)

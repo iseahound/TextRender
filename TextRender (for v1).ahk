@@ -6,9 +6,7 @@
 
 #Requires AutoHotkey v1.1.33+
 #Persistent
-#include Gdip_All.ahk
 
-pToken := Gdip_Startup()
 ; a := TextRender("i love strong & cute girls!", "r:1 c:none", "c:None d:(blur:1px opacity:100% color:0xFF00FF00)")
 
 
@@ -24,11 +22,7 @@ class TextRender {
    }
 
    __New(title := "") {
-      global pToken
-      if !(this.outer.Startup())
-         if !(pToken)
-            if !(this.pToken := Gdip_Startup())
-               throw Exception("Gdiplus failed to start. Please ensure you have gdiplus on your system.")
+      this.gdiplusStartup()
 
       this.IO()
 
@@ -45,14 +39,7 @@ class TextRender {
 
    __Delete() {
       this.DestroyWindow()
-
-      global pToken
-      if (this.outer.pToken)
-         return this.outer.Shutdown()
-      if (pToken)
-         return
-      if (this.pToken)
-         return Gdip_Shutdown(this.pToken)
+      this.gdiplusShutdown()
    }
 
    Render(terms*) {
@@ -1663,6 +1650,60 @@ class TextRender {
 
    Rect(default := "") {
       return (this.x2 > this.x && this.y2 > this.y) ? [this.x, this.y, this.w, this.h] : default
+   }
+
+   ; All references to gdiplus and pToken must be absolute!
+   static gdiplus := 0, pToken := 0
+
+   gdiplusStartup() {
+      TextRender.gdiplus++
+
+      ; Startup gdiplus when counter goes from 0 -> 1.
+      if (TextRender.gdiplus == 1) {
+
+         ; Startup gdiplus.
+         DllCall("LoadLibrary", "str", "gdiplus")
+         VarSetCapacity(si, A_PtrSize = 8 ? 24 : 16, 0) ; sizeof(GdiplusStartupInput) = 16, 24
+            , NumPut(0x1, si, "uint")
+         DllCall("gdiplus\GdiplusStartup", "ptr*", pToken:=0, "ptr", &si, "ptr", 0)
+
+         TextRender.pToken := pToken
+      }
+   }
+
+   gdiplusShutdown(cotype := "", pBitmap := "") {
+      TextRender.gdiplus--
+
+      ; When a buffer object is deleted a bitmap is sent here for disposal.
+      if (cotype == "smart_pointer")
+         if DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+            throw Exception("The bitmap of this buffer object has already been deleted.")
+
+      ; Check for unpaired calls of gdiplusShutdown.
+      if (TextRender.gdiplus < 0)
+         throw Exception("Missing TextRender.gdiplusStartup().")
+
+      ; Shutdown gdiplus when counter goes from 1 -> 0.
+      if (TextRender.gdiplus == 0) {
+         pToken := TextRender.pToken
+
+         ; Shutdown gdiplus.
+         DllCall("gdiplus\GdiplusShutdown", "ptr", pToken)
+         DllCall("FreeLibrary", "ptr", DllCall("GetModuleHandle", "str", "gdiplus", "ptr"))
+
+         ; Exit if GDI+ is still loaded. GdiplusNotInitialized = 18
+         if (18 != DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", ImageAttr:=0)) {
+            DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
+            return
+         }
+
+         ; Otherwise GDI+ has been truly unloaded from the script and objects are out of scope.
+         if (cotype = "bitmap")
+            throw Exception("Out of scope error. `n`nIf you wish to handle raw pointers to GDI+ bitmaps, add the line"
+               . "`n`n`t`t" this.__class ".gdiplusStartup()`n`nor 'pToken := Gdip_Startup()' to the top of your script."
+               . "`nAlternatively, use 'obj := ImagePutBuffer()' with 'obj.pBitmap'."
+               . "`nYou can copy this message by pressing Ctrl + C.")
+      }
    }
 } ; End of TextRender class.
 

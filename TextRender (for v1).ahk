@@ -198,7 +198,7 @@ class TextRender {
          i  := (style2.italic != "")      ? style2.italic      : style2.i
          u  := (style2.underline != "")   ? style2.underline   : style2.u
          j  := (style2.justify != "")     ? style2.justify     : style2.j
-         j  := (style2.vertical != "")    ? style2.vertical    : style2.v
+         v  := (style2.vertical != "")    ? style2.vertical    : style2.v
          n  := (style2.noWrap != "")      ? style2.noWrap      : style2.n
          z  := (style2.condensed != "")   ? style2.condensed   : style2.z
          d  := (style2.dropShadow != "")  ? style2.dropShadow  : style2.d

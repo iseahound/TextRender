@@ -1099,11 +1099,10 @@ class TextRender {
 
    class filter {
 
-      GaussianBlur(ByRef pBitmap, radius, opacity := 1) {
-         static code
-         if !(code) {
-            x86 := "
-            (LTrim
+      GaussianBlur(pBitmap, radius, opacity := 1) {
+         static code := (A_PtrSize == 4)
+            ? "
+            ( LTrim                                    ; 32-bit machine code
             VYnlV1ZTg+xci0Uci30c2UUgx0WsAwAAAI1EAAGJRdiLRRAPr0UYicOJRdSLRRwP
             r/sPr0UYiX2ki30UiUWoi0UQjVf/i30YSA+vRRgDRQgPr9ONPL0SAAAAiUWci0Uc
             iX3Eg2XE8ECJVbCJRcCLRcSJZbToAAAAACnEi0XEiWXk6AAAAAApxItFxIllzOgA
@@ -1127,9 +1126,8 @@ class TextRender {
             //9NrItltA+Fofz//9no3+l2PzHJMds7XRR9OotFGIt9CA+vwY1EBwMx/zt9EH0c
             D7Yw2cBHVtoMJFrZXeTzDyx15InyiBADRRjr30MDTRDrxd3Y6wLd2I1l9DHAW15f
             XcM=
-            )"
-            x64 := "
-            (LTrim
+            )" : "
+            ( LTrim                                    ; 64-bit machine code
             VUFXQVZBVUFUV1ZTSIHsqAAAAEiNrCSAAAAARIutkAAAAIuFmAAAAESJxkiJVRhB
             jVH/SYnPi42YAAAARInHQQ+v9Y1EAAErvZgAAABEiUUARIlN2IlFFEljxcdFtAMA
             AABIY96LtZgAAABIiUUID6/TiV0ESIld4A+vy4udmAAAAIl9qPMPEI2gAAAAiVXQ
@@ -1159,17 +1157,15 @@ class TextRender {
             McBIA0UIO1UAfR1FD7ZUAQP/wvNBDyrC8w9ZwfNEDyzQRYhUAQPr2kH/wANNAOu4
             McBIjWUoW15fQVxBXUFeQV9dw5CQkJCQkJCQkJCQkJAAAIA/
             )"
-            code := (A_PtrSize == 8) ? x64 : x86
-         }
 
          ; Get width and height.
-         DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width)
-         DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height)
+         DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
+         DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
          ; Create a buffer of raw 32-bit ARGB pixel data.
-         VarSetCapacity(Rect, 16, 0)
-            NumPut(  width, Rect,  8, "uint")        ; Width
-            NumPut( height, Rect, 12, "uint")        ; Height
+         VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
+            NumPut(  width, Rect,  8,   "uint") ; Width
+            NumPut( height, Rect, 12,   "uint") ; Height
          VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0) ; sizeof(BitmapData) = 24, 32
          DllCall("gdiplus\GdipBitmapLockBits", "ptr", pBitmap, "ptr", &Rect, "uint", 3, "int", 0x26200A, "ptr", &BitmapData)
 
@@ -1179,18 +1175,18 @@ class TextRender {
          Scan02 := DllCall("GlobalAlloc", "uint", 0x40, "uptr", stride * height, "ptr")
 
          ; Call machine code function.
-         DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", 0, "uint*", s:=0, "ptr", 0, "ptr", 0)
-         p := DllCall("GlobalAlloc", "uint", 0, "uptr", s, "ptr")
-         DllCall("VirtualProtect", "ptr", p, "ptr", s, "uint", 0x40, "uint*", op)
-         DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", p, "uint*", s, "ptr", 0, "ptr", 0)
-         value := DllCall(p, "ptr", Scan01, "ptr", Scan02, "uint", width, "uint", height, "uint", 4, "uint", radius, "float", opacity)
+         DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", 0, "uint*", size:=0, "ptr", 0, "ptr", 0)
+         p := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
+         DllCall("VirtualProtect", "ptr", p, "ptr", size, "uint", 0x40, "uint*", op) ; Allow execution from memory.
+         DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", p, "uint*", size, "ptr", 0, "ptr", 0)
+         e := DllCall(p, "ptr", Scan01, "ptr", Scan02, "uint", width, "uint", height, "uint", 4, "uint", radius, "float", opacity)
          DllCall("GlobalFree", "ptr", p)
 
          ; Free resources.
          DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
          DllCall("GlobalFree", "ptr", Scan02)
 
-         return value
+         return e
       }
    }
 

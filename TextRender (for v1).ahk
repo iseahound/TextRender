@@ -18,16 +18,19 @@ class TextRender {
       return (this.hwnd) ? this.Render(terms*) : (new this).Render(terms*)
    }
 
+   static windows := {}
+
    __New(title := "") {
       this.gdiplusStartup()
 
       this.IO()
 
       this.hwnd := this.CreateWindow()
+      TextRender.windows[this.hwnd] := this
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
 
       ; LoadMemory() is called when Draw() is invoked to save memory.
-
+      this.events := {}
       this.history := {}
       this.layers := {}
       this.drawing := true
@@ -1228,14 +1231,35 @@ class TextRender {
       return this.arg := terms
    }
 
+   OnEvent(event, callback := "") {
+      if !this.events.HasKey(event)
+         this.events[event] := callback
+      else
+         return this.events[event]
+   }
+
    WindowProc(uMsg, wParam, lParam) {
+      ; Because the first parameter of an object is "this",
+      ; the callback function will overwrite that parameter as hwnd.
       hwnd:=this
+
+      ; A dictionary of "this" objects is stored as hwnd:this.
+      this:=TextRender.windows[hwnd]
+
+      ; WM_RBUTTONDBLCLK
+      if (uMsg = 0x0204) {
+         callback := this.OnEvent("RightClick")
+         %callback%(this)
+         ; MsgBox % TextRender.windows[hwnd].w
+         return
+      }
 
       ; WM_LBUTTONDOWN
       if (uMsg = 0x201) {
          PostMessage 0xA1, 2,,, % "ahk_id" hwnd
          return
       }
+
       return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
    }
 

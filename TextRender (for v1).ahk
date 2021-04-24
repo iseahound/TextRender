@@ -1349,6 +1349,57 @@ class TextRender {
       return this
    }
 
+   DebugMemory() {
+      x := this.WindowLeft
+      y := this.WindowTop
+      w := Round(this.WindowWidth)
+      h := Round(this.WindowHeight)
+
+      ; Allocate buffer.
+      VarSetCapacity(buffer, 4 * w * h, 0)
+
+      ; Create a Bitmap with 32-bit pre-multiplied ARGB. (Owned by this object!)
+      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.BitmapWidth, "int", this.BitmapHeight
+         , "uint", this.stride, "uint", 0xE200B, "ptr", this.pBits, "ptr*", pBitmap:=0)
+
+      ; Crop the bitmap.
+      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
+         NumPut(      x, Rect,  0,    "int") ; X
+         NumPut(      y, Rect,  4,    "int") ; Y
+         NumPut(      w, Rect,  8,   "uint") ; Width
+         NumPut(      h, Rect, 12,   "uint") ; Height
+      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
+         NumPut(       4*w, BitmapData,  8,    "int") ; Stride
+         NumPut(   &buffer, BitmapData, 16,    "ptr") ; Scan0
+
+      ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
+      DllCall("gdiplus\GdipBitmapLockBits"
+               ,    "ptr", pBitmap
+               ,    "ptr", &Rect
+               ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
+               ,    "int", 0x26200A     ; Format32bppArgb
+               ,    "ptr", &BitmapData) ; Contains the buffer.
+      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+
+      DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+
+      loop % h {
+      _h := A_Index-1
+         if _h*70 > A_ScreenHeight
+            break
+      loop % w {
+      _w := A_Index-1
+         if _w*70 > A_ScreenWidth
+            continue
+         formula := _h*w + _w
+         pixel := Format("{:08X}", NumGet(buffer, 4*formula, "uint"))
+            this.Draw(pixel, "x" _w*70 " y"  70*(_h) " w70 h70 m0 c" pixel)
+      }
+      }
+      this.Render("hi")
+      return this
+   }
+
    RenderOffScreen() {
       ; Use the default rendering when the canvas coordinates fall within the bitmap area.
       if this.BitmapLeft <= this.x && this.BitmapTop <= this.y
@@ -1712,12 +1763,6 @@ class TextRender {
 ; |__________________________________________________|
 if (A_LineFile == A_ScriptFullPath) {
    MsgBox heehee GUI
-}
-
-DebugMemory() {
-   loop {
-      MsgBox % pixel := Format("0x{:08x}", NumGet(this.pBits, 4*(A_Index-1), "uint"))
-   }
 }
 
 /*

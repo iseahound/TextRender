@@ -28,6 +28,11 @@ class TextRender {
       this.hwnd := this.CreateWindow()
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
 
+      ; Store a reference to this object accessed by the window handle.
+      ; When processing window messages the hwnd can be used to retrieve "this".
+      TextRender.windows[this.hwnd] := this
+      ObjRelease(&this) ; Allow __Delete() to be called. RefCount - 1.
+
       ; LoadMemory() is called when Draw() is invoked to save memory.
       this.events := {}
       this.history := {}
@@ -42,6 +47,11 @@ class TextRender {
       ; FreeMemory() is called by DestroyWindow().
       this.DestroyWindow()
       this.gdiplusShutdown()
+
+      ; Re-add the reference to avoid calling __Delete() twice.
+      ObjAddRef(&this)
+      ; An unmanaged reference to "this" should be deleted manually.
+      TextRender.windows[this.hwnd] := ""
    }
 
    Render(terms*) {
@@ -71,9 +81,6 @@ class TextRender {
          SetTimer % blank, % -this.t ; Calls __Delete.
       }
 
-      ; I guess the windows without references have a circular loop.
-      TextRender.windows[this.hwnd] := this
-
       ; Ensure that Flush() will be called at the start of a new drawing.
       ; This approach keeps this.layers and the underlying graphics intact,
       ; so that calls to Save() and Screenshot() will not encounter a blank canvas.
@@ -87,8 +94,6 @@ class TextRender {
          DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF)
          this.GUID := ComObjCreate("Scriptlet.TypeLib").GUID ; canvas changed.
          this.UpdateLayeredWindow(this.BitmapLeft, this.BitmapTop, this.BitmapWidth, this.BitmapHeight)
-         ; Delete the reference to avoid a circular loop to allow __Delete() on timer expiry.
-         TextRender.windows[this.hwnd] := ""
       }
    }
 

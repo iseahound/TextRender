@@ -1309,8 +1309,8 @@ class TextRender {
       this.obm := obm
       this.gfx := gfx
       this.pBits := pBits
-      this.stride := 4 * width
-      this.size := this.stride * height
+      this.BitmapStride := 4 * width
+      this.BitmapSize := this.BitmapStride * height
 
       return this
    }
@@ -1360,7 +1360,7 @@ class TextRender {
 
       ; Create a Bitmap with 32-bit pre-multiplied ARGB. (Owned by this object!)
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.BitmapWidth, "int", this.BitmapHeight
-         , "uint", this.stride, "uint", 0xE200B, "ptr", this.pBits, "ptr*", pBitmap:=0)
+         , "uint", this.BitmapStride, "uint", 0xE200B, "ptr", this.pBits, "ptr*", pBitmap:=0)
 
       ; Crop the bitmap.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
@@ -1448,7 +1448,7 @@ class TextRender {
    }
 
    Hash() {
-      return Format("{:08x}", DllCall("ntdll\RtlComputeCrc32", "uint", 0, "ptr", this.pBits, "uint", this.size, "uint"))
+      return Format("{:08x}", DllCall("ntdll\RtlComputeCrc32", "uint", 0, "ptr", this.pBits, "uint", this.BitmapSize, "uint"))
    }
 
    CopyToBuffer() {
@@ -1457,7 +1457,7 @@ class TextRender {
 
       ; Create a Bitmap with 32-bit pre-multiplied ARGB. (Owned by this object!)
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.BitmapWidth, "int", this.BitmapHeight
-         , "uint", this.stride, "uint", 0xE200B, "ptr", this.pBits, "ptr*", pBitmap:=0)
+         , "uint", this.BitmapStride, "uint", 0xE200B, "ptr", this.pBits, "ptr*", pBitmap:=0)
 
       ; Crop the bitmap.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
@@ -1534,7 +1534,7 @@ class TextRender {
    CopyToBitmap() {
       ; Create a Bitmap with 32-bit pre-multiplied ARGB. (Owned by this object!)
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.BitmapWidth, "int", this.BitmapHeight
-         , "uint", this.stride, "uint", 0xE200B, "ptr", this.pBits, "ptr*", pBitmap:=0)
+         , "uint", this.BitmapStride, "uint", 0xE200B, "ptr", this.pBits, "ptr*", pBitmap:=0)
 
       ; Crop to fit and convert to 32-bit ARGB. (Managed impartially by GDI+)
       DllCall("gdiplus\GdipCloneBitmapAreaI", "int", this.x, "int", this.y, "int", this.w, "int", this.h

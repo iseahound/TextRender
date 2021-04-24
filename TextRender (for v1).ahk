@@ -1421,7 +1421,7 @@ class TextRender {
             continue
          formula := _h*w + _w
          pixel := Format("{:08X}", NumGet(buffer, 4*formula, "uint"))
-            this.Draw(pixel, "x" _w*70 " y"  70*(_h) " w70 h70 m0 c" pixel)
+            this.Draw(pixel, "x" _w*70 " y"  70*(_h) " w70 h70 m0 c" pixel, "s:24pt v:center")
       }
       }
       this.Render()

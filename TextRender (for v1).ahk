@@ -7,9 +7,6 @@
 #Requires AutoHotkey v1.1.33+
 #Persistent
 
-; a := TextRender("i love strong & cute girls!", "r:1 c:none", "c:None d:(blur:1px opacity:100% color:0xFF00FF00)")
-
-
 TextRender(text:="", background_style:="", text_style:="") {
    return TextRender.call(text, background_style, text_style)
 }

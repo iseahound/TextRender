@@ -1218,6 +1218,13 @@ class TextRender {
    }
 
    RegisterClass(vWinClass) {
+      static atom
+
+      ; Return the atom to the class if present.
+      if (atom)
+         return atom
+
+      ; Otherwise register the class name.
       pWndProc := RegisterCallback(this.WindowProc, "Fast",, &this)
       hCursor := DllCall("LoadCursor", "ptr", 0, "ptr", 32512, "ptr") ; IDC_ARROW
 
@@ -1239,9 +1246,7 @@ class TextRender {
          NumPut(          0, WNDCLASSEX, _ ? 72:44,    "ptr") ; hIconSm
 
       ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
-      if !(value := DllCall("RegisterClassEx", "ptr", &WNDCLASSEX, "ushort"))
-         throw Exception("RegisterClassEx failed.")
-      return value
+      return atom := DllCall("RegisterClassEx", "ptr", &WNDCLASSEX, "ushort")
    }
 
    UnregisterClass(vWinClass) {

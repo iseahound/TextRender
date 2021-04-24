@@ -777,6 +777,15 @@ class TextRender {
       }
 
       colormap(c) {
+         if (c = "random") ; 93% opacity + random RGB.
+            return "0xEE" SubStr(ComObjCreate("Scriptlet.TypeLib").GUID, 2, 6)
+
+         if (c = "random2") ; Solid opacity + random RGB.
+            return "0xFF" SubStr(ComObjCreate("Scriptlet.TypeLib").GUID, 2, 6)
+
+         if (c = "random3") ; Fully random opacity and RGB.
+            return SubStr(ComObjCreate("Scriptlet.TypeLib").GUID, 2, 8)
+
          static colors1 :=
          ( LTrim Join
          {

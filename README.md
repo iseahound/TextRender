@@ -40,7 +40,7 @@ CopyToBitmap() / RenderToBitmap() - Gets a GDI+ bitmap in 32-bit ARGB.
 
 Hash() - Generates a CRC32 hash of the internal canvas. Use ```.GUID``` to check if the canvas state changed. 
 
-DrawOnGraphics() / DrawOnBitmap() / DrawOnHDC() - 1st parameter is Graphics/Bitmap/hdc followed by Text, BackgroundStyle, TextStyle
+DrawOnGraphics(g) / DrawOnBitmap(bm) / DrawOnHDC(hdc) - Useful for drawing on another surface. Same params as Draw(). 
 
 ## Coordinates
 

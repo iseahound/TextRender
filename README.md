@@ -8,8 +8,6 @@
 
 ## Call
 
-TextRender(x, y, width, height) - Size of the canvas to create in memory. Defaults to the screen size.
-
 TextRender(Text, BackgroundStyle, TextStyle) - Shows the completed render on screen.
 
 ## Methods
@@ -40,7 +38,7 @@ CopyToHBitmap() / RenderToHBitmap() - Gets a handle to a bitmap in 32-bit pre-mu
 
 CopyToBitmap() / RenderToBitmap() - Gets a GDI+ bitmap in 32-bit ARGB.
 
-Hash() - Generates a CRC32 hash of the internal canvas. 
+Hash() - Generates a CRC32 hash of the internal canvas. Use ```.GUID``` to check if the canvas state changed. 
 
 DrawOnGraphics() / DrawOnBitmap() / DrawOnHDC() - 1st parameter is Graphics/Bitmap/hdc followed by Text, BackgroundStyle, TextStyle
 
@@ -52,24 +50,6 @@ Rect() - [x,y,w,h] array.
 
 Bounds() - [x, y, x2, y2] array.
 
-InBounds() - True if the drawing fits within the canvas, which is the visible screen area by default. If the drawing exceeds the internal canvas this will return False.
-
-Note: To view a drawing if it exceeds the visible screen area, use ```obj.InBounds() ? obj.CopyToBitmap() : obj.RenderToBitmap()```. The Save() method implements this behavior by default. 
-
 # Callbacks
 
-OnClick(func), OnDoubleClick(func), OnRightClick(func), OnHover(func)
-
-# For loop
-
-To check the history of a graphics object.
-Each Draw() is a separate layer. 
-Each Render() is followed by an empty layer. 
-An empty layer means the canvas was cleared. 
-
-```
-a := TextRender('hello', 't1000')
-a.Queue('world', 'cGreen')
-for Text, BackgroundStyles, TextStyles in a
-   MsgBox text
-```
+OnEvent("Click", func), OnEvent("DoubleClick", func), OnEvent("RightClick", func), OnEvent("Hover", func)

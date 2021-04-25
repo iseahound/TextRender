@@ -8,11 +8,9 @@
 
 ## Graphics Library
 
-[ImagePut/ImageEqual](https://github.com/iseahound/ImagePut)
-
-ImageRender
-
-TextRender (you are here.)
+* [ImagePut/ImageEqual](https://github.com/iseahound/ImagePut)
+* ImageRender
+* TextRender (you are here.)
 
 ## Documentation
 

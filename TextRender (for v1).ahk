@@ -1271,8 +1271,8 @@ class TextRender {
          else {
             if !this.friend2 {
                this.friend2 := TextRender()
-               this.friend.OnEvent("MiddleClick", {})
-               this.friend.OnEvent("RightClick", {})
+               this.friend2.OnEvent("MiddleClick", {})
+               this.friend2.OnEvent("RightClick", {})
             }
             clipboard := this.data
             this.friend2.Render("Saved text to clipboard.", "t:2500 c:#F9E486 y:75vh r:10%")

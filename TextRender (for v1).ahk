@@ -1497,7 +1497,7 @@ class TextRender {
       return this
    }
 
-   RenderOffScreen() {
+   RenderOnScreen() {
       ; Use the default rendering when the canvas coordinates fall within the bitmap area.
       if this.BitmapLeft <= this.x && this.BitmapTop <= this.y
       && this.BitmapRight >= this.x2 && this.BitmapBottom >= this.y2
@@ -1527,15 +1527,15 @@ class TextRender {
       ; This suffers from a windows limitation in that windows will appear in places that do not match the intended coordinates.
       ; Therefore this is not the default rendering approach as style commands are not respected.
       DllCall("UpdateLayeredWindow"
-               ,    "ptr", this.hwnd                                  ; hWnd
-               ,    "ptr", 0                                          ; hdcDst
-               ,"uint64*", this.x | this.y << 32     ; *pptDst
-               ,"uint64*", this.w | this.h << 32 ; this.BitmapWidth | this.BitmapHeight << 32 ; *psize
-               ,    "ptr", hdc                                   ; hdcSrc
-               ,"uint64*", 0                                          ; *pptSrc
-               ,   "uint", 0                                          ; crKey
-               ,  "uint*", 0xFF << 16 | 0x01 << 24                    ; *pblend
-               ,   "uint", 2)                                         ; dwFlags
+               ,    "ptr", this.hwnd                ; hWnd
+               ,    "ptr", 0                        ; hdcDst
+               ,"uint64*", this.x | this.y << 32    ; *pptDst
+               ,"uint64*", this.w | this.h << 32    ; *psize
+               ,    "ptr", hdc                      ; hdcSrc
+               ,"uint64*", 0                        ; *pptSrc
+               ,   "uint", 0                        ; crKey
+               ,  "uint*", 0xFF << 16 | 0x01 << 24  ; *pblend
+               ,   "uint", 2)                       ; dwFlags
 
       ; Cleanup
       DllCall("gdiplus\GdipDeleteGraphics", "ptr", gfx)

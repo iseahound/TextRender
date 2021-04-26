@@ -1276,6 +1276,7 @@ class TextRender {
             }
             clipboard := this.data
             this.friend2.Render("Saved text to clipboard.", "t:1250 c:#F9E486 y:75vh r:10%")
+            WinSet AlwaysOnTop, On, % "ahk_id" this.friend2.hwnd
          }
          return
       }
@@ -1294,6 +1295,7 @@ class TextRender {
             this.friend.Render(Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
                , "t:7000 r:0.5vmin x" _x+20 " y" _y+20
                , "s:1.5vmin f:(Consolas) o:(0.5) m:0.5vmin j:right")
+            WinSet AlwaysOnTop, On, % "ahk_id" this.friend.hwnd
          }
          return
       }

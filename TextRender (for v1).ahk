@@ -134,6 +134,10 @@ class TextRender {
                   ,  "uint*", 0xFF << 16 | 0x01 << 24  ; *pblend
                   ,   "uint", 2)                       ; dwFlags
 
+         ; Adjust location
+         DllCall("SetWindowPos", "ptr", this.hwnd, "ptr", 0, "int", this.x, "int", this.y, "int", 0, "int", 0
+            , "uint", 0x400 | 0x10 | 0x4 | 0x1) ; SWP_NOSENDCHANGING | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE
+
          ; Cleanup
          DllCall("gdiplus\GdipDeleteGraphics", "ptr", gfx)
          DllCall("SelectObject", "ptr", hdc, "ptr", obm)

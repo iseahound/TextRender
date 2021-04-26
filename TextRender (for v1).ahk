@@ -1275,7 +1275,7 @@ class TextRender {
                this.friend2.OnEvent("RightClick", {})
             }
             clipboard := this.data
-            this.friend2.Render("Saved text to clipboard.", "t:2500 c:#F9E486 y:75vh r:10%")
+            this.friend2.Render("Saved text to clipboard.", "t:1500 c:#F9E486 y:75vh r:10%")
          }
          return
       }

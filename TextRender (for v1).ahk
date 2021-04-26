@@ -1368,7 +1368,8 @@ class TextRender {
                this.friend := TextRender()
                this.friend.OnEvent("MiddleClick", {})
             }
-            DllCall("GetCursorPos", "uint64*", v), _x := 0xFFFFFFFF & v, _y := v >> 32
+            CoordMode Mouse
+            MouseGetPos _x, _y
             WinGetPos x, y, w, h, % "ahk_id " hwnd
             this.friend.Render(Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
                , "t:7000 r:0.5vmin x" _x+20 " y" _y+20

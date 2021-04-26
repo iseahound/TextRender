@@ -1255,6 +1255,11 @@ class TextRender {
       ; A dictionary of "this" objects is stored as hwnd:this.
       this:=TextRender.windows[hwnd]
 
+      ; WM_DESTROY
+      if (uMsg = 0x2) {
+         return this.DestroyWindow()
+      }
+
       ; WM_LBUTTONDOWN
       if (uMsg = 0x201) {
          if callback := this.OnEvent("LeftClick")

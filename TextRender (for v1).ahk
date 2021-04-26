@@ -1275,7 +1275,7 @@ class TextRender {
                this.friend2.OnEvent("RightClick", {})
             }
             clipboard := this.data
-            this.friend2.Render("Saved text to clipboard.", "t:1500 c:#F9E486 y:75vh r:10%")
+            this.friend2.Render("Saved text to clipboard.", "t:1250 c:#F9E486 y:75vh r:10%")
          }
          return
       }
@@ -1292,7 +1292,7 @@ class TextRender {
             DllCall("GetCursorPos", "uint64*", v), _x := 0xFFFFFFFF & v, _y := v >> 32
             WinGetPos x, y, w, h, % "ahk_id " hwnd
             this.friend.Render(Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
-               , "t:3000 r:0.5vmin x" _x+20 " y" _y+20
+               , "t:7000 r:0.5vmin x" _x+20 " y" _y+20
                , "s:1.5vmin f:(Consolas) o:(0.5) m:0.5vmin j:right")
          }
          return

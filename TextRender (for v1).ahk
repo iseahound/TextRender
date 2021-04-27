@@ -349,27 +349,6 @@ class TextRender {
       _h := (_h ~= "i)(%|vh)$") ? RegExReplace(_h, "i)(%|vh)$", "") * vh : _h
       _h := (_h ~= "i)vmin$") ? RegExReplace(_h, "i)vmin$", "") * vmin : _h
 
-      ; Save original Graphics settings.
-      DllCall("gdiplus\GdipGetPixelOffsetMode",    "ptr", gfx, "int*", PixelOffsetMode:=0)
-      DllCall("gdiplus\GdipGetCompositingMode",    "ptr", gfx, "int*", CompositingMode:=0)
-      DllCall("gdiplus\GdipGetCompositingQuality", "ptr", gfx, "int*", CompositingQuality:=0)
-      DllCall("gdiplus\GdipGetSmoothingMode",      "ptr", gfx, "int*", SmoothingMode:=0)
-      DllCall("gdiplus\GdipGetInterpolationMode",  "ptr", gfx, "int*", InterpolationMode:=0)
-      DllCall("gdiplus\GdipGetTextRenderingHint",  "ptr", gfx, "int*", TextRenderingHint:=0)
-
-      ; Get Rendering Quality.
-      _q := (_q >= 0 && _q <= 4) ? _q : 4          ; Default SmoothingMode is 4 if radius is set. See Draw 1.
-      q  := (q >= 0 && q <= 5) ? q : 4             ; Default TextRenderingHint is 4 (antialias).
-                                                   ; Anti-Alias = 4, Cleartype = 5 (and gives weird effects.)
-
-      ; Set Graphics settings.
-      DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", gfx, "int", 2) ; Half pixel offset.
-      ;DllCall("gdiplus\GdipSetCompositingMode",    "ptr", gfx, "int", 1) ; Overwrite/SourceCopy.
-      DllCall("gdiplus\GdipSetCompositingQuality", "ptr", gfx, "int", 0) ; AssumeLinear
-      DllCall("gdiplus\GdipSetSmoothingMode",      "ptr", gfx, "int", _q)
-      DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", gfx, "int", 7) ; HighQualityBicubic
-      DllCall("gdiplus\GdipSetTextRenderingHint",  "ptr", gfx, "int", q)
-
       ; Get Font size.
       s  := (s ~= valid_positive) ? RegExReplace(s, "\s", "") : "2.23vh"          ; Default font size is 2.23vh.
       s  := (s ~= "i)(pt|px)$") ? SubStr(s, 1, -2) : s                            ; Strip spaces, px, and pt.
@@ -587,10 +566,34 @@ class TextRender {
          c := (this.parse.grayscale(_c) < 128) ? 0xFFFFFFFF : 0xFF000000
       c  := (SourceCopy) ? 0x00000000 : this.parse.color( c)
 
+      ; Get Rendering Quality.
+      _q := (_q >= 0 && _q <= 4) ? _q : 4          ; Default SmoothingMode is 4 if radius is set. See Draw 1.
+
+      ; Default Text Rendering Hint is Cleartype on a opaque background and Anti-Alias on a transparent background.
+      if (q < 0 || q > 5)
+         q := (_c & 0xFF000000 = 0xFF000000) ? 5 : 4 ; Anti-Alias = 4, Cleartype = 5 (and gives weird effects.)
+
+
       ; Define outline and dropShadow.
       o := this.parse.outline(o, vw, vh, s, c)
       d := this.parse.dropShadow(d, vw, vh, width, height, s)
 
+
+      ; Save original Graphics settings.
+      DllCall("gdiplus\GdipGetPixelOffsetMode",    "ptr", gfx, "int*", PixelOffsetMode:=0)
+      DllCall("gdiplus\GdipGetCompositingMode",    "ptr", gfx, "int*", CompositingMode:=0)
+      DllCall("gdiplus\GdipGetCompositingQuality", "ptr", gfx, "int*", CompositingQuality:=0)
+      DllCall("gdiplus\GdipGetSmoothingMode",      "ptr", gfx, "int*", SmoothingMode:=0)
+      DllCall("gdiplus\GdipGetInterpolationMode",  "ptr", gfx, "int*", InterpolationMode:=0)
+      DllCall("gdiplus\GdipGetTextRenderingHint",  "ptr", gfx, "int*", TextRenderingHint:=0)
+
+      ; Set Graphics settings.
+      DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", gfx, "int", 2) ; Half pixel offset.
+      ;DllCall("gdiplus\GdipSetCompositingMode",    "ptr", gfx, "int", 1) ; Overwrite/SourceCopy.
+      DllCall("gdiplus\GdipSetCompositingQuality", "ptr", gfx, "int", 0) ; AssumeLinear
+      DllCall("gdiplus\GdipSetSmoothingMode",      "ptr", gfx, "int", _q)
+      DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", gfx, "int", 7) ; HighQualityBicubic
+      DllCall("gdiplus\GdipSetTextRenderingHint",  "ptr", gfx, "int", q)
 
 
       ; Draw 1 - Background

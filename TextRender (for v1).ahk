@@ -1333,14 +1333,30 @@ class TextRender {
       ; A dictionary of "this" objects is stored as hwnd:this.
       this:=TextRender.windows[hwnd]
 
-      ; WM_DESTROY
-      if (uMsg = 0x2) {
-         return this.DestroyWindow()
+      static dict :=
+      ( LTrim Join
+      {
+         WM_LBUTTONDOWN := 0x0201    : "LeftMouseDown",
+         WM_LBUTTONUP := 0x0202      : "LeftMouseUp",
+         WM_LBUTTONDBLCLK := 0x0203  : "LeftMouseDoubleClick",
+         WM_RBUTTONDOWN := 0x0204    : "RightMouseDown",
+         WM_RBUTTONUP := 0x0205      : "RightMouseUp",
+         WM_RBUTTONDBLCLK := 0x0206  : "RightMouseDoubleClick",
+         WM_MBUTTONDOWN := 0x0207    : "MiddleMouseDown",
+         WM_MBUTTONUP := 0x0208      : "MiddleMouseUp",
+         WM_MBUTTONDBLCLK := 0x0209  : "MiddleMouseDoubleClick",
+         WM_MOUSEHOVER := 0x02A1     : "MouseOver",
+         WM_MOUSELEAVE := 0x02A3     : "MouseLeave"
       }
+      )
+
+      ; WM_DESTROY
+      if (uMsg = 0x2)
+         return this.DestroyWindow()
 
       ; WM_LBUTTONDOWN
       if (uMsg = 0x201) {
-         if callback := this.OnEvent("LeftClick")
+         if callback := this.OnEvent("LeftMouseDown")
             %callback%(this)
          else
             PostMessage 0xA1, 2,,, % "ahk_id" hwnd
@@ -1349,13 +1365,13 @@ class TextRender {
 
       ; WM_RBUTTONDOWN
       if (uMsg = 0x204) {
-         if callback := this.OnEvent("RightClick")
+         if callback := this.OnEvent("RightMouseDown")
             %callback%(this)
          else {
             if !this.friend2 {
                this.friend2 := TextRender()
-               this.friend2.OnEvent("MiddleClick", {})
-               this.friend2.OnEvent("RightClick", {})
+               this.friend2.OnEvent("MiddleMouseDown", {})
+               this.friend2.OnEvent("RightMouseDown", {})
             }
             clipboard := this.data
             this.friend2.Render("Saved text to clipboard.", "t:1250 c:#F9E486 y:75vh r:10%")
@@ -1366,12 +1382,12 @@ class TextRender {
 
       ; WM_MBUTTONDOWN
       if (uMsg = 0x207) {
-         if callback := this.OnEvent("MiddleClick")
+         if callback := this.OnEvent("MiddleMouseDown")
             %callback%(this)
          else {
             if !this.friend {
                this.friend := TextRender()
-               this.friend.OnEvent("MiddleClick", {})
+               this.friend.OnEvent("MiddleMouseDown", {})
             }
             CoordMode Mouse
             MouseGetPos _x, _y

@@ -3,7 +3,7 @@
 * Simple way to draw text on the screen.
 * Interactive GUI that generates code.
 * Background color, text outline, and drop shadow.
-* Supports events such as OnEvent("click", callback).
+* Supports events such as OnEvent("LeftMouseDown", callback).
 * Standalone library without dependencies.
 
 ## Graphics Library

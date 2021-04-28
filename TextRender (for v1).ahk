@@ -1439,7 +1439,6 @@ class TextRender {
    CreateWindow(title := "") {
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       WS_POPUP                  := 0x80000000
-      WS_SYSMENU                :=    0x80000
 
       ; Extended Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
       WS_EX_TOPMOST             :=        0x8
@@ -1447,7 +1446,7 @@ class TextRender {
       WS_EX_LAYERED             :=    0x80000
       WS_EX_NOACTIVATE          :=  0x8000000
 
-      WindowStyle := WS_POPUP | WS_SYSMENU ; start off hidden with WS_VISIBLE off
+      WindowStyle := WS_POPUP ; start off hidden with WS_VISIBLE off
       WindowExStyle := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED ; WS_EX_NOACTIVATE
 
       return DllCall("CreateWindowEx"

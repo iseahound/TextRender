@@ -40,6 +40,10 @@ class TextRender {
       this.drawing := true
       this.gfx := this.obm := this.pBits := this.hbm := this.hdc := ""
 
+      this.OnEvent("LeftMouseDown", this.EventLeftMouseDown)
+      this.OnEvent("MiddleMouseDown", this.EventMiddleMouseDown)
+      this.OnEvent("RightMouseDown", this.EventRightMouseDown)
+
       return this
    }
 
@@ -1319,20 +1323,23 @@ class TextRender {
    }
 
    OnEvent(event, callback := "") {
-      if !this.events.HasKey(event)
-         this.events[event] := callback
-      else
-         return this.events[event]
+      this.events[event] := callback
+      return this
    }
 
    WindowProc(uMsg, wParam, lParam) {
       ; Because the first parameter of an object is "this",
       ; the callback function will overwrite that parameter as hwnd.
-      hwnd:=this
+      hwnd := this
 
       ; A dictionary of "this" objects is stored as hwnd:this.
-      this:=TextRender.windows[hwnd]
+      this := TextRender.windows[hwnd]
 
+      ; WM_DESTROY calls FreeMemory().
+      if (uMsg = 0x2)
+         return this.DestroyWindow()
+
+      ; Window Messages to event names.
       static dict :=
       ( LTrim Join
       {
@@ -1350,57 +1357,46 @@ class TextRender {
       }
       )
 
-      ; WM_DESTROY
-      if (uMsg = 0x2)
-         return this.DestroyWindow()
+      ; Process windows messages by invoking the associated callback.
+      for message, event in dict
+         if (uMsg = message)
+            if callback := this.events[event]
+               return %callback%(this) ; Callbacks have a reference to "this".
 
-      ; WM_LBUTTONDOWN
-      if (uMsg = 0x201) {
-         if callback := this.OnEvent("LeftMouseDown")
-            %callback%(this)
-         else
-            PostMessage 0xA1, 2,,, % "ahk_id" hwnd
-         return
-      }
-
-      ; WM_RBUTTONDOWN
-      if (uMsg = 0x204) {
-         if callback := this.OnEvent("RightMouseDown")
-            %callback%(this)
-         else {
-            if !this.friend2 {
-               this.friend2 := TextRender()
-               this.friend2.OnEvent("MiddleMouseDown", {})
-               this.friend2.OnEvent("RightMouseDown", {})
-            }
-            clipboard := this.data
-            this.friend2.Render("Saved text to clipboard.", "t:1250 c:#F9E486 y:75vh r:10%")
-            WinSet AlwaysOnTop, On, % "ahk_id" this.friend2.hwnd
-         }
-         return
-      }
-
-      ; WM_MBUTTONDOWN
-      if (uMsg = 0x207) {
-         if callback := this.OnEvent("MiddleMouseDown")
-            %callback%(this)
-         else {
-            if !this.friend {
-               this.friend := TextRender()
-               this.friend.OnEvent("MiddleMouseDown", {})
-            }
-            CoordMode Mouse
-            MouseGetPos _x, _y
-            WinGetPos x, y, w, h, % "ahk_id " hwnd
-            this.friend.Render(Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
-               , "t:7000 r:0.5vmin x" _x+20 " y" _y+20
-               , "s:1.5vmin f:(Consolas) o:(0.5) m:0.5vmin j:right")
-            WinSet AlwaysOnTop, On, % "ahk_id" this.friend.hwnd
-         }
-         return
-      }
-
+      ; Default processing of window messages.
       return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
+   }
+
+   EventLeftMouseDown() {
+      ; Allows the user to drag to reposition the window.
+      PostMessage 0xA1, 2,,, % "ahk_id" this.hwnd
+   }
+
+   EventMiddleMouseDown() {
+      ; Shows a bubble displaying the current window coordinates.
+      if !this.friend {
+         this.friend := TextRender()
+         this.friend.OnEvent("MiddleMouseDown", "")
+      }
+      CoordMode Mouse
+      MouseGetPos _x, _y
+      WinGetPos x, y, w, h, % "ahk_id " this.hwnd
+      this.friend.Render(Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
+         , "t:7000 r:0.5vmin x" _x+20 " y" _y+20
+         , "s:1.5vmin f:(Consolas) o:(0.5) m:0.5vmin j:right")
+      WinSet AlwaysOnTop, On, % "ahk_id" this.friend.hwnd
+   }
+
+   EventRightMouseDown() {
+      ; Copies the rendered text to clipboard.
+      if !this.friend2 {
+         this.friend2 := TextRender()
+         this.friend2.OnEvent("MiddleMouseDown", "")
+         this.friend2.OnEvent("RightMouseDown", "")
+      }
+      clipboard := this.data
+      this.friend2.Render("Saved text to clipboard.", "t:1250 c:#F9E486 y:75vh r:10%")
+      WinSet AlwaysOnTop, On, % "ahk_id" this.friend2.hwnd
    }
 
    RegisterClass(vWinClass) {

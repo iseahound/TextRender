@@ -1339,7 +1339,8 @@ class TextRender {
       if (uMsg = 0x2)
          return this.DestroyWindow()
 
-      ; Window Messages to event names.
+      ; Match window messages to Rainmeter event names.
+      ; https://docs.rainmeter.net/manual/mouse-actions/
       static dict :=
       ( LTrim Join
       {

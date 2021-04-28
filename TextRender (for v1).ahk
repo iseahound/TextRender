@@ -1403,7 +1403,7 @@ class TextRender {
       _ := (A_PtrSize == 8)
       VarSetCapacity(WNDCLASSEX, size := _ ? 80:48, 0)        ; sizeof(WNDCLASSEX) = 48, 80
          NumPut(       size, WNDCLASSEX,         0,   "uint") ; cbSize
-         NumPut(          3, WNDCLASSEX,         4,   "uint") ; style
+         NumPut(        0x8, WNDCLASSEX,         4,   "uint") ; style = CS_DBLCLKS
          NumPut(   pWndProc, WNDCLASSEX,         8,    "ptr") ; lpfnWndProc
          NumPut(          0, WNDCLASSEX, _ ? 16:12,    "int") ; cbClsExtra
          NumPut(          0, WNDCLASSEX, _ ? 20:16,    "int") ; cbWndExtra
@@ -1557,7 +1557,7 @@ class TextRender {
                ,    "ptr", &BitmapData) ; Contains the buffer.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
-      ; Release reference to this.pBits. 
+      ; Release reference to this.pBits.
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
       ; Draw an enlarged pixel grid layout with printed color hexes.
@@ -1579,7 +1579,7 @@ class TextRender {
       ; Calling RenderOnScreen() is rather slow as every redraw happens again.
       this.RenderOnScreen()
 
-      ; Note that this is a slow function in general. I'm not entirely sure how it can be sped up. 
+      ; Note that this is a slow function in general. I'm not entirely sure how it can be sped up.
       return this
    }
 

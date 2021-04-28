@@ -1538,7 +1538,7 @@ class TextRender {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.BitmapWidth, "int", this.BitmapHeight
          , "uint", this.BitmapStride, "uint", 0xE200B, "ptr", this.pBits, "ptr*", pBitmap:=0)
 
-      ; Crop the bitmap.
+      ; Specify that only a cropped bitmap portion will be copied.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
          NumPut(      x, Rect,  0,    "int") ; X
          NumPut(      y, Rect,  4,    "int") ; Y
@@ -1548,7 +1548,7 @@ class TextRender {
          NumPut(       4*w, BitmapData,  8,    "int") ; Stride
          NumPut(   &buffer, BitmapData, 16,    "ptr") ; Scan0
 
-      ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
+      ; Convert pARGB to ARGB using a writable buffer created by LockBits.
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", &Rect
@@ -1557,22 +1557,29 @@ class TextRender {
                ,    "ptr", &BitmapData) ; Contains the buffer.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
+      ; Release reference to this.pBits. 
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
+      ; Draw an enlarged pixel grid layout with printed color hexes.
       loop % h {
       _h := A_Index-1
-         if _h*70 > A_ScreenHeight
+         if _h*70 > A_ScreenHeight * 3
             break
       loop % w {
       _w := A_Index-1
-         if _w*70 > A_ScreenWidth
+         if _w*70 > A_ScreenWidth * 2
             continue
          formula := _h*w + _w
          pixel := Format("{:08X}", NumGet(buffer, 4*formula, "uint"))
-            this.Draw(pixel, "x" _w*70 " y"  70*(_h) " w70 h70 m0 c" pixel, "s:24pt v:center")
+         text := RegExReplace(pixel, "(.{4})(.{4})", "$1`r`n$2")
+         this.Draw(text, "x" _w*70 " y"  70*(_h) " w70 h70 m0 c" pixel, "s:24pt v:center")
       }
       }
-      this.Render()
+
+      ; Calling RenderOnScreen() is rather slow as every redraw happens again.
+      this.RenderOnScreen()
+
+      ; Note that this is a slow function in general. I'm not entirely sure how it can be sped up. 
       return this
    }
 

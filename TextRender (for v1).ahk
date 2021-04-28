@@ -20,12 +20,12 @@ class TextRender {
 
    static windows := {}
 
-   __New(title := "") {
+   __New(title := "", WindowStyle := "", WindowExStyle := "", hwndParent := 0) {
       this.gdiplusStartup()
 
       this.IO()
 
-      this.hwnd := this.CreateWindow()
+      this.hwnd := this.CreateWindow(title, WindowStyle, WindowExStyle, hwndParent)
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
 
       ; Store a reference to this object accessed by the window handle.

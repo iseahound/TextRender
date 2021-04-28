@@ -1436,7 +1436,7 @@ class TextRender {
       return DllCall("UnregisterClass", "str", vWinClass, "ptr", 0)
    }
 
-   CreateWindow(title := "") {
+   CreateWindow(title := "", WindowStyle := "", WindowExStyle := "", hwndParent := 0) {
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       WS_POPUP                  := 0x80000000
 
@@ -1446,8 +1446,10 @@ class TextRender {
       WS_EX_LAYERED             :=    0x80000
       WS_EX_NOACTIVATE          :=  0x8000000
 
-      WindowStyle := WS_POPUP ; start off hidden with WS_VISIBLE off
-      WindowExStyle := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED ; WS_EX_NOACTIVATE
+      if (WindowStyle = "")
+         WindowStyle := WS_POPUP ; start off hidden with WS_VISIBLE off
+      if (WindowExStyle = "")
+         WindowExStyle := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED
 
       return DllCall("CreateWindowEx"
          ,   "uint", WindowExStyle                     ; dwExStyle
@@ -1458,7 +1460,7 @@ class TextRender {
          ,    "int", 0                                 ; Y
          ,    "int", 0                                 ; nWidth
          ,    "int", 0                                 ; nHeight
-         ,    "ptr", 0                                 ; hWndParent
+         ,    "ptr", hwndParent                        ; hWndParent
          ,    "ptr", 0                                 ; hMenu
          ,    "ptr", 0                                 ; hInstance
          ,    "ptr", 0                                 ; lpParam

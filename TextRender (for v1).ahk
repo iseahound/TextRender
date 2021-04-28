@@ -40,9 +40,9 @@ class TextRender {
       this.drawing := true
       this.gfx := this.obm := this.pBits := this.hbm := this.hdc := ""
 
-      this.OnEvent("LeftMouseDown", this.EventLeftMouseDown)
-      this.OnEvent("MiddleMouseDown", this.EventMiddleMouseDown)
-      this.OnEvent("RightMouseDown", this.EventRightMouseDown)
+      this.OnEvent("LeftMouseDown", this.EventMoveWindow)
+      this.OnEvent("MiddleMouseDown", this.EventShowCoordinates)
+      this.OnEvent("RightMouseDown", this.EventCopyText)
 
       return this
    }
@@ -1368,12 +1368,12 @@ class TextRender {
       return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
    }
 
-   EventLeftMouseDown() {
+   EventMoveWindow() {
       ; Allows the user to drag to reposition the window.
       PostMessage 0xA1, 2,,, % "ahk_id" this.hwnd
    }
 
-   EventMiddleMouseDown() {
+   EventShowCoordinates() {
       ; Shows a bubble displaying the current window coordinates.
       if !this.friend {
          this.friend := TextRender()
@@ -1388,7 +1388,7 @@ class TextRender {
       WinSet AlwaysOnTop, On, % "ahk_id" this.friend.hwnd
    }
 
-   EventRightMouseDown() {
+   EventCopyText() {
       ; Copies the rendered text to clipboard.
       if !this.friend2 {
          this.friend2 := TextRender()

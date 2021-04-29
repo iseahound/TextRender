@@ -1948,11 +1948,5 @@ TextRenderWallpaper(text:="", background_style:="", text_style:="") {
 ; | Double click TextRender.ahk or .exe to show GUI. |
 ; |__________________________________________________|
 if (A_LineFile == A_ScriptFullPath) {
-   MsgBox heehee GUI
+   MsgBox % TextRender GUI is currently available only on AutoHotkey v2.
 }
-
-/*
-; Check for previous FreeMemory() call.
-if (!this.gfx)
-   throw Exception("The underlying graphics object and associated bitmaps have been freed.")
-*/

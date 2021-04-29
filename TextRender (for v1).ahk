@@ -320,16 +320,6 @@ class TextRender {
          q  := ((___ := RegExReplace(style2, q1    "(q(uality)?)"       q2, "${value}")) != style2) ? ___ : ""
       }
 
-      ; Extract the time variable and save it for a later when we Render() everything.
-      static times := "(?i)^\s*(\d+)\s*(ms|mil(li(second)?)?|s(ec(ond)?)?|m(in(ute)?)?|h(our)?|d(ay)?)?s?\s*$"
-      t  := (_t) ? _t : t
-      t  := ( t ~= times) ? RegExReplace( t, "\s", "") : 0 ; Default time is zero.
-      t  := ((___ := RegExReplace( t, "i)(\d+)(ms|mil(li(second)?)?)s?$", "$1")) !=  t) ? ___ *        1 : t
-      t  := ((___ := RegExReplace( t, "i)(\d+)s(ec(ond)?)?s?$"          , "$1")) !=  t) ? ___ *     1000 : t
-      t  := ((___ := RegExReplace( t, "i)(\d+)m(in(ute)?)?s?$"          , "$1")) !=  t) ? ___ *    60000 : t
-      t  := ((___ := RegExReplace( t, "i)(\d+)h(our)?s?$"               , "$1")) !=  t) ? ___ *  3600000 : t
-      t  := ((___ := RegExReplace( t, "i)(\d+)d(ay)?s?$"                , "$1")) !=  t) ? ___ * 86400000 : t
-
       ; Define color.
       _c := this.parse.color(_c, 0xDD212121) ; Default background color is transparent gray.
       SourceCopy := (c ~= "i)(delete|eraser?|overwrite|sourceCopy)") ? 1 : 0 ; Eraser brush for text.
@@ -828,6 +818,28 @@ class TextRender {
       DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", gfx, "int", InterpolationMode)
       DllCall("gdiplus\GdipSetTextRenderingHint",  "ptr", gfx, "int", TextRenderingHint)
 
+      ; Calculate time.
+      t  := (_t) ? _t : t
+      if (t = "fast") ; To be used when the user has seen the text before; to linger on screen momentarily.
+         t := 1250 + 8*chars ; Every character adds 8 milliseconds.
+      if (t = "auto") {
+         ; First, use the number of chars displayed by GdipMeasureString to truncate "text".
+         ; Then count the number of words, as defined by Unicode Code Points, i.e. all languages.
+         RegExReplace(SubStr(text, 1, chars), "(*UCP)\b\w+\b", "", words)
+         ; The average human reaction time is 250 ms. For when text suddenly appears on screen.
+         ; Using 200 words/minute, divide 60,000 ms by 200 words to get 300 ms per word.
+         t := 250 + 300*words
+      }
+
+      ; Extract the time variable and save it for a later when we Render() everything.
+      static times := "(?i)^\s*(\d+)\s*(ms|mil(li(second)?)?|s(ec(ond)?)?|m(in(ute)?)?|h(our)?|d(ay)?)?s?\s*$"
+      t  := ( t ~= times) ? RegExReplace( t, "\s", "") : 0 ; Default time is zero.
+      t  := ((___ := RegExReplace( t, "i)(\d+)(ms|mil(li(second)?)?)s?$", "$1")) !=  t) ? ___ *        1 : t
+      t  := ((___ := RegExReplace( t, "i)(\d+)s(ec(ond)?)?s?$"          , "$1")) !=  t) ? ___ *     1000 : t
+      t  := ((___ := RegExReplace( t, "i)(\d+)m(in(ute)?)?s?$"          , "$1")) !=  t) ? ___ *    60000 : t
+      t  := ((___ := RegExReplace( t, "i)(\d+)h(our)?s?$"               , "$1")) !=  t) ? ___ *  3600000 : t
+      t  := ((___ := RegExReplace( t, "i)(\d+)d(ay)?s?$"                , "$1")) !=  t) ? ___ * 86400000 : t
+
       ; Define canvas coordinates.
       t_bound :=  t                              ; string/background boundary.
       x_bound := (_c & 0xFF000000) ? _x : x
@@ -847,8 +859,11 @@ class TextRender {
       w_bound := (w + 2 * d_bound > w_bound)    ? w + 2 * d_bound    : w_bound
       h_bound := (h + 2 * d_bound > h_bound)    ? h + 2 * d_bound    : h_bound
 
-      return {t:t_bound, x:x_bound, y:y_bound, w:w_bound, h:h_bound
-            , x2:x_bound+w_bound, y2:y_bound+h_bound, chars:chars, lines:lines}
+      return {t: t_bound
+            , x: x_bound, y: y_bound
+            , w: w_bound, h: h_bound
+            , x2: x_bound+w_bound, y2: y_bound+h_bound
+            , chars: chars, words: words, lines: lines}
    }
 
    DrawOnBitmap(pBitmap, text := "", style1 := "", style2 := "") {

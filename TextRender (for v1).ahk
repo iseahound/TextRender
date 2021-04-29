@@ -65,7 +65,7 @@ class TextRender {
       }
 
       ; Allow Render() to commit when previous Draw() has happened.
-      if this.layers.length() > 0 {
+      if (this.layers.length() > 0) {
          ; Render: Off-Screen areas are not rendered. Clip objects that reside off screen.
          this.WindowLeft   := (this.BitmapLeft   > this.x)  ? this.BitmapLeft   : this.x
          this.WindowTop    := (this.BitmapTop    > this.y)  ? this.BitmapTop    : this.y
@@ -99,7 +99,7 @@ class TextRender {
       }
 
       ; Allow Render() to commit when previous Draw() has happened.
-      if this.layers.length() > 0 {
+      if (this.layers.length() > 0) {
          ; Use the default rendering when the canvas coordinates fall within the bitmap area.
          if this.InBounds()
             return this.Render(terms*)

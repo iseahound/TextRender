@@ -1354,6 +1354,13 @@ class TextRender {
       if (uMsg = 0x2)
          return this.DestroyWindow()
 
+      ; WM_DISPLAYCHANGE calls UpdateMemory().
+      if (uMsg = 0x7E) {
+         for i, layer in this.layers
+            this.Draw(layer[1], layer[2], layer[3])
+         return this.RenderOnScreen()
+      }
+
       ; Match window messages to Rainmeter event names.
       ; https://docs.rainmeter.net/manual/mouse-actions/
       static dict :=
@@ -1546,10 +1553,6 @@ class TextRender {
       this.BitmapHeight := A_ScreenHeight
       this.FreeMemory()
       this.LoadMemory()
-
-      ; Redraw graphics with new scaling from BitmapWidth and BitmapHeight.
-      for i, layer in this.layers
-         this.DrawOnGraphics(this.gfx, layer[1], layer[2], layer[3])
 
       return this
    }

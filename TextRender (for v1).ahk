@@ -1948,5 +1948,5 @@ TextRenderWallpaper(text:="", background_style:="", text_style:="") {
 ; | Double click TextRender.ahk or .exe to show GUI. |
 ; |__________________________________________________|
 if (A_LineFile == A_ScriptFullPath) {
-   MsgBox % TextRender GUI is currently available only on AutoHotkey v2.
+   MsgBox % "TextRender GUI is currently available only on AutoHotkey v2."
 }

@@ -1,8 +1,8 @@
 ; Script:    TextRender.ahk
 ; License:   MIT License
 ; Author:    Edison Hua (iseahound)
-; Date:      2021-04-19
-; Version:   v1.00
+; Date:      2021-04-29
+; Version:   v1.01
 
 #Requires AutoHotkey v1.1.33+
 #Persistent

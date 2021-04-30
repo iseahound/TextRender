@@ -3,6 +3,7 @@
 * Simple way to draw text on the screen.
 * Interactive GUI that generates code.
 * Background color, text outline, and drop shadow.
+* Can render to the desktop or behind desktop icons as a wallpaper.
 * Supports events such as OnEvent("LeftMouseDown", callback).
 * Standalone library without dependencies.
 

@@ -206,6 +206,7 @@ class TextRender {
       this.w  := this.x2 - this.x
       this.h  := this.y2 - this.y
       this.chars := obj.chars
+      this.words := obj.words
       this.lines := obj.lines
 
       return this

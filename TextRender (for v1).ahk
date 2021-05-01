@@ -1617,7 +1617,7 @@ class TextRender {
    }
 
    Hash() {
-      return Format("{:08x}", DllCall("ntdll\RtlComputeCrc32", "uint", 0, "ptr", this.pBits, "uint", this.BitmapSize, "uint"))
+      return Format("{:08x}", DllCall("ntdll\RtlComputeCrc32", "uint", 0, "ptr", this.pBits, "uptr", this.BitmapSize, "uint"))
    }
 
    CopyToBuffer() {

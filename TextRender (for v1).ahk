@@ -241,8 +241,8 @@ class TextRender {
 
    DrawOnGraphics(gfx, text := "", style1 := "", style2 := "", CanvasWidth := "", CanvasHeight := "") {
       ; Get Graphics Width and Height.
-      CanvasWidth := (CanvasWidth != "") ? CanvasWidth : NumGet(gfx + 28, "uint")
-      CanvasHeight := (CanvasHeight != "") ? CanvasHeight : NumGet(gfx + 32, "uint")
+      CanvasWidth := (CanvasWidth != "") ? CanvasWidth : NumGet(gfx + 20 + A_PtrSize, "uint")
+      CanvasHeight := (CanvasHeight != "") ? CanvasHeight : NumGet(gfx + 24 + A_PtrSize, "uint")
 
       ; Remove excess whitespace for proper RegEx detection.
       style1 := !IsObject(style1) ? RegExReplace(style1, "\s+", " ") : style1

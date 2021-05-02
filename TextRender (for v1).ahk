@@ -1934,8 +1934,8 @@ TextRenderDesktop(text:="", background_style:="", text_style:="") {
 
    ; Used to show the desktop creations immediately.
    ; Post-Creator's Update Windows 10. WM_SPAWN_WORKER = 0x052C
-   DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0x0000000D, "ptr", 0)
-   DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0x0000000D, "ptr", 1)
+   DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0xD, "ptr", 0)
+   DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0xD, "ptr", 1)
 
    hwndParent := WinExist("ahk_class Progman")
    return (new TextRender(, WS_CHILD, WS_EX_LAYERED, hwndParent)).Render(text, background_style, text_style)
@@ -1946,8 +1946,8 @@ TextRenderWallpaper(text:="", background_style:="", text_style:="") {
    static WS_EX_LAYERED := 0x80000
 
    ; Post-Creator's Update Windows 10. WM_SPAWN_WORKER = 0x052C
-   DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0x0000000D, "ptr", 0)
-   DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0x0000000D, "ptr", 1)
+   DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0xD, "ptr", 0)
+   DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0xD, "ptr", 1)
 
    ; Find a child window of class SHELLDLL_DefView.
    WinGet windows, List, ahk_class WorkerW

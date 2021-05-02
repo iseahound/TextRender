@@ -1929,7 +1929,7 @@ class TextRender {
 
 
 TextRenderDesktop(text:="", background_style:="", text_style:="") {
-   static WS_CHILD := 0x40000000
+   static WS_CHILD := (A_OSVersion = "WIN_7") ? 0x80000000 : 0x40000000 ; Fallback to WS_POPUP for Win 7.
    static WS_EX_LAYERED := 0x80000
 
    ; Used to show the desktop creations immediately.
@@ -1942,7 +1942,7 @@ TextRenderDesktop(text:="", background_style:="", text_style:="") {
 }
 
 TextRenderWallpaper(text:="", background_style:="", text_style:="") {
-   static WS_CHILD := 0x40000000
+   static WS_CHILD := (A_OSVersion = "WIN_7") ? 0x80000000 : 0x40000000 ; Fallback to WS_POPUP for Win 7.
    static WS_EX_LAYERED := 0x80000
 
    ; Post-Creator's Update Windows 10. WM_SPAWN_WORKER = 0x052C

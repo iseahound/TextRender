@@ -169,6 +169,79 @@ class TextRender {
       return this
    }
 
+   Fade(fade_in := 250, fade_out := 250, GUID := "") {
+      if (fade_in > 0) {
+         ; Render: Off-Screen areas are not rendered. Clip objects that reside off screen.
+         this.WindowLeft   := (this.BitmapLeft   > this.x)  ? this.BitmapLeft   : this.x
+         this.WindowTop    := (this.BitmapTop    > this.y)  ? this.BitmapTop    : this.y
+         this.WindowRight  := (this.BitmapRight  < this.x2) ? this.BitmapRight  : this.x2
+         this.WindowBottom := (this.BitmapBottom < this.y2) ? this.BitmapBottom : this.y2
+         this.WindowWidth  := this.WindowRight - this.WindowLeft
+         this.WindowHeight := this.WindowBottom - this.WindowTop
+
+         duration := 0
+         current := -1
+         ;count := 0
+
+
+         DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
+         DllCall("QueryPerformanceCounter", "int64*", start:=0)
+         while (duration < fade_in) {
+            alpha := Ceil(duration/fade_in * 255)
+            if (alpha != current) {
+               ;if (count != alpha)
+               ;   FileAppend % count ", " alpha "`n", log.txt
+               ;count++
+               this.UpdateLayeredWindow(this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight, alpha)
+               current := alpha
+            }
+            DllCall("QueryPerformanceCounter", "int64*", now:=0)
+            duration := (now - start)/frequency * 1000
+         }
+
+         if (alpha != 255)
+            this.UpdateLayeredWindow(this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight)
+
+         ; Create a timer that eventually clears the canvas.
+         if (this.t > 0) {
+            ; Create a reference to the object held by a timer.
+            fade := ObjBindMethod(this, "fade", 0, fade_out, this.GUID) ; Calls Fade() with no fade_in.
+            SetTimer % fade, % -this.t ; Calls __Delete.
+         }
+
+         ; Ensure that Flush() will be called at the start of a new drawing.
+         ; This approach keeps this.layers and the underlying graphics intact,
+         ; so that calls to Save() and Screenshot() will not encounter a blank canvas.
+         this.drawing := false
+         return this
+      }
+
+      ; Check to see if the state of the canvas has changed before clearing and updating.
+      if (fade_out > 0 && this.GUID = GUID) {
+         duration := 0
+         current := -1
+         ;count := 0
+         DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
+         DllCall("QueryPerformanceCounter", "int64*", start:=0)
+         while (duration < fade_out) {
+            alpha := 255 - Ceil(duration/fade_out * 255)
+            if (alpha != current) {
+               ;if (count != alpha)
+               ;   FileAppend % count ", " alpha "`n", log.txt
+               ;count++
+               this.UpdateLayeredWindow(this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight, alpha)
+               current := alpha
+            }
+            DllCall("QueryPerformanceCounter", "int64*", now:=0)
+            duration := (now - start)/frequency * 1000
+         }
+         DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF)
+         this.GUID := ComObjCreate("Scriptlet.TypeLib").GUID ; canvas changed.
+         this.UpdateLayeredWindow(this.BitmapLeft, this.BitmapTop, this.BitmapWidth, this.BitmapHeight)
+         return this
+      }
+   }
+
    Blank(GUID) {
       ; Check to see if the state of the canvas has changed before clearing and updating.
       if (this.GUID = GUID) {
@@ -1844,7 +1917,7 @@ class TextRender {
       return pBitmap
    }
 
-   UpdateLayeredWindow(x, y, w, h) {
+   UpdateLayeredWindow(x, y, w, h, alpha := 255) {
       return DllCall("UpdateLayeredWindow"
                ,    "ptr", this.hwnd                ; hWnd
                ,    "ptr", 0                        ; hdcDst
@@ -1853,7 +1926,7 @@ class TextRender {
                ,    "ptr", this.hdc                 ; hdcSrc
                ,"uint64*", x | y << 32              ; *pptSrc
                ,   "uint", 0                        ; crKey
-               ,  "uint*", 0xFF << 16 | 0x01 << 24  ; *pblend
+               ,  "uint*", alpha << 16 | 0x01 << 24 ; *pblend
                ,   "uint", 2)                       ; dwFlags
    }
 

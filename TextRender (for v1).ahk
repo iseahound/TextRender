@@ -476,9 +476,9 @@ class TextRender {
          f:=z, z:=0, _redrawBecauseOfCondensedFont := false
 
       ; Create Font. Defaults to Segoe UI and Tahoma on older systems.
-      if DllCall("gdiplus\GdipCreateFontFamilyFromName", "str",          f, "uint", 0, "ptr*", hFamily:=0)
-      if DllCall("gdiplus\GdipCreateFontFamilyFromName", "str", "Segoe UI", "uint", 0, "ptr*", hFamily:=0)
-         DllCall("gdiplus\GdipCreateFontFamilyFromName", "str",   "Tahoma", "uint", 0, "ptr*", hFamily:=0)
+      if DllCall("gdiplus\GdipCreateFontFamilyFromName", "wstr",          f, "uint", 0, "ptr*", hFamily:=0)
+      if DllCall("gdiplus\GdipCreateFontFamilyFromName", "wstr", "Segoe UI", "uint", 0, "ptr*", hFamily:=0)
+         DllCall("gdiplus\GdipCreateFontFamilyFromName", "wstr",   "Tahoma", "uint", 0, "ptr*", hFamily:=0)
 
       DllCall("gdiplus\GdipCreateFont", "ptr", hFamily, "float", s, "int", style, "int", 0, "ptr*", hFont:=0)
       DllCall("gdiplus\GdipCreateStringFormat", "int", n, "int", 0, "ptr*", hFormat:=0)

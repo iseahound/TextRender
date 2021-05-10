@@ -409,12 +409,7 @@ class TextRender {
          q := (_c & 0xFF000000 = 0xFF000000) ? 5 : 4 ; Anti-Alias = 4, Cleartype = 5 (and gives weird effects.)
 
       ; Save original Graphics settings.
-      DllCall("gdiplus\GdipGetPixelOffsetMode",    "ptr", gfx, "int*", PixelOffsetMode:=0)
-      DllCall("gdiplus\GdipGetCompositingMode",    "ptr", gfx, "int*", CompositingMode:=0)
-      DllCall("gdiplus\GdipGetCompositingQuality", "ptr", gfx, "int*", CompositingQuality:=0)
-      DllCall("gdiplus\GdipGetSmoothingMode",      "ptr", gfx, "int*", SmoothingMode:=0)
-      DllCall("gdiplus\GdipGetInterpolationMode",  "ptr", gfx, "int*", InterpolationMode:=0)
-      DllCall("gdiplus\GdipGetTextRenderingHint",  "ptr", gfx, "int*", TextRenderingHint:=0)
+      DllCall("Gdiplus\GdipSaveGraphics", "ptr", gfx, "ptr*", pState)
 
       ; Use pixels as the defualt unit when rendering.
       DllCall("gdiplus\GdipSetPageUnit", "ptr", gfx, "int", 2) ; A unit is 1 pixel.
@@ -908,12 +903,7 @@ class TextRender {
       DllCall("gdiplus\GdipDeleteFontFamily", "ptr", hFamily)
 
       ; Restore original Graphics settings.
-      DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", gfx, "int", PixelOffsetMode)
-      DllCall("gdiplus\GdipSetCompositingMode",    "ptr", gfx, "int", CompositingMode)
-      DllCall("gdiplus\GdipSetCompositingQuality", "ptr", gfx, "int", CompositingQuality)
-      DllCall("gdiplus\GdipSetSmoothingMode",      "ptr", gfx, "int", SmoothingMode)
-      DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", gfx, "int", InterpolationMode)
-      DllCall("gdiplus\GdipSetTextRenderingHint",  "ptr", gfx, "int", TextRenderingHint)
+      DllCall("Gdiplus\GdipRestoreGraphics", "ptr", gfx, "ptr", pState)
 
       ; Calculate time.
       t  := (_t) ? _t : t

@@ -664,16 +664,21 @@ class TextRender {
          }
       }
 
-      ; Define radius of rounded corners.
-      _r := (_r ~= valid_positive) ? RegExReplace(_r, "\s", "") : 0  ; Default radius is 0, or square corners.
+      ; Define the smaller of the backgound width or height.
+      _min := (_w > _h) ? _h : _w
+
+      ; Define the maximum roundness of the background bubble.
+      _rmax := _min / 2
+
+      ; Define radius of rounded corners. The default radius is 0, or square corners.
+      _r := (_r ~= "i)max") ? _rmax : _r
+      _r := (_r ~= valid_positive) ? RegExReplace(_r, "\s", "") : 0
       _r := (_r ~= "i)(pt|px)$") ? SubStr(_r, 1, -2) : _r
       _r := (_r ~= "i)vw$") ? RegExReplace(_r, "i)vw$", "") * vw : _r
       _r := (_r ~= "i)vh$") ? RegExReplace(_r, "i)vh$", "") * vh : _r
       _r := (_r ~= "i)vmin$") ? RegExReplace(_r, "i)vmin$", "") * vmin : _r
-      ; percentage is defined as a percentage of the smaller background width/height.
-      _r := (_r ~= "%$") ? RegExReplace(_r, "%$", "") * 0.01 * ((_w > _h) ? _h : _w) : _r
-      ; the radius cannot exceed the half width or half height, whichever is smaller.
-      _r := (_r <= ((_w > _h) ? _h : _w) / 2) ? _r : 0
+      _r := (_r ~= "%$") ? RegExReplace(_r, "%$", "") * 0.01 * _min : _r ; percentage of minimum
+      _r := (_r > _rmax) ? _rmax : _r ; Exceeding _rmax will create a candy wrapper effect.
 
       ; Define outline and dropShadow.
       o := this.parse.outline(o, vw, vh, s, c)

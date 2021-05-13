@@ -409,7 +409,7 @@ class TextRender {
          q := (_c & 0xFF000000 = 0xFF000000) ? 5 : 4 ; Anti-Alias = 4, Cleartype = 5 (and gives weird effects.)
 
       ; Save original Graphics settings.
-      DllCall("Gdiplus\GdipSaveGraphics", "ptr", gfx, "ptr*", pState)
+      DllCall("Gdiplus\GdipSaveGraphics", "ptr", gfx, "ptr*", pState:=0)
 
       ; Use pixels as the defualt unit when rendering.
       DllCall("gdiplus\GdipSetPageUnit", "ptr", gfx, "int", 2) ; A unit is 1 pixel.

@@ -409,7 +409,7 @@ class TextRender {
          q := (_c & 0xFF000000 = 0xFF000000) ? 5 : 4 ; Anti-Alias = 4, Cleartype = 5 (and gives weird effects.)
 
       ; Save original Graphics settings.
-      DllCall("Gdiplus\GdipSaveGraphics", "ptr", gfx, "ptr*", pState:=0)
+      DllCall("gdiplus\GdipSaveGraphics", "ptr", gfx, "ptr*", pState:=0)
 
       ; Use pixels as the defualt unit when rendering.
       DllCall("gdiplus\GdipSetPageUnit", "ptr", gfx, "int", 2) ; A unit is 1 pixel.
@@ -812,7 +812,7 @@ class TextRender {
       }
 
 
-      ; Draw 3 - Text Outline
+      ; Draw 3 - Outline
       if (!o.void) {
          ; Convert our text to a path.
          VarSetCapacity(RectF, 16, 0)          ; sizeof(RectF) = 16
@@ -865,7 +865,8 @@ class TextRender {
          DllCall("gdiplus\GdipDeletePath", "ptr", pPath)
       }
 
-      ; Draw text only when outline has not filled in the text.
+
+      ; Draw 4 - Text
       if (text != "" && o.void) {
          DllCall("gdiplus\GdipSetCompositingMode", "ptr", gfx, "int", SourceCopy)
 
@@ -909,7 +910,7 @@ class TextRender {
       DllCall("gdiplus\GdipDeleteFontFamily", "ptr", hFamily)
 
       ; Restore original Graphics settings.
-      DllCall("Gdiplus\GdipRestoreGraphics", "ptr", gfx, "ptr", pState)
+      DllCall("gdiplus\GdipRestoreGraphics", "ptr", gfx, "ptr", pState)
 
       ; Calculate time.
       t  := (_t) ? _t : t

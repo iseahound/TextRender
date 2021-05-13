@@ -477,17 +477,17 @@ class TextRender {
       if (f ~= "(ttf|otf)$") {
          ; Temporarily load a font from file. This does not install the font.
          DllCall("gdiplus\GdipNewPrivateFontCollection", "ptr*", hCollection:=0)
-   		DllCall("gdiplus\GdipPrivateAddFontFile", "ptr", hCollection, "wstr", f)
+         DllCall("gdiplus\GdipPrivateAddFontFile", "ptr", hCollection, "wstr", f)
 
          ; A collection of fonts can hold more than just 1 font. Since only 1 font will be needed, a single pointer suffices.
          DllCall("gdiplus\GdipGetFontCollectionFamilyList", "ptr", hCollection, "int", 1, "ptr*", pFontFamily:=0, "int*", found:=0)
 
          ; Normally, pFontFamily is an array of pointers. For a single pointer, no special requirements are needed.
-   		VarSetCapacity(FontName, 256)
-   		DllCall("gdiplus\GdipGetFamilyName", "ptr", pFontFamily, "str", FontName, "ushort", 1033) ; en-US
+         VarSetCapacity(FontName, 256)
+         DllCall("gdiplus\GdipGetFamilyName", "ptr", pFontFamily, "str", FontName, "ushort", 1033) ; en-US
 
          ; Create a font family. For ANSI compatibility, use str as the output type and StrGet to pass wide chars.
-   		DllCall("gdiplus\GdipCreateFontFamilyFromName", "wstr", StrGet(&FontName, "UTF-16"), "ptr", hCollection, "ptr*", hFamily:=0)
+         DllCall("gdiplus\GdipCreateFontFamilyFromName", "wstr", StrGet(&FontName, "UTF-16"), "ptr", hCollection, "ptr*", hFamily:=0)
 
          ; Delete the private font collection. It is strange a pointer reference is used.
          DllCall("gdiplus\GdipDeletePrivateFontCollection", "ptr*", hCollection)
@@ -692,15 +692,15 @@ class TextRender {
 
          ; Fill a rectangle with a solid brush.
          if (_r == 0) {
-            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int",  1) ; Turn antialiasing off if not a rounded rectangle.
+            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int",  1) ; Force off anti-alias to draw sharp rectangular edges.
             DllCall("gdiplus\GdipFillRectangle", "ptr", gfx, "ptr", pBrush, "float", _x, "float", _y, "float", _w, "float", _h) ; DRAWING!
-            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", _q) ; Turn antialiasing on for text rendering.
+            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", _q)
          }
 
          ; Fill a rounded rectangle with a solid brush.
          else {
             _r2 := (_r * 2) ; Calculate diameter
-            DllCall("gdiplus\GdipCreatePath", "uint", 0, "ptr*", pPath:=0) ; GraphicsPath
+            DllCall("gdiplus\GdipCreatePath", "uint", 0, "ptr*", pPath:=0)
             DllCall("gdiplus\GdipAddPathArc", "ptr", pPath, "float", _x           , "float", _y           , "float", _r2, "float", _r2, "float", 180, "float", 90)
             DllCall("gdiplus\GdipAddPathArc", "ptr", pPath, "float", _x + _w - _r2, "float", _y           , "float", _r2, "float", _r2, "float", 270, "float", 90)
             DllCall("gdiplus\GdipAddPathArc", "ptr", pPath, "float", _x + _w - _r2, "float", _y + _h - _r2, "float", _r2, "float", _r2, "float",   0, "float", 90)
@@ -708,11 +708,12 @@ class TextRender {
             DllCall("gdiplus\GdipClosePathFigure", "ptr", pPath) ; Connect existing arc segments into a rounded rectangle.
             DllCall("gdiplus\GdipFillPath", "ptr", gfx, "ptr", pBrush, "ptr", pPath) ; DRAWING!
             DllCall("gdiplus\GdipDeletePath", "ptr", pPath)
-        }
+         }
 
          ; Delete background solid brush.
          DllCall("gdiplus\GdipDeleteBrush", "ptr", pBrush)
       }
+
 
       ; Draw 2 - DropShadow
       if (!d.void) {
@@ -1808,7 +1809,7 @@ class TextRender {
    RenderToBitmap() {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.w, "int", this.h
          , "uint", 0, "uint", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
-   	DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", pBitmap, "ptr*", gfx:=0)
+      DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", pBitmap, "ptr*", gfx:=0)
       DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", gfx, "float", -this.x, "float", -this.y, "int", 0)
       for i, layer in this.layers
          this.DrawOnGraphics(gfx, layer[1], layer[2], layer[3], this.BitmapWidth, this.BitmapHeight)

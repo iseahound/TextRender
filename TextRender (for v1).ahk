@@ -399,8 +399,8 @@ class TextRender {
          c := (this.parse.grayscale(_c) < 128) ? 0xFFFFFFFF : 0xFF000000
       c  := (SourceCopy) ? 0x00000000 : this.parse.color( c)
 
-      ; Get Rendering Quality.
-      _q := (_q >= 0 && _q <= 4) ? _q : 4          ; Default SmoothingMode is 4 if radius is set. See Draw 1.
+      ; Default SmoothingMode is 5 for outlines and rounded corners. To disable use 0. See Draw 1, 2, 3.
+      _q := (_q >= 0 && _q <= 5) ? _q : 5 ; SmoothingModeAntiAlias8x8
 
       ; Default Text Rendering Hint is Cleartype on a opaque background and Anti-Alias on a transparent background.
       if (q < 0 || q > 5)
@@ -688,9 +688,9 @@ class TextRender {
          ; Create background solid brush.
          DllCall("gdiplus\GdipCreateSolidFill", "uint", _c, "ptr*", pBrush:=0)
 
-         ; Fill a rectangle with a solid brush.
+         ; Fill a rectangle with a solid brush. Draw sharp rectangular edges.
          if (_r == 0) {
-            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int",  1) ; Force off anti-alias to draw sharp rectangular edges.
+            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", 0) ; SmoothingModeNoAntiAlias
             DllCall("gdiplus\GdipFillRectangle", "ptr", gfx, "ptr", pBrush, "float", _x, "float", _y, "float", _w, "float", _h) ; DRAWING!
             DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", _q)
          }
@@ -724,7 +724,7 @@ class TextRender {
             DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", A_ScreenWidth, "int", A_ScreenHeight
                , "uint", 0, "uint", 0xE200B, "ptr", 0, "ptr*", DropShadow:=0)
             DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", DropShadow, "ptr*", DropShadowG:=0)
-            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", 3)
+            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", 0) ; SmoothingModeNoAntiAlias
             DllCall("gdiplus\GdipSetTextRenderingHint", "ptr", DropShadowG, "int", 1)
             DllCall("gdiplus\GdipGraphicsClear", "ptr", gfx, "uint", d.4 & 0xFFFFFF)
             VarSetCapacity(RectF, 16, 0)          ; sizeof(RectF) = 16
@@ -780,7 +780,7 @@ class TextRender {
             ; Fill in the outline. Turn off antialiasing and alpha blending so the gaps are 100% filled.
             DllCall("gdiplus\GdipCreateSolidFill", "uint", d.4, "ptr*", pBrush:=0)
             DllCall("gdiplus\GdipSetCompositingMode", "ptr", DropShadowG, "int", 1) ; Turn off alpha blending
-            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", 3) ; Turn off anti-aliasing
+            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", 0) ; SmoothingModeNoAntiAlias
             DllCall("gdiplus\GdipFillPath", "ptr", DropShadowG, "ptr", pBrush, "ptr", pPath) ; DRAWING!
             DllCall("gdiplus\GdipDeleteBrush", "ptr", pBrush)
             DllCall("gdiplus\GdipDeletePath", "ptr", pPath)
@@ -792,7 +792,7 @@ class TextRender {
             DllCall("gdiplus\GdipDeleteGraphics", "ptr", DropShadowG)
             this.filter.GaussianBlur(DropShadow, d.3, d.5)
             DllCall("gdiplus\GdipSetInterpolationMode", "ptr", gfx, "int", 5) ; NearestNeighbor
-            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", 3) ; Turn off anti-aliasing
+            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", 0) ; SmoothingModeNoAntiAlias
             ;Gdip_DrawImage(gfx, DropShadow, x + d.1 - offset2, y + d.2 - offset2, w + 2*offset2, h + 2*offset2) ; DRAWING!
             ;Gdip_DrawImage(gfx, DropShadow, 0, 0, A_Screenwidth, A_ScreenHeight) ; DRAWING!
             DllCall("gdiplus\GdipDrawImageRectRectI" ; DRAWING!

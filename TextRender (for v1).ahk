@@ -660,7 +660,7 @@ class TextRender {
       if (z) {
          if (width + x > CanvasWidth) {
             _redrawBecauseOfCondensedFont := true
-            return this.DrawOnGraphics(gfx, text, style1, style2)
+            return this.DrawOnGraphics(gfx, text, style1, style2, CanvasWidth, CanvasHeight)
          }
       }
 

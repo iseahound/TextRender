@@ -35,7 +35,6 @@ class TextRender {
 
       ; LoadMemory() is called when Draw() is invoked to save memory.
       this.events := {}
-      this.history := {}
       this.layers := {}
       this.drawing := true
       this.gfx := this.obm := this.pBits := this.hbm := this.hdc := ""
@@ -287,7 +286,6 @@ class TextRender {
 
    Flush() {
       this.drawing := true
-      this.history.push(this.layers)
 
       this.PreciseTime := DllCall("QueryPerformanceCounter", "int64*", A_PreciseTime:=0) ? A_PreciseTime : false
       this.TickCount := A_TickCount

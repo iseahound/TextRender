@@ -402,9 +402,9 @@ class TextRender {
       ; Default SmoothingMode is 5 for outlines and rounded corners. To disable use 0. See Draw 1, 2, 3.
       _q := (_q >= 0 && _q <= 5) ? _q : 5 ; SmoothingModeAntiAlias8x8
 
-      ; Default Text Rendering Hint is Cleartype on a opaque background and Anti-Alias on a transparent background.
+      ; Default TextRenderingHint is Cleartype on a opaque background and Anti-Alias on a transparent background.
       if (q < 0 || q > 5)
-         q := (_c & 0xFF000000 = 0xFF000000) ? 5 : 4 ; Anti-Alias = 4, Cleartype = 5 (and gives weird effects.)
+         q := (_c & 0xFF000000 = 0xFF000000) ? 5 : 4 ; TextRenderingHintClearTypeGridFit = 5, TextRenderingHintAntialias = 4
 
       ; Save original Graphics settings.
       DllCall("gdiplus\GdipSaveGraphics", "ptr", gfx, "ptr*", pState:=0)
@@ -413,9 +413,9 @@ class TextRender {
       DllCall("gdiplus\GdipSetPageUnit", "ptr", gfx, "int", 2) ; A unit is 1 pixel.
 
       ; Set Graphics settings.
-      DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", gfx, "int", 2) ; Half pixel offset.
-      ;DllCall("gdiplus\GdipSetCompositingMode",    "ptr", gfx, "int", 1) ; Overwrite/SourceCopy.
-      DllCall("gdiplus\GdipSetCompositingQuality", "ptr", gfx, "int", 0) ; AssumeLinear
+      DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", gfx, "int", 4) ; PixelOffsetModeHalf
+      ;DllCall("gdiplus\GdipSetCompositingMode",    "ptr", gfx, "int", 1) ; CompositingModeSourceCopy
+      DllCall("gdiplus\GdipSetCompositingQuality", "ptr", gfx, "int", 4) ; CompositingQualityGammaCorrected
       DllCall("gdiplus\GdipSetSmoothingMode",      "ptr", gfx, "int", _q)
       DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", gfx, "int", 7) ; HighQualityBicubic
       DllCall("gdiplus\GdipSetTextRenderingHint",  "ptr", gfx, "int", q)
@@ -725,7 +725,7 @@ class TextRender {
                , "uint", 0, "uint", 0xE200B, "ptr", 0, "ptr*", DropShadow:=0)
             DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", DropShadow, "ptr*", DropShadowG:=0)
             DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", 0) ; SmoothingModeNoAntiAlias
-            DllCall("gdiplus\GdipSetTextRenderingHint", "ptr", DropShadowG, "int", 1)
+            DllCall("gdiplus\GdipSetTextRenderingHint", "ptr", DropShadowG, "int", 1) ; TextRenderingHintSingleBitPerPixelGridFit
             DllCall("gdiplus\GdipGraphicsClear", "ptr", gfx, "uint", d.4 & 0xFFFFFF)
             VarSetCapacity(RectF, 16, 0)          ; sizeof(RectF) = 16
                NumPut(d.1+x, RectF,  0,  "float") ; Left
@@ -773,18 +773,18 @@ class TextRender {
                      ,    "ptr", &RectF
                      ,    "ptr", hFormat)
             DllCall("gdiplus\GdipCreatePen1", "uint", d.4, "float", 2*d.6 + o.1, "int", 2, "ptr*", pPen:=0)
-            DllCall("gdiplus\GdipSetPenLineJoin", "ptr", pPen, "uint", 2)
+            DllCall("gdiplus\GdipSetPenLineJoin", "ptr", pPen, "uint", 2) ; LineJoinTypeRound
             DllCall("gdiplus\GdipDrawPath", "ptr", DropShadowG, "ptr", pPen, "ptr", pPath)
             DllCall("gdiplus\GdipDeletePen", "ptr", pPen)
 
             ; Fill in the outline. Turn off antialiasing and alpha blending so the gaps are 100% filled.
             DllCall("gdiplus\GdipCreateSolidFill", "uint", d.4, "ptr*", pBrush:=0)
-            DllCall("gdiplus\GdipSetCompositingMode", "ptr", DropShadowG, "int", 1) ; Turn off alpha blending
+            DllCall("gdiplus\GdipSetCompositingMode", "ptr", DropShadowG, "int", 1) ; CompositingModeSourceCopy
             DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", 0) ; SmoothingModeNoAntiAlias
             DllCall("gdiplus\GdipFillPath", "ptr", DropShadowG, "ptr", pBrush, "ptr", pPath) ; DRAWING!
             DllCall("gdiplus\GdipDeleteBrush", "ptr", pBrush)
             DllCall("gdiplus\GdipDeletePath", "ptr", pPath)
-            DllCall("gdiplus\GdipSetCompositingMode", "ptr", DropShadowG, "int", 0)
+            DllCall("gdiplus\GdipSetCompositingMode", "ptr", DropShadowG, "int", 0) ; CompositingModeSourceOver
             DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", _q)
          }
 
@@ -800,7 +800,7 @@ class TextRender {
                      ,    "ptr", DropShadow
                      ,    "int", 0, "int", 0, "int", A_Screenwidth, "int", A_Screenwidth ; destination rectangle
                      ,    "int", 0, "int", 0, "int", A_Screenwidth, "int", A_Screenwidth ; source rectangle
-                     ,    "int", 2  ; UnitPixel
+                     ,    "int", 2  ; UnitTypePixel
                      ,    "ptr", 0  ; imageAttributes
                      ,    "ptr", 0  ; callback
                      ,    "ptr", 0) ; callbackData
@@ -833,9 +833,8 @@ class TextRender {
          if (o.3) {
             DllCall("gdiplus\GdipSetClipPath", "ptr", gfx, "ptr", pPath, "int", 3) ; Exclude original text region from being drawn on.
             ARGB := Format("0x{:02X}",((o.4 & 0xFF000000) >> 24)/o.3) . Format("{:06X}",(o.4 & 0x00FFFFFF))
-            ; width := 1, unit is 2,
-            DllCall("gdiplus\GdipCreatePen1", "uint", ARGB, "float", 1, "int", 2, "ptr*", pPenGlow:=0)
-            DllCall("gdiplus\GdipSetPenLineJoin", "ptr",pPenGlow, "uint",2)
+            DllCall("gdiplus\GdipCreatePen1", "uint", ARGB, "float", 1, "int", 2, "ptr*", pPenGlow:=0) ; UnitTypePixel = 2
+            DllCall("gdiplus\GdipSetPenLineJoin", "ptr",pPenGlow, "uint",2) ; LineJoinTypeRound
 
             Loop % o.3
             {
@@ -848,8 +847,8 @@ class TextRender {
 
          ; Draw outline text.
          if (o.1) {
-            DllCall("gdiplus\GdipCreatePen1", "uint", o.2, "float", o.1, "int", 2, "ptr*", pPen:=0)
-            DllCall("gdiplus\GdipSetPenLineJoin", "ptr", pPen, "uint", 2)
+            DllCall("gdiplus\GdipCreatePen1", "uint", o.2, "float", o.1, "int", 2, "ptr*", pPen:=0) ; UnitTypePixel = 2
+            DllCall("gdiplus\GdipSetPenLineJoin", "ptr", pPen, "uint", 2) ; LineJoinTypeRound
             DllCall("gdiplus\GdipDrawPath", "ptr", gfx, "ptr", pPen, "ptr", pPath) ; DRAWING!
             DllCall("gdiplus\GdipDeletePen", "ptr", pPen)
          }
@@ -858,7 +857,7 @@ class TextRender {
          DllCall("gdiplus\GdipCreateSolidFill", "uint", c, "ptr*", pBrush:=0)
          DllCall("gdiplus\GdipSetCompositingMode", "ptr", gfx, "int", SourceCopy)
          DllCall("gdiplus\GdipFillPath", "ptr", gfx, "ptr", pBrush, "ptr", pPath) ; DRAWING!
-         DllCall("gdiplus\GdipSetCompositingMode", "ptr", gfx, "int", 0)
+         DllCall("gdiplus\GdipSetCompositingMode", "ptr", gfx, "int", 0) ; CompositingModeSourceOver
          DllCall("gdiplus\GdipDeleteBrush", "ptr", pBrush)
          DllCall("gdiplus\GdipDeletePath", "ptr", pPath)
       }

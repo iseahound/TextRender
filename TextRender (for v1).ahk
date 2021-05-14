@@ -901,13 +901,15 @@ class TextRender {
          h := NumGet(RectF, 12, "float")
       }
 
-      ; Delete Font Objects.
+
+      ; Cleanup.
       DllCall("gdiplus\GdipDeleteStringFormat", "ptr", hFormat)
       DllCall("gdiplus\GdipDeleteFont", "ptr", hFont)
       DllCall("gdiplus\GdipDeleteFontFamily", "ptr", hFamily)
 
       ; Restore original Graphics settings.
       DllCall("gdiplus\GdipRestoreGraphics", "ptr", gfx, "ptr", pState)
+
 
       ; Calculate time.
       t  := (_t) ? _t : t

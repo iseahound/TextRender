@@ -953,8 +953,10 @@ class TextRender {
       return {t: t_bound
             , x: x_bound, y: y_bound
             , w: w_bound, h: h_bound
-            , x2: x_bound+w_bound, y2: y_bound+h_bound
-            , chars: chars, words: words, lines: lines}
+            , x2: x_bound + w_bound, y2: y_bound + h_bound
+            , chars: chars
+            , words: words
+            , lines: lines}
    }
 
    DrawOnBitmap(pBitmap, text := "", style1 := "", style2 := "") {

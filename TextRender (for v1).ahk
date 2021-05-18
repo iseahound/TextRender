@@ -1215,10 +1215,6 @@ class TextRender {
          return d
       }
 
-      font(f, default := "Arial"){
-
-      }
-
       grayscale(sRGB) {
          static rY := 0.212655
          static gY := 0.715158

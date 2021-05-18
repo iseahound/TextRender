@@ -80,7 +80,7 @@ class TextRender {
       ; Create a timer that eventually clears the canvas.
       if (this.t > 0) {
          ; Create a reference to the object held by a timer.
-         blank := ObjBindMethod(this, "blank", this.GUID) ; Calls Blank()
+         blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
          SetTimer % blank, % -this.t ; Calls __Delete.
       }
 
@@ -157,7 +157,7 @@ class TextRender {
       ; Create a timer that eventually clears the canvas.
       if (this.t > 0) {
          ; Create a reference to the object held by a timer.
-         blank := ObjBindMethod(this, "blank", this.GUID) ; Calls Blank()
+         blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
          SetTimer % blank, % -this.t ; Calls __Delete.
       }
 
@@ -168,7 +168,7 @@ class TextRender {
       return this
    }
 
-   Fade(fade_in := 250, fade_out := 250, GUID := "") {
+   Fade(fade_in := 250, fade_out := 250, status := "") {
       if (fade_in > 0) {
          ; Render: Off-Screen areas are not rendered. Clip objects that reside off screen.
          this.WindowLeft   := (this.BitmapLeft   > this.x)  ? this.BitmapLeft   : this.x
@@ -204,7 +204,7 @@ class TextRender {
          ; Create a timer that eventually clears the canvas.
          if (this.t > 0) {
             ; Create a reference to the object held by a timer.
-            fade := ObjBindMethod(this, "fade", 0, fade_out, this.GUID) ; Calls Fade() with no fade_in.
+            fade := ObjBindMethod(this, "fade", 0, fade_out, this.status) ; Calls Fade() with no fade_in.
             SetTimer % fade, % -this.t ; Calls __Delete.
          }
 
@@ -216,7 +216,7 @@ class TextRender {
       }
 
       ; Check to see if the state of the canvas has changed before clearing and updating.
-      if (fade_out > 0 && this.GUID = GUID) {
+      if (fade_out > 0 && this.status = status) {
          duration := 0
          current := -1
          ;count := 0
@@ -235,17 +235,17 @@ class TextRender {
             duration := (now - start)/frequency * 1000
          }
          DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF)
-         this.GUID := ComObjCreate("Scriptlet.TypeLib").GUID ; canvas changed.
+         this.CanvasChanged()
          this.UpdateLayeredWindow(this.BitmapLeft, this.BitmapTop, this.BitmapWidth, this.BitmapHeight)
          return this
       }
    }
 
-   Blank(GUID) {
+   Blank(status) {
       ; Check to see if the state of the canvas has changed before clearing and updating.
-      if (this.GUID = GUID) {
+      if (this.status = status) {
          DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF)
-         this.GUID := ComObjCreate("Scriptlet.TypeLib").GUID ; canvas changed.
+         this.CanvasChanged()
          this.UpdateLayeredWindow(this.BitmapLeft, this.BitmapTop, this.BitmapWidth, this.BitmapHeight)
       }
    }
@@ -267,7 +267,7 @@ class TextRender {
       obj := this.DrawOnGraphics(this.gfx, data, styles*)
 
       ; Create a unique signature for each call to Draw().
-      this.GUID := ComObjCreate("Scriptlet.TypeLib").GUID
+      this.CanvasChanged()
 
       ; Set canvas coordinates.
       this.t  := (this.t  == "") ? obj.t  : (this.t  > obj.t)  ? this.t  : obj.t
@@ -292,7 +292,7 @@ class TextRender {
       this.layers := {}
       this.x := this.y := this.x2 := this.y2 := this.w := this.h := ""
       DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF)
-      this.GUID := ComObjCreate("Scriptlet.TypeLib").GUID ; canvas changed.
+      this.CanvasChanged()
       return this
    }
 
@@ -308,6 +308,11 @@ class TextRender {
       if (milliseconds)
          Sleep % milliseconds
       return this
+   }
+
+   CanvasChanged() {
+      Random rand, -2147483648, 2147483647
+      this.status := rand
    }
 
    DrawOnGraphics(gfx, text := "", style1 := "", style2 := "", CanvasWidth := "", CanvasHeight := "") {

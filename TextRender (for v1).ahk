@@ -1537,22 +1537,22 @@ class TextRender {
       ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
       ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
       _ := (A_PtrSize == 8)
-      VarSetCapacity(WNDCLASSEX, size := _ ? 80:48, 0)        ; sizeof(WNDCLASSEX) = 48, 80
-         NumPut(       size, WNDCLASSEX,         0,   "uint") ; cbSize
-         NumPut(        0x8, WNDCLASSEX,         4,   "uint") ; style = CS_DBLCLKS
-         NumPut(   pWndProc, WNDCLASSEX,         8,    "ptr") ; lpfnWndProc
-         NumPut(          0, WNDCLASSEX, _ ? 16:12,    "int") ; cbClsExtra
-         NumPut(          0, WNDCLASSEX, _ ? 20:16,    "int") ; cbWndExtra
-         NumPut(          0, WNDCLASSEX, _ ? 24:20,    "ptr") ; hInstance
-         NumPut(          0, WNDCLASSEX, _ ? 32:24,    "ptr") ; hIcon
-         NumPut(    hCursor, WNDCLASSEX, _ ? 40:28,    "ptr") ; hCursor
-         NumPut(         16, WNDCLASSEX, _ ? 48:32,    "ptr") ; hbrBackground
-         NumPut(          0, WNDCLASSEX, _ ? 56:36,    "ptr") ; lpszMenuName
-         NumPut( &vWinClass, WNDCLASSEX, _ ? 64:40,    "ptr") ; lpszClassName
-         NumPut(          0, WNDCLASSEX, _ ? 72:44,    "ptr") ; hIconSm
+      VarSetCapacity(wc, size := _ ? 80:48, 0)        ; sizeof(WNDCLASSEX) = 48, 80
+         NumPut(       size, wc,         0,   "uint") ; cbSize
+         NumPut(        0x8, wc,         4,   "uint") ; style = CS_DBLCLKS
+         NumPut(   pWndProc, wc,         8,    "ptr") ; lpfnWndProc
+         NumPut(          0, wc, _ ? 16:12,    "int") ; cbClsExtra
+         NumPut(          0, wc, _ ? 20:16,    "int") ; cbWndExtra
+         NumPut(          0, wc, _ ? 24:20,    "ptr") ; hInstance
+         NumPut(          0, wc, _ ? 32:24,    "ptr") ; hIcon
+         NumPut(    hCursor, wc, _ ? 40:28,    "ptr") ; hCursor
+         NumPut(         16, wc, _ ? 48:32,    "ptr") ; hbrBackground
+         NumPut(          0, wc, _ ? 56:36,    "ptr") ; lpszMenuName
+         NumPut( &vWinClass, wc, _ ? 64:40,    "ptr") ; lpszClassName
+         NumPut(          0, wc, _ ? 72:44,    "ptr") ; hIconSm
 
       ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
-      return atom := DllCall("RegisterClassEx", "ptr", &WNDCLASSEX, "ushort")
+      return atom := DllCall("RegisterClassEx", "ptr", &wc, "ushort")
    }
 
    UnregisterClass(vWinClass) {

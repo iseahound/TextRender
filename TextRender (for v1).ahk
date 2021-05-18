@@ -234,7 +234,9 @@ class TextRender {
             DllCall("QueryPerformanceCounter", "int64*", now:=0)
             duration := (now - start)/frequency * 1000
          }
+         DllCall("gdiplus\GdipSetClipRect", "ptr", this.gfx, "float", this.x, "float", this.y, "float", this.w, "float", this.h, "int", 0)
          DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF)
+         DllCall("gdiplus\GdipResetClip", "ptr", this.gfx)
          this.CanvasChanged()
          this.UpdateLayeredWindow(this.BitmapLeft, this.BitmapTop, this.BitmapWidth, this.BitmapHeight)
          return this
@@ -244,7 +246,9 @@ class TextRender {
    Blank(status) {
       ; Check to see if the state of the canvas has changed before clearing and updating.
       if (this.status = status) {
+         DllCall("gdiplus\GdipSetClipRect", "ptr", this.gfx, "float", this.x, "float", this.y, "float", this.w, "float", this.h, "int", 0)
          DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF)
+         DllCall("gdiplus\GdipResetClip", "ptr", this.gfx)
          this.CanvasChanged()
          this.UpdateLayeredWindow(this.BitmapLeft, this.BitmapTop, this.BitmapWidth, this.BitmapHeight)
       }
@@ -286,12 +290,13 @@ class TextRender {
 
    Flush() {
       this.drawing := true
-
       this.PreciseTime := DllCall("QueryPerformanceCounter", "int64*", A_PreciseTime:=0) ? A_PreciseTime : false
       this.TickCount := A_TickCount
       this.layers := {}
-      this.x := this.y := this.x2 := this.y2 := this.w := this.h := ""
+      DllCall("gdiplus\GdipSetClipRect", "ptr", this.gfx, "float", this.x, "float", this.y, "float", this.w, "float", this.h, "int", 0)
       DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF)
+      DllCall("gdiplus\GdipResetClip", "ptr", this.gfx)
+      this.x := this.y := this.x2 := this.y2 := this.w := this.h := ""
       this.CanvasChanged()
       return this
    }

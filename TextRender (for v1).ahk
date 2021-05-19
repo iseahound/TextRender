@@ -28,7 +28,10 @@ class TextRender {
       TextRender.windows[this.hwnd] := this
       ObjRelease(&this) ; Allow __Delete() to be called. RefCount - 1.
 
-      ; LoadMemory() is called when Draw() is invoked to save memory.
+      ; Fail UpdateMemory() check to access LoadMemory().
+      this.BitmapWidth := this.BitmapHeight := 0
+
+      ; Bypass FreeMemory() check before LoadMemory().
       this.gfx := this.obm := this.hbm := this.hdc := ""
 
       ; Saves repeated calls of Draw().

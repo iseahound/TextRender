@@ -255,7 +255,7 @@ class TextRender {
 
       this.UpdateMemory()
 
-      if styles[1] = "" && styles[2] = ""
+      if (styles[1] = "" && styles[2] = "")
          styles := this.styles
       this.data := data
       this.styles := styles

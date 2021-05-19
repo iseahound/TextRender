@@ -83,13 +83,13 @@ class TextRender {
          ; This approach keeps this.layers and the underlying graphics intact,
          ; so that calls to Save() and Screenshot() will not encounter a blank canvas.
          this.drawing := false
-      }
 
-      ; Create a timer that eventually clears the canvas.
-      if (this.t > 0) {
-         ; Create a reference to the object held by a timer.
-         blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
-         SetTimer % blank, % -this.t ; Calls __Delete.
+         ; Create a timer that eventually clears the canvas.
+         if (this.t > 0) {
+            ; Create a reference to the object held by a timer.
+            blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
+            SetTimer % blank, % -this.t ; Calls __Delete.
+         }
       }
 
       return this

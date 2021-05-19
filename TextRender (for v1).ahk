@@ -463,7 +463,7 @@ class TextRender {
       style := (b) ? 1 : 0         ; bold
       style += (i) ? 2 : 0         ; italic
       style += (u) ? 4 : 0         ; underline
-      style += (strikeout) ? 8 : 0 ; strikeout, not implemented.
+      ; style += (strikeout) ? 8 : 0 ; strikeout, not implemented.
       n  := (n) ? 0x4000 | 0x1000 : 0x4000 ; Defaults to text wrapping.
 
       ; Define text justification. Default text justification to center.
@@ -476,7 +476,7 @@ class TextRender {
 
       ; Later when text x and w are finalized and it is found that x + width exceeds the screen,
       ; then the _redrawBecauseOfCondensedFont flag is set to true.
-      static _redrawBecauseOfCondensedFont
+      static _redrawBecauseOfCondensedFont := false
       if (_redrawBecauseOfCondensedFont == true)
          f:=z, z:=0, _redrawBecauseOfCondensedFont := false
 
@@ -919,15 +919,16 @@ class TextRender {
       ; Restore original Graphics settings.
       DllCall("gdiplus\GdipRestoreGraphics", "ptr", gfx, "ptr", pState)
 
+      ; Calulate the number of words.
+      ; First, use the number of chars displayed by GdipMeasureString to truncate "text".
+      ; Then count the number of words, as defined by Unicode Code Points, i.e. all languages.
+      RegExReplace(SubStr(text, 1, chars), "(*UCP)\b\w+\b", "", words)
 
       ; Calculate time.
       t  := (_t) ? _t : t
       if (t = "fast") ; To be used when the user has seen the text before; to linger on screen momentarily.
          t := 1250 + 8*chars ; Every character adds 8 milliseconds.
       if (t = "auto") {
-         ; First, use the number of chars displayed by GdipMeasureString to truncate "text".
-         ; Then count the number of words, as defined by Unicode Code Points, i.e. all languages.
-         RegExReplace(SubStr(text, 1, chars), "(*UCP)\b\w+\b", "", words)
          ; The average human reaction time is 250 ms. For when text suddenly appears on screen.
          ; Using 200 words/minute, divide 60,000 ms by 200 words to get 300 ms per word.
          t := 250 + 300*words
@@ -1509,7 +1510,7 @@ class TextRender {
    }
 
    RegisterClass(vWinClass) {
-      static atom
+      static atom := 0
 
       ; Return the atom to the class if present.
       if (atom)

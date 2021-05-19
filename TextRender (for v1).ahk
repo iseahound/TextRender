@@ -1645,11 +1645,13 @@ class TextRender {
    }
 
    UpdateMemory() {
-      ; Get virtual screen coordinates.
+      ; Get true virtual screen coordinates.
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
       sx := DllCall("GetSystemMetrics", "int", 76, "int")
       sy := DllCall("GetSystemMetrics", "int", 77, "int")
       sw := DllCall("GetSystemMetrics", "int", 78, "int")
       sh := DllCall("GetSystemMetrics", "int", 79, "int")
+      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       if (sw = this.BitmapWidth && sh = this.BitmapHeight)
          return this

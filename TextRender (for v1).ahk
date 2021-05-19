@@ -1500,7 +1500,7 @@ class TextRender {
    EventShowCoordinates() {
       ; Shows a bubble displaying the current window coordinates.
       if !this.friend1 {
-         this.friend1 := TextRender()
+         this.friend1 := new TextRender(,,, this.hwnd)
          this.friend1.OnEvent("MiddleMouseDown", "")
       }
       CoordMode Mouse
@@ -1515,7 +1515,7 @@ class TextRender {
    EventCopyText() {
       ; Copies the rendered text to clipboard.
       if !this.friend2 {
-         this.friend2 := TextRender()
+         this.friend2 := new TextRender(,,, this.hwnd)
          this.friend2.OnEvent("MiddleMouseDown", "")
          this.friend2.OnEvent("RightMouseDown", "")
       }

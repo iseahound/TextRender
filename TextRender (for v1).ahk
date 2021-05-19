@@ -19,9 +19,15 @@ class TextRender {
    __New(title := "", WindowStyle := "", WindowExStyle := "", hwndParent := 0) {
       this.gdiplusStartup()
 
+      ; Set a DPI awareness context for CreateWindow().
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
+
       ; Create and show the window.
       this.hwnd := this.CreateWindow(title, WindowStyle, WindowExStyle, hwndParent)
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
+
+      ; Restore old DPI awareness context.
+      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; Store a reference to this object accessed by the window handle.
       ; When processing window messages the hwnd can be used to retrieve "this".

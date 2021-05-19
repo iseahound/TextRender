@@ -1421,7 +1421,7 @@ class TextRender {
    }
 
    ; IO - Capture input and internalize environmental data.
-   IO(terms*) {
+   IO() {
       static A_Frequency, f := DllCall("QueryPerformanceFrequency", "int64*", A_Frequency:=0)
       DllCall("QueryPerformanceCounter", "int64*", A_PreciseTime:=0)
 
@@ -1431,7 +1431,7 @@ class TextRender {
       this.ScreenWidth := A_ScreenWidth
       this.ScreenHeight := A_ScreenHeight
       this.IsAdmin := A_IsAdmin
-      return this.arg := terms
+      return
    }
 
    OnEvent(event, callback := "") {

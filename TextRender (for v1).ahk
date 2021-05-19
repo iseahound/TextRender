@@ -284,7 +284,7 @@ class TextRender {
 
    Flush() {
       this.drawing := true
-      this.PreciseTime := DllCall("QueryPerformanceCounter", "int64*", A_PreciseTime:=0) ? A_PreciseTime : false
+      ; this.PreciseTime := DllCall("QueryPerformanceCounter", "int64*", A_PreciseTime:=0) ? A_PreciseTime : false
       this.TickCount := A_TickCount
       this.layers := {}
       DllCall("gdiplus\GdipSetClipRect", "ptr", this.gfx, "float", this.x, "float", this.y, "float", this.w, "float", this.h, "int", 0)
@@ -307,6 +307,11 @@ class TextRender {
       if (milliseconds)
          Sleep % milliseconds
       return this
+   }
+
+   Counter() { ; Returns a number in units of seconds.
+      static freq := DllCall("QueryPerformanceFrequency", "int64*", freq:=0) ? freq : false
+      return DllCall("QueryPerformanceCounter", "int64*", counter:=0) ? counter/freq : false
    }
 
    CanvasChanged() {

@@ -284,8 +284,6 @@ class TextRender {
 
    Flush() {
       this.drawing := true
-      ; this.PreciseTime := DllCall("QueryPerformanceCounter", "int64*", A_PreciseTime:=0) ? A_PreciseTime : false
-      this.TickCount := A_TickCount
       this.layers := {}
       DllCall("gdiplus\GdipSetClipRect", "ptr", this.gfx, "float", this.x, "float", this.y, "float", this.w, "float", this.h, "int", 0)
       DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF)
@@ -1484,17 +1482,17 @@ class TextRender {
 
    EventShowCoordinates() {
       ; Shows a bubble displaying the current window coordinates.
-      if !this.friend {
-         this.friend := TextRender()
-         this.friend.OnEvent("MiddleMouseDown", "")
+      if !this.friend1 {
+         this.friend1 := TextRender()
+         this.friend1.OnEvent("MiddleMouseDown", "")
       }
       CoordMode Mouse
       MouseGetPos _x, _y
       WinGetPos x, y, w, h, % "ahk_id " this.hwnd
-      this.friend.Render(Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
+      this.friend1.Render(Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
          , "t:7000 r:0.5vmin x" _x+20 " y" _y+20
          , "s:1.5vmin f:(Consolas) o:(0.5) m:0.5vmin j:right")
-      WinSet AlwaysOnTop, On, % "ahk_id" this.friend.hwnd
+      WinSet AlwaysOnTop, On, % "ahk_id" this.friend1.hwnd
    }
 
    EventCopyText() {

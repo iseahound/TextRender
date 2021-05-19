@@ -1567,23 +1567,24 @@ class TextRender {
 
       if (WindowStyle = "")
          WindowStyle := WS_POPUP ; start off hidden with WS_VISIBLE off
+
       if (WindowExStyle = "")
          WindowExStyle := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED
 
       return DllCall("CreateWindowEx"
-         ,   "uint", WindowExStyle                     ; dwExStyle
-         , "ushort", this.RegisterClass("TextRender")  ; lpClassName
-         ,    "str", title                             ; lpWindowName
-         ,   "uint", WindowStyle                       ; dwStyle
-         ,    "int", 0                                 ; X
-         ,    "int", 0                                 ; Y
-         ,    "int", 0                                 ; nWidth
-         ,    "int", 0                                 ; nHeight
-         ,    "ptr", hwndParent                        ; hWndParent
-         ,    "ptr", 0                                 ; hMenu
-         ,    "ptr", 0                                 ; hInstance
-         ,    "ptr", 0                                 ; lpParam
-         ,    "ptr")
+               ,   "uint", WindowExStyle                     ; dwExStyle
+               , "ushort", this.RegisterClass("TextRender")  ; lpClassName
+               ,    "str", title                             ; lpWindowName
+               ,   "uint", WindowStyle                       ; dwStyle
+               ,    "int", 0                                 ; X
+               ,    "int", 0                                 ; Y
+               ,    "int", 0                                 ; nWidth
+               ,    "int", 0                                 ; nHeight
+               ,    "ptr", hwndParent                        ; hWndParent
+               ,    "ptr", 0                                 ; hMenu
+               ,    "ptr", 0                                 ; hInstance
+               ,    "ptr", 0                                 ; lpParam
+               ,    "ptr")
    }
 
    ; Duality #2 - Destroys a window.

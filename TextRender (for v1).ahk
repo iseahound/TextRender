@@ -19,6 +19,7 @@ class TextRender {
    __New(title := "", WindowStyle := "", WindowExStyle := "", hwndParent := 0) {
       this.gdiplusStartup()
 
+      ; Create and show the window.
       this.hwnd := this.CreateWindow(title, WindowStyle, WindowExStyle, hwndParent)
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
 
@@ -28,14 +29,19 @@ class TextRender {
       ObjRelease(&this) ; Allow __Delete() to be called. RefCount - 1.
 
       ; LoadMemory() is called when Draw() is invoked to save memory.
-      this.events := {}
-      this.layers := {}
-      this.drawing := true
       this.gfx := this.obm := this.hbm := this.hdc := ""
 
+      ; Saves repeated calls of Draw().
+      this.layers := {}
+
+      ; Initalize default events.
+      this.events := {}
       this.OnEvent("LeftMouseDown", this.EventMoveWindow)
       this.OnEvent("MiddleMouseDown", this.EventShowCoordinates)
       this.OnEvent("RightMouseDown", this.EventCopyText)
+
+      ; Prevents an unnecessary call of Flush().
+      this.drawing := true
 
       return this
    }

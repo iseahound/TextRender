@@ -272,7 +272,7 @@ class TextRender {
       this.layers.push([data, styles*])
 
       ; Drawing
-      obj := this.DrawOnGraphics(this.gfx, data, styles*)
+      obj := this.DrawOnGraphics(this.gfx, data, styles[1], styles[2], A_ScreenWidth, A_ScreenHeight)
 
       ; Create a unique signature for each call to Draw().
       this.CanvasChanged()
@@ -1612,6 +1612,7 @@ class TextRender {
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
       gfx := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", gfx:=0) ? false : gfx
+      DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", gfx, "float", -this.BitmapLeft, "float", -this.BitmapTop, "int", 0)
 
       this.hdc := hdc
       this.hbm := hbm
@@ -1952,7 +1953,8 @@ class TextRender {
                ,"uint64*", x | y << 32              ; *pptDst
                ,"uint64*", w | h << 32              ; *psize
                ,    "ptr", this.hdc                 ; hdcSrc
-               ,"uint64*", x | y << 32              ; *pptSrc
+               ,"uint64*", x - this.BitmapLeft
+                        |  y - this.BitmapTop << 32 ; *pptSrc
                ,   "uint", 0                        ; crKey
                ,  "uint*", alpha << 16 | 0x01 << 24 ; *pblend
                ,   "uint", 2)                       ; dwFlags

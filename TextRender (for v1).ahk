@@ -1637,7 +1637,6 @@ class TextRender {
       return this
    }
 
-   ; BROKEN - create a fixed size flag.
    UpdateMemory() {
       if (A_ScreenWidth == this.BitmapWidth && A_ScreenHeight == this.BitmapHeight)
          return this

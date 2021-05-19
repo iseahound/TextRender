@@ -8,15 +8,11 @@
 #Persistent
 
 TextRender(text:="", background_style:="", text_style:="") {
-   return TextRender.call(text, background_style, text_style)
+   return (new TextRender).Render(text, background_style, text_style)
 }
 
 ; TextRender() - Display custom text on screen.
 class TextRender {
-
-   call(terms*) {
-      return (this.hwnd) ? this.Render(terms*) : (new this).Render(terms*)
-   }
 
    static windows := {}
 

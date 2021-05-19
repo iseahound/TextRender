@@ -19,8 +19,6 @@ class TextRender {
    __New(title := "", WindowStyle := "", WindowExStyle := "", hwndParent := 0) {
       this.gdiplusStartup()
 
-      this.IO()
-
       this.hwnd := this.CreateWindow(title, WindowStyle, WindowExStyle, hwndParent)
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
 
@@ -1418,20 +1416,6 @@ class TextRender {
 
          return e
       }
-   }
-
-   ; IO - Capture input and internalize environmental data.
-   IO() {
-      static A_Frequency, f := DllCall("QueryPerformanceFrequency", "int64*", A_Frequency:=0)
-      DllCall("QueryPerformanceCounter", "int64*", A_PreciseTime:=0)
-
-      this.PreciseTime := A_PreciseTime
-      this.TickCount := A_TickCount
-      this.Frequency := A_Frequency
-      this.ScreenWidth := A_ScreenWidth
-      this.ScreenHeight := A_ScreenHeight
-      this.IsAdmin := A_IsAdmin
-      return
    }
 
    OnEvent(event, callback := "") {

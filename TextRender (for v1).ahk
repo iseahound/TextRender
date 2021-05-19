@@ -63,18 +63,23 @@ class TextRender {
          this.Draw(terms*)
       }
 
-      ; Allow Render() to commit when previous Draw() has happened.
+      ; Allow Render() to commit only when previous calls to Draw() have occurred.
       if (this.layers.length() > 0) {
-         ; Render: Off-Screen areas are not rendered. Clip objects that reside off screen.
+         ; Define the smaller of canvas and bitmap coordinates.
          this.WindowLeft   := (this.BitmapLeft   > this.x)  ? this.BitmapLeft   : this.x
          this.WindowTop    := (this.BitmapTop    > this.y)  ? this.BitmapTop    : this.y
          this.WindowRight  := (this.BitmapRight  < this.x2) ? this.BitmapRight  : this.x2
          this.WindowBottom := (this.BitmapBottom < this.y2) ? this.BitmapBottom : this.y2
          this.WindowWidth  := this.WindowRight - this.WindowLeft
          this.WindowHeight := this.WindowBottom - this.WindowTop
-         ; Only the visible screen area will be rendered.
-         ; Objects that reside partly off screen will not have those areas rendered.
+
+         ; Reminder: Only the visible screen area will be rendered. Clipping will occur.
          this.UpdateLayeredWindow(this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight)
+
+         ; Ensure that Flush() will be called at the start of a new drawing.
+         ; This approach keeps this.layers and the underlying graphics intact,
+         ; so that calls to Save() and Screenshot() will not encounter a blank canvas.
+         this.drawing := false
       }
 
       ; Create a timer that eventually clears the canvas.
@@ -84,10 +89,6 @@ class TextRender {
          SetTimer % blank, % -this.t ; Calls __Delete.
       }
 
-      ; Ensure that Flush() will be called at the start of a new drawing.
-      ; This approach keeps this.layers and the underlying graphics intact,
-      ; so that calls to Save() and Screenshot() will not encounter a blank canvas.
-      this.drawing := false
       return this
    }
 

@@ -1638,15 +1638,21 @@ class TextRender {
    }
 
    UpdateMemory() {
-      if (A_ScreenWidth == this.BitmapWidth && A_ScreenHeight == this.BitmapHeight)
+      ; Get virtual screen coordinates.
+      sx := DllCall("GetSystemMetrics", "int", 76, "int")
+      sy := DllCall("GetSystemMetrics", "int", 77, "int")
+      sw := DllCall("GetSystemMetrics", "int", 78, "int")
+      sh := DllCall("GetSystemMetrics", "int", 79, "int")
+
+      if (sw = this.BitmapWidth && sh = this.BitmapHeight)
          return this
 
-      this.BitmapLeft := 0
-      this.BitmapTop := 0
-      this.BitmapRight := A_ScreenWidth
-      this.BitmapBottom := A_ScreenHeight
-      this.BitmapWidth := A_ScreenWidth
-      this.BitmapHeight := A_ScreenHeight
+      this.BitmapLeft := sx
+      this.BitmapTop := sy
+      this.BitmapRight := sx + sw
+      this.BitmapBottom := sy + sh
+      this.BitmapWidth := sw
+      this.BitmapHeight := sh
       this.FreeMemory()
       this.LoadMemory()
 

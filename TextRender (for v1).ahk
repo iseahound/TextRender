@@ -319,7 +319,7 @@ class TextRender {
    }
 
    Counter() { ; Returns a number in units of milliseconds.
-      static freq := DllCall("QueryPerformanceFrequency", "int64*", freq:=0) ? freq/1000 : false
+      static freq := DllCall("QueryPerformanceFrequency", "int64*", freq:=0) ? freq*1000 : false
       return DllCall("QueryPerformanceCounter", "int64*", counter:=0) ? counter/freq : false
    }
 

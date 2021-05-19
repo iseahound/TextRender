@@ -31,7 +31,7 @@ class TextRender {
       this.events := {}
       this.layers := {}
       this.drawing := true
-      this.gfx := this.obm := this.pBits := this.hbm := this.hdc := ""
+      this.gfx := this.obm := this.hbm := this.hdc := ""
 
       this.OnEvent("LeftMouseDown", this.EventMoveWindow)
       this.OnEvent("MiddleMouseDown", this.EventShowCoordinates)
@@ -1608,9 +1608,9 @@ class TextRender {
       this.hbm := hbm
       this.obm := obm
       this.gfx := gfx
-      this.pBits := pBits
-      this.BitmapStride := 4 * width
-      this.BitmapSize := this.BitmapStride * height
+      this.BitmapBits := pBits
+      this.BitmapStride := 4 * this.BitmapWidth
+      this.BitmapSize := this.BitmapStride * this.BitmapHeight
 
       return this
    }
@@ -1624,7 +1624,7 @@ class TextRender {
       DllCall("SelectObject", "ptr", this.hdc, "ptr", this.obm)
       DllCall("DeleteObject", "ptr", this.hbm)
       DllCall("DeleteDC",     "ptr", this.hdc)
-      this.gfx := this.obm := this.pBits := this.hbm := this.hdc := ""
+      this.gfx := this.obm := this.hbm := this.hdc := ""
       return this
    }
 
@@ -1656,7 +1656,7 @@ class TextRender {
 
       ; Create a Bitmap with 32-bit pre-multiplied ARGB. (Owned by this object!)
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.BitmapWidth, "int", this.BitmapHeight
-         , "uint", this.BitmapStride, "uint", 0xE200B, "ptr", this.pBits, "ptr*", pBitmap:=0)
+         , "uint", this.BitmapStride, "uint", 0xE200B, "ptr", this.BitmapBits, "ptr*", pBitmap:=0)
 
       ; Specify that only a cropped bitmap portion will be copied.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
@@ -1677,7 +1677,7 @@ class TextRender {
                ,    "ptr", &BitmapData) ; Contains the buffer.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
-      ; Release reference to this.pBits.
+      ; Release reference to this.BitmapBits.
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
       ; Draw an enlarged pixel grid layout with printed color hexes.
@@ -1704,7 +1704,7 @@ class TextRender {
    }
 
    Hash() {
-      return Format("{:08x}", DllCall("ntdll\RtlComputeCrc32", "uint", 0, "ptr", this.pBits, "uptr", this.BitmapSize, "uint"))
+      return Format("{:08x}", DllCall("ntdll\RtlComputeCrc32", "uint", 0, "ptr", this.BitmapBits, "uptr", this.BitmapSize, "uint"))
    }
 
    CopyToBuffer() {
@@ -1713,7 +1713,7 @@ class TextRender {
 
       ; Create a Bitmap with 32-bit pre-multiplied ARGB. (Owned by this object!)
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.BitmapWidth, "int", this.BitmapHeight
-         , "uint", this.BitmapStride, "uint", 0xE200B, "ptr", this.pBits, "ptr*", pBitmap:=0)
+         , "uint", this.BitmapStride, "uint", 0xE200B, "ptr", this.BitmapBits, "ptr*", pBitmap:=0)
 
       ; Crop the bitmap.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
@@ -1790,7 +1790,7 @@ class TextRender {
    CopyToBitmap() {
       ; Create a Bitmap with 32-bit pre-multiplied ARGB. (Owned by this object!)
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.BitmapWidth, "int", this.BitmapHeight
-         , "uint", this.BitmapStride, "uint", 0xE200B, "ptr", this.pBits, "ptr*", pBitmap:=0)
+         , "uint", this.BitmapStride, "uint", 0xE200B, "ptr", this.BitmapBits, "ptr*", pBitmap:=0)
 
       ; Crop to fit and convert to 32-bit ARGB. (Managed impartially by GDI+)
       DllCall("gdiplus\GdipCloneBitmapAreaI", "int", this.x, "int", this.y, "int", this.w, "int", this.h

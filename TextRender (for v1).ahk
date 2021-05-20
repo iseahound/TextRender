@@ -2067,6 +2067,387 @@ TextRenderWallpaper(text:="", background_style:="", text_style:="") {
 }
 
 
+ImageRender(image:="", style:="", polygons:="") {
+   return (new ImageRender).Render(image, style, polygons)
+}
+
+class ImageRender extends TextRender {
+
+   DrawOnGraphics(gfx, pBitmap := "", style := "", polygons := "", CanvasWidth := "", CanvasHeight := "") {
+      ; Get Graphics Width and Height.
+      CanvasWidth := (CanvasWidth != "") ? CanvasWidth : NumGet(gfx + 20 + A_PtrSize, "uint")
+      CanvasHeight := (CanvasHeight != "") ? CanvasHeight : NumGet(gfx + 24 + A_PtrSize, "uint")
+
+      ; Remove excess whitespace for proper RegEx detection.
+      style := !IsObject(style) ? RegExReplace(style, "\s+", " ") : style
+
+      ; RegEx help? https://regex101.com/r/xLzZzO/2
+      static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
+      static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\s:#%_a-z\-\.\d]+|\([\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
+
+      ; Extract styles to variables.
+      if IsObject(style) {
+         t  := (style.time != "")        ? style.time        : style.t
+         a  := (style.anchor != "")      ? style.anchor      : style.a
+         x  := (style.left != "")        ? style.left        : style.x
+         y  := (style.top != "")         ? style.top         : style.y
+         w  := (style.width != "")       ? style.width       : style.w
+         h  := (style.height != "")      ? style.height      : style.h
+         m  := (style.margin != "")      ? style.margin      : style.m
+         s  := (style.scale != "")       ? style.scale       : style.s
+         c  := (style.color != "")       ? style.color       : style.c
+         q  := (style.quality != "")     ? style.quality     : (style.q) ? style.q : style.InterpolationMode
+      } else {
+         t  := ((___ := RegExReplace(style, q1    "(t(ime)?)"          q2, "${value}")) != style) ? ___ : ""
+         a  := ((___ := RegExReplace(style, q1    "(a(nchor)?)"        q2, "${value}")) != style) ? ___ : ""
+         x  := ((___ := RegExReplace(style, q1    "(x|left)"           q2, "${value}")) != style) ? ___ : ""
+         y  := ((___ := RegExReplace(style, q1    "(y|top)"            q2, "${value}")) != style) ? ___ : ""
+         w  := ((___ := RegExReplace(style, q1    "(w(idth)?)"         q2, "${value}")) != style) ? ___ : ""
+         h  := ((___ := RegExReplace(style, q1    "(h(eight)?)"        q2, "${value}")) != style) ? ___ : ""
+         m  := ((___ := RegExReplace(style, q1    "(m(argin)?)"        q2, "${value}")) != style) ? ___ : ""
+         s  := ((___ := RegExReplace(style, q1    "(s(cale)?)"         q2, "${value}")) != style) ? ___ : ""
+         c  := ((___ := RegExReplace(style, q1    "(c(olor)?)"         q2, "${value}")) != style) ? ___ : ""
+         q  := ((___ := RegExReplace(style, q1    "(q(uality)?)"       q2, "${value}")) != style) ? ___ : ""
+      }
+
+      ; Extract the time variable and save it for a later when we Render() everything.
+      static times := "(?i)^\s*(\d+)\s*(ms|mil(li(second)?)?|s(ec(ond)?)?|m(in(ute)?)?|h(our)?|d(ay)?)?s?\s*$"
+      t  := ( t ~= times) ? RegExReplace( t, "\s", "") : 0 ; Default time is zero.
+      t  := ((___ := RegExReplace( t, "i)(\d+)(ms|mil(li(second)?)?)s?$", "$1")) !=  t) ? ___ *        1 : t
+      t  := ((___ := RegExReplace( t, "i)(\d+)s(ec(ond)?)?s?$"          , "$1")) !=  t) ? ___ *     1000 : t
+      t  := ((___ := RegExReplace( t, "i)(\d+)m(in(ute)?)?s?$"          , "$1")) !=  t) ? ___ *    60000 : t
+      t  := ((___ := RegExReplace( t, "i)(\d+)h(our)?s?$"               , "$1")) !=  t) ? ___ *  3600000 : t
+      t  := ((___ := RegExReplace( t, "i)(\d+)d(ay)?s?$"                , "$1")) !=  t) ? ___ * 86400000 : t
+
+      ; These are the type checkers.
+      static valid := "(?i)^\s*(\-?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*(%|pt|px|vh|vmin|vw)?\s*$"
+      static valid_positive := "(?i)^\s*((?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*(%|pt|px|vh|vmin|vw)?\s*$"
+
+      ; Define viewport width and height. This is the visible screen area.
+      vw := 0.01 * CanvasWidth         ; 1% of viewport width.
+      vh := 0.01 * CanvasHeight        ; 1% of viewport height.
+      vmin := (vw < vh) ? vw : vh      ; 1vw or 1vh, whichever is smaller.
+      vr := CanvasWidth / CanvasHeight ; Aspect ratio of the viewport.
+
+      ; Get original image width and height.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+      minimum := (width < height) ? width : height
+      aspect := width / height
+
+      ; Get width and height.
+      w  := ( w ~= valid_positive) ? RegExReplace( w, "\s", "") : ""
+      w  := ( w ~= "i)(pt|px)$") ? SubStr( w, 1, -2) :  w
+      w  := ( w ~= "i)vw$") ? RegExReplace( w, "i)vw$", "") * vw :  w
+      w  := ( w ~= "i)vh$") ? RegExReplace( w, "i)vh$", "") * vh :  w
+      w  := ( w ~= "i)vmin$") ? RegExReplace( w, "i)vmin$", "") * vmin :  w
+      w  := ( w ~= "%$") ? RegExReplace( w, "%$", "") * 0.01 * width :  w
+
+      h  := ( h ~= valid_positive) ? RegExReplace( h, "\s", "") : ""
+      h  := ( h ~= "i)(pt|px)$") ? SubStr( h, 1, -2) :  h
+      h  := ( h ~= "i)vw$") ? RegExReplace( h, "i)vw$", "") * vw :  h
+      h  := ( h ~= "i)vh$") ? RegExReplace( h, "i)vh$", "") * vh :  h
+      h  := ( h ~= "i)vmin$") ? RegExReplace( h, "i)vmin$", "") * vmin :  h
+      h  := ( h ~= "%$") ? RegExReplace( h, "%$", "") * 0.01 * height :  h
+
+      ; Default width and height.
+      if (w == "" && h == "")
+         w := width, h := height, wh_unset := true
+      if (w == "")
+         w := h * aspect
+      if (h == "")
+         h := w / aspect
+
+      ; If scale is "fill" scale the image until there are no empty spaces but two sides of the image are cut off.
+      ; If scale is "fit" scale the image so that the greatest edge will fit with empty borders along one edge.
+      ; If scale is "harmonic" automatically downscale by the harmonic series. Ex: 50%, 33%, 25%, 20%...
+      if (s = "auto" || s = "fill" || s = "fit" || s = "harmonic" || s = "limit") {
+         if (wh_unset == true)
+            w := CanvasWidth, h := CanvasHeight
+         s := (s = "auto" || s = "limit")
+            ? ((aspect > w / h) ? ((width > w) ? w / width : 1) : ((height > h) ? h / height : 1)) : s
+         s := (s = "fill") ? ((aspect < w / h) ? w / width : h / height) : s
+         s := (s = "fit") ? ((aspect > w / h) ? w / width : h / height) : s
+         s := (s = "harmonic") ? ((aspect > w / h) ? 1 / (width // w + 1) : 1 / (height // h + 1)) : s
+         w := width  ; width and height given were maximum values, not actual values.
+         h := height ; Therefore restore the width and height to the image width and height.
+      }
+
+      s  := ( s ~= valid) ? RegExReplace( s, "\s", "") : ""
+      s  := ( s ~= "i)(pt|px)$") ? SubStr( s, 1, -2) :  s
+      s  := ( s ~= "i)vw$") ? RegExReplace( s, "i)vw$", "") * vw / width :  s
+      s  := ( s ~= "i)vh$") ? RegExReplace( s, "i)vh$", "") * vh / height:  s
+      s  := ( s ~= "i)vmin$") ? RegExReplace( s, "i)vmin$", "") * vmin / minimum :  s
+      s  := ( s ~= "%$") ? RegExReplace( s, "%$", "") * 0.01 :  s
+
+      ; If scale is negative automatically scale by a geometric series constant.
+      ; Example: If scale is -0.5, then downscale by 50%, 25%, 12.5%, 6.25%...
+      ; What the equation is asking is how many powers of -1/s can we fit in width/w?
+      ; Then we use floor division and add 1 to ensure that we never exceed the bounds.
+      ; While this is only designed to handle negative scales from 0 to -1.0,
+      ; it works for negative numbers higher than -1.0. In this case, the 0 to -1 bounded
+      ; are the left adjoint, meaning they never surpass the w and h. Higher negative Numbers
+      ; are the right adjoint, meaning they never surpass w*-s and h*-s. Weird, huh.
+      ; To clarify: Left adjoint: w*-s to w, h*-s to h. Right adjoint: w to w*-s, h to h*-s
+      ; LaTex: \frac{1}{\frac{-1}{s}^{Floor(\frac{log(x)}{log(\frac{-1}{s})}) + 1}}
+      ; Vertical asymptote at s := -1, which resolves to the empty string "".
+      if (s < 0 && s != "") {
+         if (wh_unset == true)
+            w := CanvasWidth, h := CanvasHeight
+         s := (s < 0) ? ((aspect > w / h)
+            ? (-s) ** ((log(width/w) // log(-1/s)) + 1) : (-s) ** ((log(height/h) // log(-1/s)) + 1)) : s
+         w := width  ; width and height given were maximum values, not actual values.
+         h := height ; Therefore restore the width and height to the image width and height.
+      }
+
+      ; Default scale.
+      if (s == "") {
+         s := (x == "" && y == "" && wh_unset == true)         ; shrink image if x,y,w,h,s are all unset.
+            ? ((aspect > vr)                                   ; determine whether width or height exceeds screen.
+               ? ((width > CanvasWidth) ? CanvasWidth / width : 1)       ; scale will downscale image by its width.
+               : ((height > CanvasHeight) ? CanvasHeight / height : 1))  ; scale will downscale image by its height.
+            : 1                                                ; Default scale is 1.00.
+      }
+
+      ; Scale width and height.
+      w  := w * s
+      h  := h * s
+
+      ; Get anchor. This is where the origin of the image is located.
+      a  := RegExReplace( a, "\s", "")
+      a  := (a ~= "i)top" && a ~= "i)left") ? 1 : (a ~= "i)top" && a ~= "i)cent(er|re)") ? 2
+         : (a ~= "i)top" && a ~= "i)right") ? 3 : (a ~= "i)cent(er|re)" && a ~= "i)left") ? 4
+         : (a ~= "i)cent(er|re)" && a ~= "i)right") ? 6 : (a ~= "i)bottom" && a ~= "i)left") ? 7
+         : (a ~= "i)bottom" && a ~= "i)cent(er|re)") ? 8 : (a ~= "i)bottom" && a ~= "i)right") ? 9
+         : (a ~= "i)top") ? 2 : (a ~= "i)left") ? 4 : (a ~= "i)right") ? 6 : (a ~= "i)bottom") ? 8
+         : (a ~= "i)cent(er|re)") ? 5 : (a ~= "^[1-9]$") ? a : 1 ; Default anchor is top-left.
+
+      ; The anchor can be implied and overwritten by x and y (left, center, right, top, bottom).
+      a  := ( x ~= "i)left") ? 1+((( a-1)//3)*3) : ( x ~= "i)cent(er|re)") ? 2+((( a-1)//3)*3) : ( x ~= "i)right") ? 3+((( a-1)//3)*3) :  a
+      a  := ( y ~= "i)top") ? 1+(mod( a-1,3)) : ( y ~= "i)cent(er|re)") ? 4+(mod( a-1,3)) : ( y ~= "i)bottom") ? 7+(mod( a-1,3)) :  a
+
+      ; Convert English words to numbers. Don't mess with these values any further.
+      x  := ( x ~= "i)left") ? 0 : (x ~= "i)cent(er|re)") ? 0.5*CanvasWidth : (x ~= "i)right") ? CanvasWidth : x
+      y  := ( y ~= "i)top") ? 0 : (y ~= "i)cent(er|re)") ? 0.5*CanvasHeight : (y ~= "i)bottom") ? CanvasHeight : y
+
+      ; Get x and y.
+      x  := ( x ~= valid) ? RegExReplace( x, "\s", "") : ""
+      x  := ( x ~= "i)(pt|px)$") ? SubStr( x, 1, -2) :  x
+      x  := ( x ~= "i)(%|vw)$") ? RegExReplace( x, "i)(%|vw)$", "") * vw :  x
+      x  := ( x ~= "i)vh$") ? RegExReplace( x, "i)vh$", "") * vh :  x
+      x  := ( x ~= "i)vmin$") ? RegExReplace( x, "i)vmin$", "") * vmin :  x
+
+      y  := ( y ~= valid) ? RegExReplace( y, "\s", "") : ""
+      y  := ( y ~= "i)(pt|px)$") ? SubStr( y, 1, -2) :  y
+      y  := ( y ~= "i)vw$") ? RegExReplace( y, "i)vw$", "") * vw :  y
+      y  := ( y ~= "i)(%|vh)$") ? RegExReplace( y, "i)(%|vh)$", "") * vh :  y
+      y  := ( y ~= "i)vmin$") ? RegExReplace( y, "i)vmin$", "") * vmin :  y
+
+      ; Default x and y.
+      if (x == "")
+         x := 0.5*CanvasWidth, a := 2+((( a-1)//3)*3)
+      if (y == "")
+         y := 0.5*CanvasHeight, a := 4+(mod( a-1,3))
+
+      ; Modify x and y values with the anchor, so that the image has a new point of origin.
+      x  -= (mod(a-1,3) == 0) ? 0 : (mod(a-1,3) == 1) ? w/2 : (mod(a-1,3) == 2) ? w : 0
+      y  -= (((a-1)//3) == 0) ? 0 : (((a-1)//3) == 1) ? h/2 : (((a-1)//3) == 2) ? h : 0
+
+      ; Prevent half-pixel rendering and keep image sharp.
+      w  := Round(x + w) - Round(x)    ; Use real x2 coordinate to determine width.
+      h  := Round(y + h) - Round(y)    ; Use real y2 coordinate to determine height.
+      x  := Round(x)                   ; NOTE: simple Floor(w) or Round(w) will NOT work.
+      y  := Round(y)                   ; The float values need to be added up and then rounded!
+
+      ; Get margin.
+      m  := this.outer.parse.margin_and_padding(m, vw, vh)
+
+      ; Calculate border using margin.
+      _w := w + Round(m.2) + Round(m.4)
+      _h := h + Round(m.1) + Round(m.3)
+      _x := x - Round(m.4)
+      _y := y - Round(m.1)
+
+      ; Save original Graphics settings.
+      DllCall("gdiplus\GdipSaveGraphics", "ptr", gfx, "ptr*", pState:=0)
+
+      ; Set some general Graphics settings.
+      DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr",gfx, "int",2) ; Half pixel offset.
+      DllCall("gdiplus\GdipSetCompositingMode",    "ptr",gfx, "int",1) ; Overwrite/SourceCopy.
+      DllCall("gdiplus\GdipSetCompositingQuality", "ptr",gfx, "int",0) ; AssumeLinear
+      DllCall("gdiplus\GdipSetSmoothingMode",      "ptr",gfx, "int",0) ; No anti-alias.
+      DllCall("gdiplus\GdipSetInterpolationMode",  "ptr",gfx, "int",7) ; HighQualityBicubic
+
+      ; Begin drawing the image onto the canvas.
+      if (pBitmap != "") {
+
+         ; Draw border.
+         if (!m.void) {
+            DllCall("gdiplus\GdipSetPixelOffsetMode",   "ptr",gfx, "int",0) ; No pixel offset.
+            DllCall("gdiplus\GdipSetCompositingMode",   "ptr",gfx, "int",0) ; Blend/SourceOver.
+            DllCall("gdiplus\GdipSetSmoothingMode",     "ptr",gfx, "int",0) ; No anti-alias.
+
+            c := this.parse.color(c, 0xFF000000) ; Default color is black.
+            DllCall("gdiplus\GdipCreateSolidFill", "uint", c, "ptr*", pBrush:=0)
+            DllCall("gdiplus\GdipFillRectangleI"
+                     ,    "ptr", gfx
+                     ,    "ptr", pBrush
+                     ,    "int", _x
+                     ,    "int", _y
+                     ,    "int", _w
+                     ,    "int", _h)
+            DllCall("gdiplus\GdipDeleteBrush", "ptr", pBrush)
+         }
+
+         ; Draw image.
+         if (w == width && h == height) {
+            ; Get the device context (hdc) associated with the Graphics object.
+            ; Allocate a top-down device independent bitmap (hbm) by inputting a negative height.
+            ; Pass the existing device context so that CreateDIBSection can determine the pixel format.
+            ; Outputs a pointer to the pixel data. Select the new handle to a bitmap onto the cloned
+            ; compatible device context. The old bitmap (obm) is a monochrome 1x1 default bitmap that
+            ; will be reselected onto the device context (cdc) before deletion.
+            ; The following routine is 4ms faster than hbm := Gdip_CreateHBITMAPFromBitmap(pBitmap).
+
+            DllCall("gdiplus\GdipGetDC", "ptr", gfx, "ptr*", ddc:=0)
+
+            ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
+            hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+            VarSetCapacity(bi, 40, 0)              ; sizeof(bi) = 40
+               NumPut(       40, bi,  0,   "uint") ; Size
+               NumPut(    width, bi,  4,   "uint") ; Width
+               NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+               NumPut(        1, bi, 12, "ushort") ; Planes
+               NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
+            hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
+            obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+
+            ; In the below code we do something really interesting to save a call of memcpy().
+            ; When calling LockBits the third argument is set to 0x4 (ImageLockModeUserInputBuf).
+            ; This means that we can use the pointer to the bits from our memory bitmap (DIB)
+            ; as the Scan0 of the LockBits output. While this is not a speed up, this saves memory
+            ; because we are (1) allocating a DIB, (2) getting a pBitmap, (3) using a LockBits buffer.
+            ; Instead of (3), we can use the allocated buffer from (1) which makes the most sense.
+            ; The bottleneck in the code is LockBits(), which takes over 20 ms for a 1920 x 1080 image.
+            ; https://stackoverflow.com/questions/6782489/create-bitmap-from-a-byte-array-of-pixel-data
+            ; https://stackoverflow.com/questions/17030264/read-and-write-directly-to-unlocked-bitmap-unmanaged-memory-scan0
+            VarSetCapacity(Rect, 16, 0)              ; sizeof(Rect) = 16
+               NumPut(    width, Rect,  8,   "uint") ; Width
+               NumPut(   height, Rect, 12,   "uint") ; Height
+            VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)     ; sizeof(BitmapData) = 24, 32
+               NumPut(       width, BitmapData,  0,   "uint") ; Width
+               NumPut(      height, BitmapData,  4,   "uint") ; Height
+               NumPut(   4 * width, BitmapData,  8,    "int") ; Stride
+               NumPut(     0xE200B, BitmapData, 12,    "int") ; PixelFormat
+               NumPut(       pBits, BitmapData, 16,    "ptr") ; Scan0
+            DllCall("gdiplus\GdipBitmapLockBits"
+                     ,    "ptr", pBitmap
+                     ,    "ptr", &Rect
+                     ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
+                     ,    "int", 0xE200B      ; Format32bppPArgb
+                     ,    "ptr", &BitmapData)
+            DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+
+            ; A good question to ask is why don't we get the pointer to the bits of the hBitmap already
+            ; associated with the hdc? Well we need to set the x,y,w,h coordinates of the resulting transposition;
+            ; and if a Graphics object associated to a pBitmap via Gdip_GraphicsFromImage() is passed,
+            ; there would be no underlying handle to a device independent bitmap, and thus no pBits at all!
+            ; (RtlMoveMemory is a Windows API wrapper around memcpy() and can not deal with w,h unlike BitBlt.)
+            ; (Gdip_GetDC and Gdip_GraphicsFromImage are wrappers around GdipGetDC and GdipGetImageGraphicsContext.)
+            ; So a buffer is still needed, just not two buffers (read the notes above.)
+
+            DllCall("gdi32\BitBlt"
+                     , "ptr", ddc, "int", x, "int", y, "int", w, "int", h
+                     , "ptr", hdc, "int", 0, "int", 0, "uint", 0x00CC0020) ; SRCCOPY
+
+
+            ;BitBlt(hdc, x, y, w, h, cdc, 0, 0) ; BitBlt() is the fastest operation for copying pixels.
+            DllCall("SelectObject", "ptr", hdc, "ptr", obm)
+            DllCall("DeleteObject", "ptr", hbm)
+            DllCall("DeleteDC",     "ptr", hdc)
+
+            DllCall("gdiplus\GdipReleaseDC", "ptr", gfx, "ptr", ddc)
+
+
+
+         } else {
+            ; Set InterpolationMode.
+            q := (q >= 0 && q <= 7) ? q : 7    ; HighQualityBicubic
+
+            DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr",gfx, "int",2) ; Half pixel offset.
+            DllCall("gdiplus\GdipSetCompositingMode",    "ptr",gfx, "int",1) ; Overwrite/SourceCopy.
+            DllCall("gdiplus\GdipSetSmoothingMode",      "ptr",gfx, "int",0) ; No anti-alias.
+            DllCall("gdiplus\GdipSetInterpolationMode",  "ptr",gfx, "int",q)
+            DllCall("gdiplus\GdipSetCompositingQuality", "ptr",gfx, "int",0) ; AssumeLinear
+
+            ; WrapModeTile         = 0
+            ; WrapModeTileFlipX    = 1
+            ; WrapModeTileFlipY    = 2
+            ; WrapModeTileFlipXY   = 3
+            ; WrapModeClamp        = 4
+            ; Values outside this range downgrades from HighQualityBicubic to something horrible.
+            ; Downgrading removes the pre-filtering on the algorithm, and the need for edge cases.
+            DllCall("gdiplus\GdipCreateImageAttributes", "ptr*",ImageAttr)
+            DllCall("gdiplus\GdipSetImageAttributesWrapMode", "ptr",ImageAttr, "int",3)
+            DllCall("gdiplus\GdipDrawImageRectRectI"
+                     ,    "ptr", gfx
+                     ,    "ptr", pBitmap
+                     ,    "int", x            ; destination rectangle
+                     ,    "int", y
+                     ,    "int", w
+                     ,    "int", h
+                     ,    "int", 0            ; source rectangle
+                     ,    "int", 0
+                     ,    "int", width
+                     ,    "int", height
+                     ,    "int", 2
+                     ,    "ptr", ImageAttr
+                     ,    "ptr", 0
+                     ,    "ptr", 0)
+            DllCall("gdiplus\GdipDisposeImageAttributes", "ptr",ImageAttr)
+         }
+      }
+
+      ; Begin drawing the polygons onto the canvas.
+      if (polygons != "") {
+         DllCall("gdiplus\GdipSetPixelOffsetMode",   "ptr",gfx, "int",0) ; No pixel offset.
+         DllCall("gdiplus\GdipSetCompositingMode",   "ptr",gfx, "int",1) ; Overwrite/SourceCopy.
+         DllCall("gdiplus\GdipSetSmoothingMode",     "ptr",gfx, "int",2) ; Use anti-alias.
+
+         DllCall("gdiplus\GdipCreatePen1", "uint", 0xFFFF0000, "float", 1, "int", 2, "ptr*", pPen:=0)
+
+         for i, polygon in polygons {
+            DllCall("gdiplus\GdipCreatePath", "int",1, "ptr*",pPath)
+            VarSetCapacity(pointf, 8*polygons[i].polygon.maxIndex(), 0)
+            for j, point in polygons[i].polygon {
+               NumPut(point.x*s + x, pointf, 8*(A_Index-1) + 0, "float")
+               NumPut(point.y*s + y, pointf, 8*(A_Index-1) + 4, "float")
+            }
+            DllCall("gdiplus\GdipAddPathPolygon", "ptr",pPath, "ptr",&pointf, "uint",polygons[i].polygon.maxIndex())
+            DllCall("gdiplus\GdipDrawPath", "ptr",gfx, "ptr",pPen, "ptr",pPath) ; DRAWING!
+         }
+
+         DllCall("gdiplus\GdipDeletePen", "ptr", pPen)
+      }
+
+      ; Restore original Graphics settings.
+      DllCall("gdiplus\GdipRestoreGraphics", "ptr", gfx, "ptr", pState)
+
+      ; Define bounds.
+      t_bound :=  t
+      x_bound := _x
+      y_bound := _y
+      w_bound := _w
+      h_bound := _h
+
+      return {t: t_bound
+            , x: x_bound, y: y_bound
+            , w: w_bound, h: h_bound
+            , x2: x_bound + w_bound, y2: y_bound + h_bound}
+   }
+} ; End of ImageRender class.
+
+
 ; |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾|
 ; | Double click TextRender.ahk or .exe to show GUI. |
 ; |__________________________________________________|

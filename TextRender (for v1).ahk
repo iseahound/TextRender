@@ -244,7 +244,7 @@ class TextRender {
             DllCall("QueryPerformanceCounter", "int64*", now:=0)
             duration := (now - start)/frequency * 1000
          }
-         this.UpdateLayeredWindow(this.BitmapLeft, this.BitmapTop, this.BitmapWidth, this.BitmapHeight, 0)
+         this.UpdateLayeredWindow(this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight, 0)
          return this
       }
    }
@@ -252,7 +252,7 @@ class TextRender {
    Blank(status) {
       ; Check to see if the state of the canvas has changed before clearing and updating.
       if (this.status = status) {
-         this.UpdateLayeredWindow(this.BitmapLeft, this.BitmapTop, this.BitmapWidth, this.BitmapHeight, 0)
+         this.UpdateLayeredWindow(this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight, 0)
       }
    }
 
@@ -304,7 +304,7 @@ class TextRender {
 
    Clear() {
       this.Flush()
-      this.UpdateLayeredWindow(this.BitmapLeft, this.BitmapTop, this.BitmapWidth, this.BitmapHeight)
+      this.UpdateLayeredWindow(this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight, 0)
       return this
    }
 

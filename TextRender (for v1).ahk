@@ -323,6 +323,8 @@ class TextRender {
    CanvasChanged() {
       Random rand, -2147483648, 2147483647
       this.status := rand
+      if callback := this.events["CanvasChange"]
+         return %callback%(this) ; Callbacks have a reference to "this".
    }
 
    DrawOnGraphics(gfx, text := "", style1 := "", style2 := "", CanvasWidth := "", CanvasHeight := "") {

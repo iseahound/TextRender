@@ -1,7 +1,7 @@
 # TextRender
 
-* Standalone library without dependencies.
-* Draws beautiful text on screen.
+* Standalone library with optional dependencies.
+* Draws beautiful images and text to the screen.
 * Features background color, text outline, and drop shadow.
 * Renders to the screen, desktop, or behind desktop icons as a wallpaper.
 * Supports events such as OnEvent("LeftMouseDown", callback).
@@ -11,8 +11,7 @@
 ## Graphics Library
 
 * [ImagePut/ImageEqual](https://github.com/iseahound/ImagePut)
-* [ImageRender](https://github.com/iseahound/ImageRender)
-* [TextRender](https://github.com/iseahound/TextRender) (you are here.)
+* [TextRender & ImageRender](https://github.com/iseahound/TextRender) (you are here.)
 * [ScreenSelect](https://github.com/iseahound/ScreenSelect)
 
 ## Documentation

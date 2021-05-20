@@ -313,7 +313,6 @@ class TextRender {
    Clear() {
       this.Flush()
       this.UpdateLayeredWindow(this.BitmapLeft, this.BitmapTop, this.BitmapWidth, this.BitmapHeight)
-      this.drawing := false
       return this
    }
 

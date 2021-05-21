@@ -2335,10 +2335,7 @@ class ImageRender extends TextRender {
                NumPut(    width, Rect,  8,   "uint") ; Width
                NumPut(   height, Rect, 12,   "uint") ; Height
             VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)     ; sizeof(BitmapData) = 24, 32
-               NumPut(       width, BitmapData,  0,   "uint") ; Width
-               NumPut(      height, BitmapData,  4,   "uint") ; Height
                NumPut(   4 * width, BitmapData,  8,    "int") ; Stride
-               NumPut(     0xE200B, BitmapData, 12,    "int") ; PixelFormat
                NumPut(       pBits, BitmapData, 16,    "ptr") ; Scan0
             DllCall("gdiplus\GdipBitmapLockBits"
                      ,    "ptr", pBitmap

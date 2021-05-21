@@ -2281,21 +2281,13 @@ class ImageRender extends TextRender {
       ; Begin drawing the image onto the canvas.
       if (pBitmap != "") {
 
-         ; Draw border.
+         ; Draw background.
          if (!m.void) {
-            DllCall("gdiplus\GdipSetPixelOffsetMode",   "ptr",gfx, "int",0) ; No pixel offset.
-            DllCall("gdiplus\GdipSetCompositingMode",   "ptr",gfx, "int",0) ; Blend/SourceOver.
-            DllCall("gdiplus\GdipSetSmoothingMode",     "ptr",gfx, "int",0) ; No anti-alias.
+            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", 0) ; SmoothingModeNoAntiAlias
 
             c := this.parse.color(c, 0xDD212121) ; Default color is transparent gray.
             DllCall("gdiplus\GdipCreateSolidFill", "uint", c, "ptr*", pBrush:=0)
-            DllCall("gdiplus\GdipFillRectangleI"
-                     ,    "ptr", gfx
-                     ,    "ptr", pBrush
-                     ,    "int", _x
-                     ,    "int", _y
-                     ,    "int", _w
-                     ,    "int", _h)
+            DllCall("gdiplus\GdipFillRectangle", "ptr", gfx, "ptr", pBrush, "float", _x, "float", _y, "float", _w, "float", _h) ; DRAWING!
             DllCall("gdiplus\GdipDeleteBrush", "ptr", pBrush)
          }
 

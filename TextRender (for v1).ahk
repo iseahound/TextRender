@@ -2260,7 +2260,7 @@ class ImageRender extends TextRender {
       y  := Round(y)                   ; The float values need to be added up and then rounded!
 
       ; Get margin.
-      m  := this.outer.parse.margin_and_padding(m, vw, vh)
+      m  := this.parse.margin_and_padding(m, vw, vh)
 
       ; Calculate border using margin.
       _w := w + Round(m.2) + Round(m.4)

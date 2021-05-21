@@ -2301,16 +2301,13 @@ class ImageRender extends TextRender {
 
          ; Draw image.
          if (w == width && h == height) {
-            ; Get the device context (hdc) associated with the Graphics object.
-            ; Allocate a top-down device independent bitmap (hbm) by inputting a negative height.
-            ; Pass the existing device context so that CreateDIBSection can determine the pixel format.
-            ; Outputs a pointer to the pixel data. Select the new handle to a bitmap onto the cloned
-            ; compatible device context. The old bitmap (obm) is a monochrome 1x1 default bitmap that
-            ; will be reselected onto the device context (cdc) before deletion.
-            ; The following routine is 4ms faster than hbm := Gdip_CreateHBITMAPFromBitmap(pBitmap).
-
+            ; Get a read-only device context associated with the Graphics object.
             DllCall("gdiplus\GdipGetDC", "ptr", gfx, "ptr*", ddc:=0)
 
+            ; Allocate a top-down device independent bitmap (hbm) by inputting a negative height.
+            ; Outputs a pointer to the pixel data. Select the new handle to a bitmap onto the cloned
+            ; compatible device context. The old bitmap (obm) is a monochrome 1x1 default bitmap that
+            ; will be reselected onto the device context (hdc) before deletion.
             ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
             hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
             VarSetCapacity(bi, 40, 0)              ; sizeof(bi) = 40
@@ -2322,12 +2319,13 @@ class ImageRender extends TextRender {
             hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
             obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
+            ; The following routine is 4ms faster than hbm := Gdip_CreateHBITMAPFromBitmap(pBitmap).
             ; In the below code we do something really interesting to save a call of memcpy().
             ; When calling LockBits the third argument is set to 0x4 (ImageLockModeUserInputBuf).
             ; This means that we can use the pointer to the bits from our memory bitmap (DIB)
             ; as the Scan0 of the LockBits output. While this is not a speed up, this saves memory
             ; because we are (1) allocating a DIB, (2) getting a pBitmap, (3) using a LockBits buffer.
-            ; Instead of (3), we can use the allocated buffer from (1) which makes the most sense.
+            ; Instead of LockBits creating a new buffer, we can use the allocated buffer from (1).
             ; The bottleneck in the code is LockBits(), which takes over 20 ms for a 1920 x 1080 image.
             ; https://stackoverflow.com/questions/6782489/create-bitmap-from-a-byte-array-of-pixel-data
             ; https://stackoverflow.com/questions/17030264/read-and-write-directly-to-unlocked-bitmap-unmanaged-memory-scan0
@@ -2345,27 +2343,23 @@ class ImageRender extends TextRender {
                      ,    "ptr", &BitmapData)
             DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
-            ; A good question to ask is why don't we get the pointer to the bits of the hBitmap already
-            ; associated with the hdc? Well we need to set the x,y,w,h coordinates of the resulting transposition;
-            ; and if a Graphics object associated to a pBitmap via Gdip_GraphicsFromImage() is passed,
-            ; there would be no underlying handle to a device independent bitmap, and thus no pBits at all!
-            ; (RtlMoveMemory is a Windows API wrapper around memcpy() and can not deal with w,h unlike BitBlt.)
-            ; (Gdip_GetDC and Gdip_GraphicsFromImage are wrappers around GdipGetDC and GdipGetImageGraphicsContext.)
-            ; So a buffer is still needed, just not two buffers (read the notes above.)
+            ; A good question to ask is why don't we use the pBits already associated with the graphics hdc?
+            ; One, if a Graphics object associated to a pBitmap via Gdip_GraphicsFromImage() is passed,
+            ; there would be no underlying device independent bitmap, and thus no pBits at all!
+            ; Two, since the size of the allocated DIB is not the same size as the underlying DIB,
+            ; injection using x,y,w,h coordinates is required, and BitBlt supports this.
+            ; Note: The Rect in LockBits is crops the image source and does not affect the destination.
 
+            ; BitBlt() is the fastest operation for copying pixels.
             DllCall("gdi32\BitBlt"
                      , "ptr", ddc, "int", x, "int", y, "int", w, "int", h
                      , "ptr", hdc, "int", 0, "int", 0, "uint", 0x00CC0020) ; SRCCOPY
 
-
-            ;BitBlt(hdc, x, y, w, h, cdc, 0, 0) ; BitBlt() is the fastest operation for copying pixels.
             DllCall("SelectObject", "ptr", hdc, "ptr", obm)
             DllCall("DeleteObject", "ptr", hbm)
             DllCall("DeleteDC",     "ptr", hdc)
 
             DllCall("gdiplus\GdipReleaseDC", "ptr", gfx, "ptr", ddc)
-
-
 
          } else {
             ; Set InterpolationMode.

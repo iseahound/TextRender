@@ -410,7 +410,7 @@ class TextRender {
       }
 
       ; Define color.
-      _c := this.parse.color(_c, 0xDD212121) ; Default background color is transparent gray.
+      _c := this.parse.color(_c, 0xDD212121) ; Default color for background is transparent gray.
       SourceCopy := (c ~= "i)(delete|eraser?|overwrite|sourceCopy)") ? 1 : 0 ; Eraser brush for text.
       if (!c) ; Default text color changes between white and black.
          c := (this.parse.grayscale(_c) < 128) ? 0xFFFFFFFF : 0xFF000000
@@ -2287,7 +2287,7 @@ class ImageRender extends TextRender {
             DllCall("gdiplus\GdipSetCompositingMode",   "ptr",gfx, "int",0) ; Blend/SourceOver.
             DllCall("gdiplus\GdipSetSmoothingMode",     "ptr",gfx, "int",0) ; No anti-alias.
 
-            c := this.parse.color(c, 0xFF000000) ; Default color is black.
+            c := this.parse.color(c, 0xDD212121) ; Default color is transparent gray.
             DllCall("gdiplus\GdipCreateSolidFill", "uint", c, "ptr*", pBrush:=0)
             DllCall("gdiplus\GdipFillRectangleI"
                      ,    "ptr", gfx
@@ -2350,10 +2350,19 @@ class ImageRender extends TextRender {
             ; injection using x,y,w,h coordinates is required, and BitBlt supports this.
             ; Note: The Rect in LockBits is crops the image source and does not affect the destination.
 
+            (m.void) ; Check if a margin is set to invoke either BitBlt or AlphaBlend.
+
             ; BitBlt() is the fastest operation for copying pixels.
-            DllCall("gdi32\BitBlt"
+            ? DllCall("gdi32\BitBlt"
                      , "ptr", ddc, "int", x, "int", y, "int", w, "int", h
                      , "ptr", hdc, "int", 0, "int", 0, "uint", 0x00CC0020) ; SRCCOPY
+
+            ; AlphaBlend() does not overwrite the underlying pixels.
+            : DllCall("msimg32\AlphaBlend"
+                     , "ptr", ddc, "int", x, "int", y, "int", w, "int", h
+                     , "ptr", hdc, "int", 0, "int", 0, "int", w, "int", h
+                     , "uint", 0xFF << 16 | 0x01 << 24) ; BlendFunction
+
 
             DllCall("SelectObject", "ptr", hdc, "ptr", obm)
             DllCall("DeleteObject", "ptr", hbm)

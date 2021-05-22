@@ -2366,37 +2366,25 @@ class ImageRender extends TextRender {
             ; Set InterpolationMode.
             q := (q >= 0 && q <= 7) ? q : 7    ; HighQualityBicubic
 
-            DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr",gfx, "int",2) ; Half pixel offset.
-            DllCall("gdiplus\GdipSetCompositingMode",    "ptr",gfx, "int",1) ; Overwrite/SourceCopy.
-            DllCall("gdiplus\GdipSetSmoothingMode",      "ptr",gfx, "int",0) ; No anti-alias.
-            DllCall("gdiplus\GdipSetInterpolationMode",  "ptr",gfx, "int",q)
-            DllCall("gdiplus\GdipSetCompositingQuality", "ptr",gfx, "int",0) ; AssumeLinear
+            DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", gfx, "int", 2) ; Half pixel offset.
+            DllCall("gdiplus\GdipSetCompositingMode",    "ptr", gfx, "int", 1) ; Overwrite/SourceCopy.
+            DllCall("gdiplus\GdipSetSmoothingMode",      "ptr", gfx, "int", 0) ; No anti-alias.
+            DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", gfx, "int", q)
+            DllCall("gdiplus\GdipSetCompositingQuality", "ptr", gfx, "int", 0) ; AssumeLinear
 
-            ; WrapModeTile         = 0
-            ; WrapModeTileFlipX    = 1
-            ; WrapModeTileFlipY    = 2
-            ; WrapModeTileFlipXY   = 3
-            ; WrapModeClamp        = 4
-            ; Values outside this range downgrades from HighQualityBicubic to something horrible.
-            ; Downgrading removes the pre-filtering on the algorithm, and the need for edge cases.
-            DllCall("gdiplus\GdipCreateImageAttributes", "ptr*",ImageAttr)
-            DllCall("gdiplus\GdipSetImageAttributesWrapMode", "ptr",ImageAttr, "int",3)
+            ; Draw image with proper edges and scaling.
+            DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", ImageAttr)
+            DllCall("gdiplus\GdipSetImageAttributesWrapMode", "ptr", ImageAttr, "int", 3) ; WrapModeTileFlipXY
             DllCall("gdiplus\GdipDrawImageRectRectI"
                      ,    "ptr", gfx
                      ,    "ptr", pBitmap
-                     ,    "int", x            ; destination rectangle
-                     ,    "int", y
-                     ,    "int", w
-                     ,    "int", h
-                     ,    "int", 0            ; source rectangle
-                     ,    "int", 0
-                     ,    "int", width
-                     ,    "int", height
-                     ,    "int", 2
+                     ,    "int", x, "int", y, "int", w, "int", h          ; destination rectangle
+                     ,    "int", 0, "int", 0, "int", width, "int", height ; source rectangle
+                     ,    "int", 2                                        ; UnitTypePixel
                      ,    "ptr", ImageAttr
                      ,    "ptr", 0
                      ,    "ptr", 0)
-            DllCall("gdiplus\GdipDisposeImageAttributes", "ptr",ImageAttr)
+            DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
          }
       }
 

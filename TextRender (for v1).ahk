@@ -2293,8 +2293,8 @@ class ImageRender extends TextRender {
             }
          }
 
-         ; Draw image.
-         if (w == width && h == height) {
+         ; Draw image using GDI.
+         if (q = 0 || w == width && h == height) {
             ; Get a read-only device context associated with the Graphics object.
             DllCall("gdiplus\GdipGetDC", "ptr", gfx, "ptr*", ddc:=0)
 
@@ -2348,30 +2348,32 @@ class ImageRender extends TextRender {
 
             ; AlphaBlend() does not overwrite the underlying pixels.
             ? DllCall("msimg32\AlphaBlend"
-                     , "ptr", ddc, "int", x, "int", y, "int", w, "int", h
-                     , "ptr", hdc, "int", 0, "int", 0, "int", w, "int", h
+                     , "ptr", ddc, "int", x, "int", y, "int", w    , "int", h
+                     , "ptr", hdc, "int", 0, "int", 0, "int", width, "int", height
                      , "uint", 0xFF << 16 | 0x01 << 24) ; BlendFunction
 
             ; BitBlt() is the fastest operation for copying pixels.
-            : DllCall("gdi32\BitBlt"
-                     , "ptr", ddc, "int", x, "int", y, "int", w, "int", h
-                     , "ptr", hdc, "int", 0, "int", 0, "uint", 0x00CC0020) ; SRCCOPY
-
+            : DllCall("gdi32\StretchBlt"
+                     , "ptr", ddc, "int", x, "int", y, "int", w    , "int", h
+                     , "ptr", hdc, "int", 0, "int", 0, "int", width, "int", height
+                     , "uint", 0x00CC0020) ; SRCCOPY
 
             DllCall("SelectObject", "ptr", hdc, "ptr", obm)
             DllCall("DeleteObject", "ptr", hbm)
             DllCall("DeleteDC",     "ptr", hdc)
 
             DllCall("gdiplus\GdipReleaseDC", "ptr", gfx, "ptr", ddc)
+         }
 
-         } else {
+         ; Draw image scaled to a new width and height.
+         else {
             ; Set InterpolationMode.
             q := (q >= 0 && q <= 7) ? q : 7    ; HighQualityBicubic
 
             DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", gfx, "int", 2) ; Half pixel offset.
             DllCall("gdiplus\GdipSetCompositingMode",    "ptr", gfx, "int", 1) ; Overwrite/SourceCopy.
-            DllCall("gdiplus\GdipSetSmoothingMode",      "ptr", gfx, "int", 0) ; No anti-alias.
-            DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", gfx, "int", q)
+            DllCall("gdiplus\GdipSetSmoothingMode",      "ptr", gfx, "int", q) ; No anti-alias.
+            DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", gfx, "int", 5)
             DllCall("gdiplus\GdipSetCompositingQuality", "ptr", gfx, "int", 0) ; AssumeLinear
 
             ; Draw image with proper edges and scaling.

@@ -2282,14 +2282,15 @@ class ImageRender extends TextRender {
       ; Begin drawing the image onto the canvas.
       if (pBitmap != "") {
 
-         ; Draw background.
-         if (!m.void) {
-            DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", 0) ; SmoothingModeNoAntiAlias
-
+         ; Draw background if color or margin is set.
+         if (c != "" || !m.void) {
             c := this.parse.color(c, 0xDD212121) ; Default color is transparent gray.
-            DllCall("gdiplus\GdipCreateSolidFill", "uint", c, "ptr*", pBrush:=0)
-            DllCall("gdiplus\GdipFillRectangle", "ptr", gfx, "ptr", pBrush, "float", _x, "float", _y, "float", _w, "float", _h) ; DRAWING!
-            DllCall("gdiplus\GdipDeleteBrush", "ptr", pBrush)
+            if (c & 0xFF000000) {
+               DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", 0) ; SmoothingModeNoAntiAlias
+               DllCall("gdiplus\GdipCreateSolidFill", "uint", c, "ptr*", pBrush:=0)
+               DllCall("gdiplus\GdipFillRectangle", "ptr", gfx, "ptr", pBrush, "float", _x, "float", _y, "float", _w, "float", _h) ; DRAWING!
+               DllCall("gdiplus\GdipDeleteBrush", "ptr", pBrush)
+            }
          }
 
          ; Draw image.
@@ -2343,18 +2344,18 @@ class ImageRender extends TextRender {
             ; injection using x,y,w,h coordinates is required, and BitBlt supports this.
             ; Note: The Rect in LockBits is crops the image source and does not affect the destination.
 
-            (m.void) ; Check if a margin is set to invoke either BitBlt or AlphaBlend.
-
-            ; BitBlt() is the fastest operation for copying pixels.
-            ? DllCall("gdi32\BitBlt"
-                     , "ptr", ddc, "int", x, "int", y, "int", w, "int", h
-                     , "ptr", hdc, "int", 0, "int", 0, "uint", 0x00CC0020) ; SRCCOPY
+            (c != "" || !m.void) ; Check if color or margin is set to invoke AlphaBlend, otherwise BitBlt.
 
             ; AlphaBlend() does not overwrite the underlying pixels.
-            : DllCall("msimg32\AlphaBlend"
+            ? DllCall("msimg32\AlphaBlend"
                      , "ptr", ddc, "int", x, "int", y, "int", w, "int", h
                      , "ptr", hdc, "int", 0, "int", 0, "int", w, "int", h
                      , "uint", 0xFF << 16 | 0x01 << 24) ; BlendFunction
+
+            ; BitBlt() is the fastest operation for copying pixels.
+            : DllCall("gdi32\BitBlt"
+                     , "ptr", ddc, "int", x, "int", y, "int", w, "int", h
+                     , "ptr", hdc, "int", 0, "int", 0, "uint", 0x00CC0020) ; SRCCOPY
 
 
             DllCall("SelectObject", "ptr", hdc, "ptr", obm)

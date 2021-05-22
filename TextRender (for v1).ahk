@@ -316,8 +316,8 @@ class TextRender {
    }
 
    Counter() { ; Returns a number in units of milliseconds.
-      static freq := DllCall("QueryPerformanceFrequency", "int64*", freq:=0) ? freq*1000 : false
-      return DllCall("QueryPerformanceCounter", "int64*", counter:=0) ? counter/freq : false
+      static freq := DllCall("QueryPerformanceFrequency", "int64*", freq:=0, "int") ? freq*1000 : false
+      return DllCall("QueryPerformanceCounter", "int64*", counter:=0, "int") ? counter/freq : false
    }
 
    CanvasChanged() {
@@ -1550,7 +1550,7 @@ class TextRender {
    }
 
    UnregisterClass(vWinClass) {
-      return DllCall("UnregisterClass", "str", vWinClass, "ptr", 0)
+      return DllCall("UnregisterClass", "str", vWinClass, "ptr", 0, "int")
    }
 
    CreateWindow(title := "", WindowStyle := "", WindowExStyle := "", hwndParent := 0) {
@@ -1958,7 +1958,8 @@ class TextRender {
                         |  y - this.BitmapTop << 32 ; *pptSrc
                ,   "uint", 0                        ; crKey
                ,  "uint*", alpha << 16 | 0x01 << 24 ; *pblend
-               ,   "uint", 2)                       ; dwFlags
+               ,   "uint", 2                        ; dwFlags
+               ,    "int")                          ; Success = 1
    }
 
    InBounds() { ; Check if canvas coordinates are inside bitmap coordinates.

@@ -1342,7 +1342,7 @@ class TextRender {
    class filter {
 
       GaussianBlur(pBitmap, radius, opacity := 1) {
-         static code := (A_PtrSize == 4)
+         static code := (A_PtrSize = 4)
             ? "
             ( LTrim                                    ; 32-bit machine code
             VYnlV1ZTg+xci0Uci30c2UUgx0WsAwAAAI1EAAGJRdiLRRAPr0UYicOJRdSLRRwP
@@ -1530,20 +1530,20 @@ class TextRender {
 
       ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
       ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
-      _ := (A_PtrSize == 8)
-      VarSetCapacity(wc, size := _ ? 80:48, 0)        ; sizeof(WNDCLASSEX) = 48, 80
+      _ := (A_PtrSize = 4)
+      VarSetCapacity(wc, size := _ ? 48:80, 0)        ; sizeof(WNDCLASSEX) = 48, 80
          NumPut(       size, wc,         0,   "uint") ; cbSize
          NumPut(        0x8, wc,         4,   "uint") ; style = CS_DBLCLKS
          NumPut(   pWndProc, wc,         8,    "ptr") ; lpfnWndProc
-         NumPut(          0, wc, _ ? 16:12,    "int") ; cbClsExtra
-         NumPut(          0, wc, _ ? 20:16,    "int") ; cbWndExtra
-         NumPut(          0, wc, _ ? 24:20,    "ptr") ; hInstance
-         NumPut(          0, wc, _ ? 32:24,    "ptr") ; hIcon
-         NumPut(    hCursor, wc, _ ? 40:28,    "ptr") ; hCursor
-         NumPut(         16, wc, _ ? 48:32,    "ptr") ; hbrBackground
-         NumPut(          0, wc, _ ? 56:36,    "ptr") ; lpszMenuName
-         NumPut( &vWinClass, wc, _ ? 64:40,    "ptr") ; lpszClassName
-         NumPut(          0, wc, _ ? 72:44,    "ptr") ; hIconSm
+         NumPut(          0, wc, _ ? 12:16,    "int") ; cbClsExtra
+         NumPut(          0, wc, _ ? 16:20,    "int") ; cbWndExtra
+         NumPut(          0, wc, _ ? 20:24,    "ptr") ; hInstance
+         NumPut(          0, wc, _ ? 24:32,    "ptr") ; hIcon
+         NumPut(    hCursor, wc, _ ? 28:40,    "ptr") ; hCursor
+         NumPut(         16, wc, _ ? 32:48,    "ptr") ; hbrBackground
+         NumPut(          0, wc, _ ? 36:56,    "ptr") ; lpszMenuName
+         NumPut( &vWinClass, wc, _ ? 40:64,    "ptr") ; lpszClassName
+         NumPut(          0, wc, _ ? 44:72,    "ptr") ; hIconSm
 
       ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
       return atom := DllCall("RegisterClassEx", "ptr", &wc, "ushort")
@@ -1987,7 +1987,7 @@ class TextRender {
 
          ; Startup gdiplus.
          DllCall("LoadLibrary", "str", "gdiplus")
-         VarSetCapacity(si, A_PtrSize = 8 ? 24 : 16, 0) ; sizeof(GdiplusStartupInput) = 16, 24
+         VarSetCapacity(si, A_PtrSize = 4 ? 16:24, 0) ; sizeof(GdiplusStartupInput) = 16, 24
             , NumPut(0x1, si, "uint")
          DllCall("gdiplus\GdiplusStartup", "ptr*", pToken:=0, "ptr", &si, "ptr", 0)
 

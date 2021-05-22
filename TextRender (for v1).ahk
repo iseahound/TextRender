@@ -2378,12 +2378,12 @@ class ImageRender extends TextRender {
             DllCall("gdiplus\GdipDrawImageRectRectI"
                      ,    "ptr", gfx
                      ,    "ptr", pBitmap
-                     ,    "int", x, "int", y, "int", w, "int", h          ; destination rectangle
+                     ,    "int", x, "int", y, "int", w    , "int", h      ; destination rectangle
                      ,    "int", 0, "int", 0, "int", width, "int", height ; source rectangle
                      ,    "int", 2                                        ; UnitTypePixel
-                     ,    "ptr", ImageAttr
-                     ,    "ptr", 0
-                     ,    "ptr", 0)
+                     ,    "ptr", ImageAttr                                ; imageAttributes
+                     ,    "ptr", 0                                        ; callback
+                     ,    "ptr", 0)                                       ; callbackData
             DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
          }
       }

@@ -2372,8 +2372,8 @@ class ImageRender extends TextRender {
 
             DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", gfx, "int", 2) ; Half pixel offset.
             DllCall("gdiplus\GdipSetCompositingMode",    "ptr", gfx, "int", 1) ; Overwrite/SourceCopy.
-            DllCall("gdiplus\GdipSetSmoothingMode",      "ptr", gfx, "int", q) ; No anti-alias.
-            DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", gfx, "int", 5)
+            DllCall("gdiplus\GdipSetSmoothingMode",      "ptr", gfx, "int", 0) ; No anti-alias.
+            DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", gfx, "int", q)
             DllCall("gdiplus\GdipSetCompositingQuality", "ptr", gfx, "int", 0) ; AssumeLinear
 
             ; Draw image with proper edges and scaling.

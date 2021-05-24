@@ -1430,6 +1430,20 @@ class TextRender {
 
          return e
       }
+
+      MCode(mcode) {
+         static e := {1:4, 2:1}, c := (A_PtrSize=8) ? "x64" : "x86"
+         if (!regexmatch(mcode, "^([0-9]+),(" c ":|.*?," c ":)([^,]+)", m))
+            return
+         if (!DllCall("crypt32\CryptStringToBinary", "str", m3, "uint", 0, "uint", e[m1], "ptr", 0, "uint*", s, "ptr", 0, "ptr", 0))
+            return
+         p := DllCall("GlobalAlloc", "uint", 0, "ptr", s, "ptr")
+         if (c="x64")
+            DllCall("VirtualProtect", "ptr", p, "ptr", s, "uint", 0x40, "uint*", op)
+         if (DllCall("crypt32\CryptStringToBinary", "str", m3, "uint", 0, "uint", e[m1], "ptr", p, "uint*", s, "ptr", 0, "ptr", 0))
+            return p
+         DllCall("GlobalFree", "ptr", p)
+      }
    }
 
    OnEvent(event, callback := "") {
@@ -2097,6 +2111,7 @@ class ImageRender extends TextRender {
          m  := (style.margin != "")      ? style.margin      : style.m
          s  := (style.scale != "")       ? style.scale       : style.s
          c  := (style.color != "")       ? style.color       : style.c
+         k  := (style.key != "")         ? style.key         : style.k
          q  := (style.quality != "")     ? style.quality     : (style.q) ? style.q : style.InterpolationMode
       } else {
          t  := ((___ := RegExReplace(style, q1    "(t(ime)?)"          q2, "${value}")) != style) ? ___ : ""
@@ -2108,6 +2123,7 @@ class ImageRender extends TextRender {
          m  := ((___ := RegExReplace(style, q1    "(m(argin)?)"        q2, "${value}")) != style) ? ___ : ""
          s  := ((___ := RegExReplace(style, q1    "(s(cale)?)"         q2, "${value}")) != style) ? ___ : ""
          c  := ((___ := RegExReplace(style, q1    "(c(olor)?)"         q2, "${value}")) != style) ? ___ : ""
+         k  := ((___ := RegExReplace(style, q1    "(k(ey)?)"           q2, "${value}")) != style) ? ___ : ""
          q  := ((___ := RegExReplace(style, q1    "(q(uality)?)"       q2, "${value}")) != style) ? ___ : ""
       }
 
@@ -2343,6 +2359,14 @@ class ImageRender extends TextRender {
             ; Two, since the size of the allocated DIB is not the same size as the underlying DIB,
             ; injection using x,y,w,h coordinates is required, and BitBlt supports this.
             ; Note: The Rect in LockBits is crops the image source and does not affect the destination.
+
+            ; Make a color transparent if the color key option is specified.
+            if (k != "") {
+               static colorkey
+               if !(colorkey)
+                  colorkey := this.filter.MCode("2,x64:VUiJ5UiD7BBIiU0QiVUYRIlFIESJTSjHRfwAAAAA6zmLRfxImEiNFIUAAAAASItFEEgB0IsAO0UodRqLRfxImEiNFIUAAAAASItFEEgB0McAAAAAAINF/AGLVfyLRRgPr0UgOcJyubgBAAAASIPEEF3D")
+               DllCall(colorkey, "ptr", pBits, "uint", width, "uint", height, "uint", 0xFFFFFFFF)
+            }
 
             (c != "" || !m.void) ; Check if color or margin is set to invoke AlphaBlend, otherwise BitBlt.
 

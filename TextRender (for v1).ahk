@@ -1501,7 +1501,7 @@ class TextRender {
 
    EventMoveWindow() {
       ; Allows the user to drag to reposition the window.
-      PostMessage 0xA1, 2,,, % "ahk_id" this.hwnd
+      DllCall("DefWindowProc", "ptr", this.hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
    }
 
    EventShowCoordinates() {

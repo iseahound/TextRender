@@ -2364,7 +2364,7 @@ class ImageRender extends TextRender {
             if (k != "") {
                static colorkey
                if !(colorkey)
-                  colorkey := this.filter.MCode("2,x64:VUiJ5UiD7BBIiU0QiVUYRIlFIESJTSjHRfwAAAAA6zmLRfxImEiNFIUAAAAASItFEEgB0IsAO0UodRqLRfxImEiNFIUAAAAASItFEEgB0McAAAAAAINF/AGLVfyLRRgPr0UgOcJyubgBAAAASIPEEF3D")
+                  colorkey := this.filter.MCode("2,x86:VjHSU4tMJBQxwA+vTCQQi3QkDItcJBiFyXUO6yKNdgCDwAE5yInCdBaNFJY5GnXwg8ABOcjHAgAAAACJwnXquAEAAABbXsM=,x64:QQ+v0IXSdCeD6gFIjUSRBOsJSIPBBEg5wXQURDkJdfLHAQAAAABIg8EESDnBdey4AQAAAMM=")
                k := this.parse.color(k, NumGet(pBits+0, "uint")) ; Default key is top-left pixel.
                DllCall(colorkey, "ptr", pBits, "uint", width, "uint", height, "uint", k)
             }

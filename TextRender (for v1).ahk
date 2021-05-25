@@ -2365,7 +2365,8 @@ class ImageRender extends TextRender {
                static colorkey
                if !(colorkey)
                   colorkey := this.filter.MCode("2,x64:VUiJ5UiD7BBIiU0QiVUYRIlFIESJTSjHRfwAAAAA6zmLRfxImEiNFIUAAAAASItFEEgB0IsAO0UodRqLRfxImEiNFIUAAAAASItFEEgB0McAAAAAAINF/AGLVfyLRRgPr0UgOcJyubgBAAAASIPEEF3D")
-               DllCall(colorkey, "ptr", pBits, "uint", width, "uint", height, "uint", 0xFFFFFFFF)
+               k := this.parse.color(k, NumGet(pBits+0, "uint")) ; Default key is top-left pixel.
+               DllCall(colorkey, "ptr", pBits, "uint", width, "uint", height, "uint", k)
             }
 
             (c != "" || !m.void) ; Check if color or margin is set to invoke AlphaBlend, otherwise BitBlt.
@@ -2402,6 +2403,14 @@ class ImageRender extends TextRender {
 
             ; Draw image with proper edges and scaling.
             DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", ImageAttr)
+
+            ; Make a color transparent if the color key option is specified.
+            if (k != "") {
+               DllCall("gdiplus\GdipBitmapGetPixel", "ptr", pBitmap, "int", 0, "int", 0, "uint*", k_default)
+               k := this.parse.color(k, k_default) ; Default key is top-left pixel.
+               DllCall("gdiplus\GdipSetImageAttributesColorKeys", "ptr", ImageAttr, "int", 0, "int", 1, "uint", k, "uint", k)
+            }
+
             DllCall("gdiplus\GdipSetImageAttributesWrapMode", "ptr", ImageAttr, "int", 3) ; WrapModeTileFlipXY
             DllCall("gdiplus\GdipDrawImageRectRectI"
                      ,    "ptr", gfx

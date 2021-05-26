@@ -411,9 +411,11 @@ class TextRender {
       _c := this.parse.color(_c, 0xDD212121) ; Default color for background is transparent gray.
 
       ; Parse text color.
-      SourceCopy := false
-      if (c ~= "i)(delete|eraser?|overwrite|sourceCopy)")
-         c := 0x00000000, SourceCopy := true ; Eraser brush for text.
+      AlphaCopy := false
+      if (c ~= "i)(delete|eraser?|overwrite|AlphaCopy)")
+         AlphaCopy := true, c := 0 ; Eraser brush for text.
+      if (c ~= "^-") ; Allow negative color values to overwrite alpha.
+         AlphaCopy := true, c := LTrim(c, "-")
 
       ; Default color is white text on a dark background or black text on a light background..
       c  := this.parse.color(c, this.parse.grayscale(_c) < 128 ? 0xFFFFFFFF : 0xFF000000)
@@ -422,7 +424,7 @@ class TextRender {
 
       ; Default TextRenderingHint is Cleartype on a opaque background and Anti-Alias on a transparent background.
       if (q < 0 || q > 5)
-         q := ((_c & 0xFF000000 = 0xFF000000) && (!SourceCopy)) ? 5 : 4 ; TextRenderingHintClearTypeGridFit = 5, TextRenderingHintAntialias = 4
+         q := (_c & 0xFF000000 = 0xFF000000) && (!AlphaCopy) ? 5 : 4 ; TextRenderingHintClearTypeGridFit = 5, TextRenderingHintAntialias = 4
 
       ; Save original Graphics settings.
       DllCall("gdiplus\GdipSaveGraphics", "ptr", gfx, "ptr*", pState:=0)
@@ -873,7 +875,7 @@ class TextRender {
 
          ; Fill outline text.
          DllCall("gdiplus\GdipCreateSolidFill", "uint", c, "ptr*", pBrush:=0)
-         DllCall("gdiplus\GdipSetCompositingMode", "ptr", gfx, "int", SourceCopy)
+         DllCall("gdiplus\GdipSetCompositingMode", "ptr", gfx, "int", AlphaCopy)
          DllCall("gdiplus\GdipFillPath", "ptr", gfx, "ptr", pBrush, "ptr", pPath) ; DRAWING!
          DllCall("gdiplus\GdipSetCompositingMode", "ptr", gfx, "int", 0) ; CompositingModeSourceOver
          DllCall("gdiplus\GdipDeleteBrush", "ptr", pBrush)
@@ -883,7 +885,7 @@ class TextRender {
 
       ; Draw 4 - Text
       if (text != "" && o.void) {
-         DllCall("gdiplus\GdipSetCompositingMode", "ptr", gfx, "int", SourceCopy)
+         DllCall("gdiplus\GdipSetCompositingMode", "ptr", gfx, "int", AlphaCopy)
 
          VarSetCapacity(RectF, 16, 0)          ; sizeof(RectF) = 16
             NumPut(    x, RectF,  0,  "float") ; Left

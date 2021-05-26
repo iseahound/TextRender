@@ -1333,7 +1333,7 @@ class TextRender {
          t := ((___ := RegExReplace(t, "i)(\d+)h(our)?s?$"               , "$1")) != t) ? ___ *  3600000 : t
          t := ((___ := RegExReplace(t, "i)(\d+)d(ay)?s?$"                , "$1")) != t) ? ___ * 86400000 : t
          static MAX_INT := (A_PtrSize = 4) ? 2**31-1 : 2**63-1
-         return (t > 0) ? t : MAX_INT ; Check sign for integer overflow.
+         return (t >= 0) ? t : MAX_INT ; Check sign for integer overflow.
       }
    }
 

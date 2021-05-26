@@ -328,13 +328,9 @@ class TextRender {
    }
 
    DrawOnGraphics(gfx, text := "", style1 := "", style2 := "", CanvasWidth := "", CanvasHeight := "") {
-      ; Get Graphics Width and Height.
+      ; Get default width and height from undocumented graphics pointer offset.
       CanvasWidth := (CanvasWidth != "") ? CanvasWidth : NumGet(gfx + 20 + A_PtrSize, "uint")
       CanvasHeight := (CanvasHeight != "") ? CanvasHeight : NumGet(gfx + 24 + A_PtrSize, "uint")
-
-      ; Remove excess whitespace for proper RegEx detection.
-      style1 := !IsObject(style1) ? RegExReplace(style1, "\s+", " ") : style1
-      style2 := !IsObject(style2) ? RegExReplace(style2, "\s+", " ") : style2
 
       ; RegEx help? https://regex101.com/r/xLzZzO/2
       static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
@@ -353,6 +349,7 @@ class TextRender {
          _m  := (style1.margin != "")   ? style1.margin   : style1.m
          _q  := (style1.quality != "")  ? style1.quality  : (style1.q) ? style1.q : style1.SmoothingMode
       } else {
+         RegExReplace(style1, "\s+", A_Space) ; Limit whitespace for fixed width look-behinds.
          _t  := ((___ := RegExReplace(style1, q1    "(t(ime)?)"          q2, "${value}")) != style1) ? ___ : ""
          _a  := ((___ := RegExReplace(style1, q1    "(a(nchor)?)"        q2, "${value}")) != style1) ? ___ : ""
          _x  := ((___ := RegExReplace(style1, q1    "(x|left)"           q2, "${value}")) != style1) ? ___ : ""
@@ -387,6 +384,7 @@ class TextRender {
          o  := (style2.outline != "")     ? style2.outline     : style2.o
          q  := (style2.quality != "")     ? style2.quality     : (style2.q) ? style2.q : style2.TextRenderingHint
       } else {
+         RegExReplace(style2, "\s+", A_Space) ; Limit whitespace for fixed width look-behinds.
          t  := ((___ := RegExReplace(style2, q1    "(t(ime)?)"          q2, "${value}")) != style2) ? ___ : ""
          a  := ((___ := RegExReplace(style2, q1    "(a(nchor)?)"        q2, "${value}")) != style2) ? ___ : ""
          x  := ((___ := RegExReplace(style2, q1    "(x|left)"           q2, "${value}")) != style2) ? ___ : ""
@@ -2089,12 +2087,9 @@ ImageRender(image:="", style:="", polygons:="") {
 class ImageRender extends TextRender {
 
    DrawOnGraphics(gfx, pBitmap := "", style := "", polygons := "", CanvasWidth := "", CanvasHeight := "") {
-      ; Get Graphics Width and Height.
+      ; Get default width and height from undocumented graphics pointer offset.
       CanvasWidth := (CanvasWidth != "") ? CanvasWidth : NumGet(gfx + 20 + A_PtrSize, "uint")
       CanvasHeight := (CanvasHeight != "") ? CanvasHeight : NumGet(gfx + 24 + A_PtrSize, "uint")
-
-      ; Remove excess whitespace for proper RegEx detection.
-      style := !IsObject(style) ? RegExReplace(style, "\s+", " ") : style
 
       ; RegEx help? https://regex101.com/r/xLzZzO/2
       static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
@@ -2114,6 +2109,7 @@ class ImageRender extends TextRender {
          k  := (style.key != "")         ? style.key         : style.k
          q  := (style.quality != "")     ? style.quality     : (style.q) ? style.q : style.InterpolationMode
       } else {
+         RegExReplace(style, "\s+", A_Space) ; Limit whitespace for fixed width look-behinds.
          t  := ((___ := RegExReplace(style, q1    "(t(ime)?)"          q2, "${value}")) != style) ? ___ : ""
          a  := ((___ := RegExReplace(style, q1    "(a(nchor)?)"        q2, "${value}")) != style) ? ___ : ""
          x  := ((___ := RegExReplace(style, q1    "(x|left)"           q2, "${value}")) != style) ? ___ : ""

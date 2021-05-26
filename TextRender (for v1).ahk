@@ -332,7 +332,7 @@ class TextRender {
       CanvasWidth := (CanvasWidth != "") ? CanvasWidth : NumGet(gfx + 20 + A_PtrSize, "uint")
       CanvasHeight := (CanvasHeight != "") ? CanvasHeight : NumGet(gfx + 24 + A_PtrSize, "uint")
 
-      ; RegEx help? https://regex101.com/r/xLzZzO/2
+      ; RegEx help? https://regex101.com/r/rNsP6n/1
       static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
       static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\\\/\s:#%_a-z\-\.\d]+|\([\\\/\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
 
@@ -2091,9 +2091,9 @@ class ImageRender extends TextRender {
       CanvasWidth := (CanvasWidth != "") ? CanvasWidth : NumGet(gfx + 20 + A_PtrSize, "uint")
       CanvasHeight := (CanvasHeight != "") ? CanvasHeight : NumGet(gfx + 24 + A_PtrSize, "uint")
 
-      ; RegEx help? https://regex101.com/r/xLzZzO/2
+      ; RegEx help? https://regex101.com/r/rNsP6n/1
       static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
-      static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\s:#%_a-z\-\.\d]+|\([\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
+      static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\\\/\s:#%_a-z\-\.\d]+|\([\\\/\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
 
       ; Extract styles to variables.
       if IsObject(style) {

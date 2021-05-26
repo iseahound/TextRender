@@ -1000,8 +1000,10 @@ class TextRender {
 
          ; Use integer buffer.
          else {
-            c += (c < 0x01000000) ? 0xFF000000 : 0
-            c := (c > 0xFFFFFFFF) ? default : c
+            if (c > 0 && c < 0x01000000)
+               c += 0xFF000000
+            if (c < 0 || c > 0xFFFFFFFF)
+               c := default
          }
 
          return c

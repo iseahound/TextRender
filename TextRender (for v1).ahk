@@ -998,6 +998,11 @@ class TextRender {
             c := (c ~= xARGB) ? c : default
          }
 
+         ; Use integer buffer.
+         else {
+            c += (c < 0x01000000) ? 0xFF000000 : 0
+         }
+
          return (c != "") ? c : default
       }
 

@@ -930,27 +930,15 @@ class TextRender {
       ; Then count the number of words, as defined by Unicode Code Points, i.e. all languages.
       RegExReplace(SubStr(text, 1, chars), "(*UCP)\b\w+\b", "", words)
 
-      ; Calculate time.
-      t  := (_t) ? _t : t
-      if (t = "fast") ; To be used when the user has seen the text before; to linger on screen momentarily.
-         t := 1250 + 8*chars ; Every character adds 8 milliseconds.
-      if (t = "auto") {
-         ; The average human reaction time is 250 ms. For when text suddenly appears on screen.
-         ; Using 200 words/minute, divide 60,000 ms by 200 words to get 300 ms per word.
-         t := 250 + 300*words
-      }
-
-      ; Extract the time variable and save it for a later when we Render() everything.
-      static times := "(?i)^\s*(\d+)\s*(ms|mil(li(second)?)?|s(ec(ond)?)?|m(in(ute)?)?|h(our)?|d(ay)?)?s?\s*$"
-      t  := ( t ~= times) ? RegExReplace( t, "\s", "") : 0 ; Default time is zero.
-      t  := ((___ := RegExReplace( t, "i)(\d+)(ms|mil(li(second)?)?)s?$", "$1")) !=  t) ? ___ *        1 : t
-      t  := ((___ := RegExReplace( t, "i)(\d+)s(ec(ond)?)?s?$"          , "$1")) !=  t) ? ___ *     1000 : t
-      t  := ((___ := RegExReplace( t, "i)(\d+)m(in(ute)?)?s?$"          , "$1")) !=  t) ? ___ *    60000 : t
-      t  := ((___ := RegExReplace( t, "i)(\d+)h(our)?s?$"               , "$1")) !=  t) ? ___ *  3600000 : t
-      t  := ((___ := RegExReplace( t, "i)(\d+)d(ay)?s?$"                , "$1")) !=  t) ? ___ * 86400000 : t
+      ; Calculate time for string values.
+      t := (_t) ? _t : t      ; Prefer style1 over style2.
+      if (t = "fast")         ; For when the user has seen the text before; to linger a bit longer on screen.
+         t := 1250 + 8*chars  ; Every character adds 8 milliseconds.
+      if (t = "auto")         ; The average human reaction time is 250 ms. For the sudden appearance of text.
+         t := 250 + 300*words ; Using 200 words/minute, divide 60,000 ms by 200 words to get 300 ms per word.
 
       ; Define canvas coordinates.
-      t_bound :=  t                              ; string/background boundary.
+      t_bound := this.parse.time(t)              ; string/background boundary.
       x_bound := (_c & 0xFF000000) ? _x : x
       y_bound := (_c & 0xFF000000) ? _y : y
       w_bound := (_c & 0xFF000000) ? _w : w
@@ -1334,6 +1322,18 @@ class TextRender {
          o.3 := (o.3 ~= "%$") ? SubStr(o.3, 1, -1) * 0.01 * font_size : o.3
          o.4 := this.color(o.4, o.2) ; Default color is outline color.
          return o
+      }
+
+      time(t) {
+         static times := "(?i)^\s*((\d+(\.\d*)?)|\.\d+)\s*(ms|mil(li(second)?)?|s(ec(ond)?)?|m(in(ute)?)?|h(our)?|d(ay)?)?s?\s*$"
+         t := (t ~= times) ? RegExReplace(t, "\s", "") : 0 ; Default time is zero.
+         t := ((___ := RegExReplace(t, "i)(\d+)(ms|mil(li(second)?)?)s?$", "$1")) != t) ? ___ *        1 : t
+         t := ((___ := RegExReplace(t, "i)(\d+)s(ec(ond)?)?s?$"          , "$1")) != t) ? ___ *     1000 : t
+         t := ((___ := RegExReplace(t, "i)(\d+)m(in(ute)?)?s?$"          , "$1")) != t) ? ___ *    60000 : t
+         t := ((___ := RegExReplace(t, "i)(\d+)h(our)?s?$"               , "$1")) != t) ? ___ *  3600000 : t
+         t := ((___ := RegExReplace(t, "i)(\d+)d(ay)?s?$"                , "$1")) != t) ? ___ * 86400000 : t
+         static MAX_INT := (A_PtrSize = 4) ? 2**31-1 : 2**63-1
+         return (t > 0) ? t : MAX_INT ; Check sign for integer overflow.
       }
    }
 
@@ -2123,15 +2123,6 @@ class ImageRender extends TextRender {
          q  := ((___ := RegExReplace(style, q1    "(q(uality)?)"       q2, "${value}")) != style) ? ___ : ""
       }
 
-      ; Extract the time variable and save it for a later when we Render() everything.
-      static times := "(?i)^\s*(\d+)\s*(ms|mil(li(second)?)?|s(ec(ond)?)?|m(in(ute)?)?|h(our)?|d(ay)?)?s?\s*$"
-      t  := ( t ~= times) ? RegExReplace( t, "\s", "") : 0 ; Default time is zero.
-      t  := ((___ := RegExReplace( t, "i)(\d+)(ms|mil(li(second)?)?)s?$", "$1")) !=  t) ? ___ *        1 : t
-      t  := ((___ := RegExReplace( t, "i)(\d+)s(ec(ond)?)?s?$"          , "$1")) !=  t) ? ___ *     1000 : t
-      t  := ((___ := RegExReplace( t, "i)(\d+)m(in(ute)?)?s?$"          , "$1")) !=  t) ? ___ *    60000 : t
-      t  := ((___ := RegExReplace( t, "i)(\d+)h(our)?s?$"               , "$1")) !=  t) ? ___ *  3600000 : t
-      t  := ((___ := RegExReplace( t, "i)(\d+)d(ay)?s?$"                , "$1")) !=  t) ? ___ * 86400000 : t
-
       ; These are the type checkers.
       static valid := "(?i)^\s*(\-?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*(%|pt|px|vh|vmin|vw)?\s*$"
       static valid_positive := "(?i)^\s*((?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*(%|pt|px|vh|vmin|vw)?\s*$"
@@ -2447,7 +2438,7 @@ class ImageRender extends TextRender {
       DllCall("gdiplus\GdipRestoreGraphics", "ptr", gfx, "ptr", pState)
 
       ; Define bounds.
-      t_bound :=  t
+      t_bound := this.parse.time(t)
       x_bound := _x
       y_bound := _y
       w_bound := _w

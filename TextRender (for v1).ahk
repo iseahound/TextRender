@@ -983,15 +983,18 @@ class TextRender {
 
       color(c, default := 0xFFFFFFFF) {
          static xARGB := "^0x([0-9A-Fa-f]{8})$"
-         static xRGB  := "^0x([0-9A-Fa-f]{6})$"
-         static ARGB  :=   "^([0-9A-Fa-f]{8})$"
-         static RGB   :=   "^([0-9A-Fa-f]{6})$"
+         static  xRGB := "^0x([0-9A-Fa-f]{6})$"
+         static  ARGB :=   "^([0-9A-Fa-f]{8})$"
+         static   RGB :=   "^([0-9A-Fa-f]{6})$"
 
+         ; Check string buffer.
          if ObjGetCapacity([c], 1) {
             c := Trim(c)
             c := LTrim(c, "#")
-            c := ((___ := this.colormap(c)) != "") ? ___ : c
-            c := (c ~= xRGB) ? "0xFF" RegExReplace(c, xRGB, "$1") : (c ~= ARGB) ? "0x" c : (c ~= RGB) ? "0xFF" c : c
+            c := this.colormap(c, c)
+            c := (c ~= xRGB) ? "0xFF" RegExReplace(c, xRGB, "$1")
+               : (c ~= ARGB) ? "0x" c
+               : (c ~= RGB) ? "0xFF" c : c
             c := (c ~= xARGB) ? c : default
          }
 

@@ -989,20 +989,21 @@ class TextRender {
 
          ; Check string buffer.
          if ObjGetCapacity([c], 1) {
-            c := Trim(c)
-            c := LTrim(c, "#")
-            c := this.colormap(c, c)
+            c := Trim(c)                    ; Remove surrounding whitespace.
+            c := LTrim(c, "#")              ; Remove leading number sign.
+            c := this.colormap(c, c)        ; Convert CSS color names to hexadecimal.
             c := (c ~= xRGB) ? "0xFF" RegExReplace(c, xRGB, "$1")
                : (c ~= ARGB) ? "0x" c
                : (c ~= RGB) ? "0xFF" c : c
-            c := (c ~= xARGB) ? c : default
+            c := (c ~= xARGB) ? c : default ; Ensure hexadecimal format is valid ARGB.
          }
 
-         ; Use integer buffer.
+         ; Assume number buffer.
          else {
-            if (c > 0 && c < 0x01000000)
-               c += 0xFF000000
-            if (c < 0 || c > 0xFFFFFFFF)
+            c := Round(c)                   ; Integers only.
+            if (c > 0 && c < 0x01000000)    ; Lift RGB to solid ARGB.
+               c += 0xFF000000              ; But do not convert zero to solid black.
+            if (c < 0 || c > 0xFFFFFFFF)    ; Catch integers outside of 0 - 0xFFFFFFFF.
                c := default
          }
 

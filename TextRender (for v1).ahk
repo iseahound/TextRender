@@ -446,20 +446,20 @@ class TextRender {
       vr := CanvasWidth / CanvasHeight ; Aspect ratio of the viewport.
 
       ; Get background width and height.
-      _w := (_w ~= valid_positive) ? RegExReplace(_w, "\s", "") : ""
+      _w := (_w ~= valid_positive) ? RegExReplace(_w, "\s") : ""
       _w := (_w ~= "i)(pt|px)$") ? SubStr(_w, 1, -2) : _w
       _w := (_w ~= "i)(%|vw)$") ? RegExReplace(_w, "i)(%|vw)$", "") * vw : _w
       _w := (_w ~= "i)vh$") ? RegExReplace(_w, "i)vh$", "") * vh : _w
       _w := (_w ~= "i)vmin$") ? RegExReplace(_w, "i)vmin$", "") * vmin : _w
 
-      _h := (_h ~= valid_positive) ? RegExReplace(_h, "\s", "") : ""
+      _h := (_h ~= valid_positive) ? RegExReplace(_h, "\s") : ""
       _h := (_h ~= "i)(pt|px)$") ? SubStr(_h, 1, -2) : _h
       _h := (_h ~= "i)vw$") ? RegExReplace(_h, "i)vw$", "") * vw : _h
       _h := (_h ~= "i)(%|vh)$") ? RegExReplace(_h, "i)(%|vh)$", "") * vh : _h
       _h := (_h ~= "i)vmin$") ? RegExReplace(_h, "i)vmin$", "") * vmin : _h
 
       ; Get Font size.
-      s  := (s ~= valid_positive) ? RegExReplace(s, "\s", "") : "2.23vh"          ; Default font size is 2.23vh.
+      s  := (s ~= valid_positive) ? RegExReplace(s, "\s") : "2.23vh"          ; Default font size is 2.23vh.
       s  := (s ~= "i)(pt|px)$") ? SubStr(s, 1, -2) : s                            ; Strip spaces, px, and pt.
       s  := (s ~= "i)vh$") ? RegExReplace(s, "i)vh$", "") * vh : s                ; Relative to viewport height.
       s  := (s ~= "i)vw$") ? RegExReplace(s, "i)vw$", "") * vw : s                ; Relative to viewport width.
@@ -545,7 +545,7 @@ class TextRender {
 
 
       ; Get background anchor. This is where the origin of the image is located.
-      _a := RegExReplace(_a, "\s", "")
+      _a := RegExReplace(_a, "\s")
       _a := (_a ~= "i)top" && _a ~= "i)left") ? 1 : (_a ~= "i)top" && _a ~= "i)cent(er|re)") ? 2
          : (_a ~= "i)top" && _a ~= "i)right") ? 3 : (_a ~= "i)cent(er|re)" && _a ~= "i)left") ? 4
          : (_a ~= "i)cent(er|re)" && _a ~= "i)right") ? 6 : (_a ~= "i)bottom" && _a ~= "i)left") ? 7
@@ -562,13 +562,13 @@ class TextRender {
       _y := (_y ~= "i)top") ? 0 : (_y ~= "i)cent(er|re)") ? 0.5*CanvasHeight : (_y ~= "i)bottom") ? CanvasHeight : _y
 
       ; Get _x and _y.
-      _x := (_x ~= valid) ? RegExReplace(_x, "\s", "") : ""
+      _x := (_x ~= valid) ? RegExReplace(_x, "\s") : ""
       _x := (_x ~= "i)(pt|px)$") ? SubStr(_x, 1, -2) : _x
       _x := (_x ~= "i)(%|vw)$") ? RegExReplace(_x, "i)(%|vw)$", "") * vw : _x
       _x := (_x ~= "i)vh$") ? RegExReplace(_x, "i)vh$", "") * vh : _x
       _x := (_x ~= "i)vmin$") ? RegExReplace(_x, "i)vmin$", "") * vmin : _x
 
-      _y := (_y ~= valid) ? RegExReplace(_y, "\s", "") : ""
+      _y := (_y ~= valid) ? RegExReplace(_y, "\s") : ""
       _y := (_y ~= "i)(pt|px)$") ? SubStr(_y, 1, -2) : _y
       _y := (_y ~= "i)vw$") ? RegExReplace(_y, "i)vw$", "") * vw : _y
       _y := (_y ~= "i)(%|vh)$") ? RegExReplace(_y, "i)(%|vh)$", "") * vh : _y
@@ -592,14 +592,14 @@ class TextRender {
       _y := Round(_y)                  ; The float values need to be added up and then rounded!
 
       ; Get the text width and text height.
-      w  := ( w ~= valid_positive) ? RegExReplace( w, "\s", "") : width ; Default is simulated text width.
+      w  := ( w ~= valid_positive) ? RegExReplace( w, "\s") : width ; Default is simulated text width.
       w  := ( w ~= "i)(pt|px)$") ? SubStr( w, 1, -2) :  w
       w  := ( w ~= "i)vw$") ? RegExReplace( w, "i)vw$", "") * vw :  w
       w  := ( w ~= "i)vh$") ? RegExReplace( w, "i)vh$", "") * vh :  w
       w  := ( w ~= "i)vmin$") ? RegExReplace( w, "i)vmin$", "") * vmin :  w
       w  := ( w ~= "%$") ? RegExReplace( w, "%$", "") * 0.01 * _w :  w
 
-      h  := ( h ~= valid_positive) ? RegExReplace( h, "\s", "") : height ; Default is simulated text height.
+      h  := ( h ~= valid_positive) ? RegExReplace( h, "\s") : height ; Default is simulated text height.
       h  := ( h ~= "i)(pt|px)$") ? SubStr( h, 1, -2) :  h
       h  := ( h ~= "i)vw$") ? RegExReplace( h, "i)vw$", "") * vw :  h
       h  := ( h ~= "i)vh$") ? RegExReplace( h, "i)vh$", "") * vh :  h
@@ -615,7 +615,7 @@ class TextRender {
          y  := (v = 1) ? _y + (_h/2) - (h/2) : (v = 2) ? _y + _h - h : y
 
       ; Get anchor.
-      a  := RegExReplace( a, "\s", "")
+      a  := RegExReplace( a, "\s")
       a  := (a ~= "i)top" && a ~= "i)left") ? 1 : (a ~= "i)top" && a ~= "i)cent(er|re)") ? 2
          : (a ~= "i)top" && a ~= "i)right") ? 3 : (a ~= "i)cent(er|re)" && a ~= "i)left") ? 4
          : (a ~= "i)cent(er|re)" && a ~= "i)right") ? 6 : (a ~= "i)bottom" && a ~= "i)left") ? 7
@@ -634,7 +634,7 @@ class TextRender {
       y  := ( y ~= "i)top") ? _y : (y ~= "i)cent(er|re)") ? _y + 0.5*_h : (y ~= "i)bottom") ? _y + _h : y
 
       ; Default text x is background x.
-      x  := ( x ~= valid) ? RegExReplace( x, "\s", "") : _x
+      x  := ( x ~= valid) ? RegExReplace( x, "\s") : _x
       x  := ( x ~= "i)(pt|px)$") ? SubStr( x, 1, -2) :  x
       x  := ( x ~= "i)vw$") ? RegExReplace( x, "i)vw$", "") * vw :  x
       x  := ( x ~= "i)vh$") ? RegExReplace( x, "i)vh$", "") * vh :  x
@@ -642,7 +642,7 @@ class TextRender {
       x  := ( x ~= "%$") ? RegExReplace( x, "%$", "") * 0.01 * _w :  x
 
       ; Default text y is background y.
-      y  := ( y ~= valid) ? RegExReplace( y, "\s", "") : _y
+      y  := ( y ~= valid) ? RegExReplace( y, "\s") : _y
       y  := ( y ~= "i)(pt|px)$") ? SubStr( y, 1, -2) :  y
       y  := ( y ~= "i)vw$") ? RegExReplace( y, "i)vw$", "") * vw :  y
       y  := ( y ~= "i)vh$") ? RegExReplace( y, "i)vh$", "") * vh :  y
@@ -685,7 +685,7 @@ class TextRender {
 
       ; Define radius of rounded corners. The default radius is 0, or square corners.
       _r := (_r ~= "i)max") ? _rmax : _r
-      _r := (_r ~= valid_positive) ? RegExReplace(_r, "\s", "") : 0
+      _r := (_r ~= valid_positive) ? RegExReplace(_r, "\s") : 0
       _r := (_r ~= "i)(pt|px)$") ? SubStr(_r, 1, -2) : _r
       _r := (_r ~= "i)vw$") ? RegExReplace(_r, "i)vw$", "") * vw : _r
       _r := (_r ~= "i)vh$") ? RegExReplace(_r, "i)vh$", "") * vh : _r
@@ -1202,7 +1202,7 @@ class TextRender {
          for key, value in d {
             if (key = 4) ; Don't mess with color data.
                continue
-            d[key] := (d[key] ~= valid) ? RegExReplace(d[key], "\s", "") : 0 ; Default for everything is 0.
+            d[key] := (d[key] ~= valid) ? RegExReplace(d[key], "\s") : 0 ; Default for everything is 0.
             d[key] := (d[key] ~= "i)(pt|px)$") ? SubStr(d[key], 1, -2) : d[key]
             d[key] := (d[key] ~= "i)vw$") ? RegExReplace(d[key], "i)vw$", "") * vw : d[key]
             d[key] := (d[key] ~= "i)vh$") ? RegExReplace(d[key], "i)vh$", "") * vh : d[key]
@@ -1271,7 +1271,7 @@ class TextRender {
             m.4 := m.2
 
          for key, value in m {
-            m[key] := (m[key] ~= valid) ? RegExReplace(m[key], "\s", "") : default
+            m[key] := (m[key] ~= valid) ? RegExReplace(m[key], "\s") : default
             m[key] := (m[key] ~= "i)(pt|px)$") ? SubStr(m[key], 1, -2) : m[key]
             m[key] := (m[key] ~= "i)vw$") ? RegExReplace(m[key], "i)vw$", "") * vw : m[key]
             m[key] := (m[key] ~= "i)vh$") ? RegExReplace(m[key], "i)vh$", "") * vh : m[key]
@@ -1310,7 +1310,7 @@ class TextRender {
          for key, value in o {
             if (key = 2) || (key = 4) ; Don't mess with color data.
                continue
-            o[key] := (o[key] ~= valid_positive) ? RegExReplace(o[key], "\s", "") : 0 ; Default for everything is 0.
+            o[key] := (o[key] ~= valid_positive) ? RegExReplace(o[key], "\s") : 0 ; Default for everything is 0.
             o[key] := (o[key] ~= "i)(pt|px)$") ? SubStr(o[key], 1, -2) : o[key]
             o[key] := (o[key] ~= "i)vw$") ? RegExReplace(o[key], "i)vw$", "") * vw : o[key]
             o[key] := (o[key] ~= "i)vh$") ? RegExReplace(o[key], "i)vh$", "") * vh : o[key]
@@ -1326,7 +1326,7 @@ class TextRender {
 
       time(t) {
          static times := "(?i)^\s*((\d+(\.\d*)?)|\.\d+)\s*(ms|mil(li(second)?)?|s(ec(ond)?)?|m(in(ute)?)?|h(our)?|d(ay)?)?s?\s*$"
-         t := (t ~= times) ? RegExReplace(t, "\s", "") : 0 ; Default time is zero.
+         t := (t ~= times) ? RegExReplace(t, "\s") : 0 ; Default time is zero.
          t := ((___ := RegExReplace(t, "i)(\d+)(ms|mil(li(second)?)?)s?$", "$1")) != t) ? ___ *        1 : t
          t := ((___ := RegExReplace(t, "i)(\d+)s(ec(ond)?)?s?$"          , "$1")) != t) ? ___ *     1000 : t
          t := ((___ := RegExReplace(t, "i)(\d+)m(in(ute)?)?s?$"          , "$1")) != t) ? ___ *    60000 : t
@@ -2140,14 +2140,14 @@ class ImageRender extends TextRender {
       aspect := width / height
 
       ; Get width and height.
-      w  := ( w ~= valid_positive) ? RegExReplace( w, "\s", "") : ""
+      w  := ( w ~= valid_positive) ? RegExReplace( w, "\s") : ""
       w  := ( w ~= "i)(pt|px)$") ? SubStr( w, 1, -2) :  w
       w  := ( w ~= "i)vw$") ? RegExReplace( w, "i)vw$", "") * vw :  w
       w  := ( w ~= "i)vh$") ? RegExReplace( w, "i)vh$", "") * vh :  w
       w  := ( w ~= "i)vmin$") ? RegExReplace( w, "i)vmin$", "") * vmin :  w
       w  := ( w ~= "%$") ? RegExReplace( w, "%$", "") * 0.01 * width :  w
 
-      h  := ( h ~= valid_positive) ? RegExReplace( h, "\s", "") : ""
+      h  := ( h ~= valid_positive) ? RegExReplace( h, "\s") : ""
       h  := ( h ~= "i)(pt|px)$") ? SubStr( h, 1, -2) :  h
       h  := ( h ~= "i)vw$") ? RegExReplace( h, "i)vw$", "") * vw :  h
       h  := ( h ~= "i)vh$") ? RegExReplace( h, "i)vh$", "") * vh :  h
@@ -2177,7 +2177,7 @@ class ImageRender extends TextRender {
          h := height ; Therefore restore the width and height to the image width and height.
       }
 
-      s  := ( s ~= valid) ? RegExReplace( s, "\s", "") : ""
+      s  := ( s ~= valid) ? RegExReplace( s, "\s") : ""
       s  := ( s ~= "i)(pt|px)$") ? SubStr( s, 1, -2) :  s
       s  := ( s ~= "i)vw$") ? RegExReplace( s, "i)vw$", "") * vw / width :  s
       s  := ( s ~= "i)vh$") ? RegExReplace( s, "i)vh$", "") * vh / height:  s
@@ -2218,7 +2218,7 @@ class ImageRender extends TextRender {
       h  := h * s
 
       ; Get anchor. This is where the origin of the image is located.
-      a  := RegExReplace( a, "\s", "")
+      a  := RegExReplace( a, "\s")
       a  := (a ~= "i)top" && a ~= "i)left") ? 1 : (a ~= "i)top" && a ~= "i)cent(er|re)") ? 2
          : (a ~= "i)top" && a ~= "i)right") ? 3 : (a ~= "i)cent(er|re)" && a ~= "i)left") ? 4
          : (a ~= "i)cent(er|re)" && a ~= "i)right") ? 6 : (a ~= "i)bottom" && a ~= "i)left") ? 7
@@ -2235,13 +2235,13 @@ class ImageRender extends TextRender {
       y  := ( y ~= "i)top") ? 0 : (y ~= "i)cent(er|re)") ? 0.5*CanvasHeight : (y ~= "i)bottom") ? CanvasHeight : y
 
       ; Get x and y.
-      x  := ( x ~= valid) ? RegExReplace( x, "\s", "") : ""
+      x  := ( x ~= valid) ? RegExReplace( x, "\s") : ""
       x  := ( x ~= "i)(pt|px)$") ? SubStr( x, 1, -2) :  x
       x  := ( x ~= "i)(%|vw)$") ? RegExReplace( x, "i)(%|vw)$", "") * vw :  x
       x  := ( x ~= "i)vh$") ? RegExReplace( x, "i)vh$", "") * vh :  x
       x  := ( x ~= "i)vmin$") ? RegExReplace( x, "i)vmin$", "") * vmin :  x
 
-      y  := ( y ~= valid) ? RegExReplace( y, "\s", "") : ""
+      y  := ( y ~= valid) ? RegExReplace( y, "\s") : ""
       y  := ( y ~= "i)(pt|px)$") ? SubStr( y, 1, -2) :  y
       y  := ( y ~= "i)vw$") ? RegExReplace( y, "i)vw$", "") * vw :  y
       y  := ( y ~= "i)(%|vh)$") ? RegExReplace( y, "i)(%|vh)$", "") * vh :  y

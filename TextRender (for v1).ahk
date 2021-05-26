@@ -407,19 +407,22 @@ class TextRender {
          q  := ((___ := RegExReplace(style2, q1    "(q(uality)?)"       q2, "${value}")) != style2) ? ___ : ""
       }
 
-      ; Define color.
+      ; Parse background color.
       _c := this.parse.color(_c, 0xDD212121) ; Default color for background is transparent gray.
-      SourceCopy := (c ~= "i)(delete|eraser?|overwrite|sourceCopy)") ? 1 : 0 ; Eraser brush for text.
-      if (!c) ; Default text color changes between white and black.
-         c := (this.parse.grayscale(_c) < 128) ? 0xFFFFFFFF : 0xFF000000
-      c  := (SourceCopy) ? 0x00000000 : this.parse.color( c)
 
+      ; Parse text color.
+      SourceCopy := false
+      if (c ~= "i)(delete|eraser?|overwrite|sourceCopy)")
+         c := 0x00000000, SourceCopy := true ; Eraser brush for text.
+
+      ; Default color is white text on a dark background or black text on a light background..
+      c  := this.parse.color(c, this.parse.grayscale(_c) < 128 ? 0xFFFFFFFF : 0xFF000000)
       ; Default SmoothingMode is 5 for outlines and rounded corners. To disable use 0. See Draw 1, 2, 3.
       _q := (_q >= 0 && _q <= 5) ? _q : 5 ; SmoothingModeAntiAlias8x8
 
       ; Default TextRenderingHint is Cleartype on a opaque background and Anti-Alias on a transparent background.
       if (q < 0 || q > 5)
-         q := (_c & 0xFF000000 = 0xFF000000) ? 5 : 4 ; TextRenderingHintClearTypeGridFit = 5, TextRenderingHintAntialias = 4
+         q := ((_c & 0xFF000000 = 0xFF000000) && (!SourceCopy)) ? 5 : 4 ; TextRenderingHintClearTypeGridFit = 5, TextRenderingHintAntialias = 4
 
       ; Save original Graphics settings.
       DllCall("gdiplus\GdipSaveGraphics", "ptr", gfx, "ptr*", pState:=0)
@@ -986,6 +989,9 @@ class TextRender {
          static  xRGB := "^0x([0-9A-Fa-f]{6})$"
          static  ARGB :=   "^([0-9A-Fa-f]{8})$"
          static   RGB :=   "^([0-9A-Fa-f]{6})$"
+
+         if (c == "")
+            return default
 
          ; Check string buffer.
          if ObjGetCapacity([c], 1) {

@@ -1001,9 +1001,10 @@ class TextRender {
          ; Use integer buffer.
          else {
             c += (c < 0x01000000) ? 0xFF000000 : 0
+            c := (c > 0xFFFFFFFF) ? default : c
          }
 
-         return (c != "") ? c : default
+         return c
       }
 
       colormap(c, default := 0xFFFFFFFF) {

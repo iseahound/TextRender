@@ -981,7 +981,7 @@ class TextRender {
 
    class parse {
 
-      color(c, default := 0xDD424242) {
+      color(c, default := 0xFFFFFFFF) {
          static xARGB := "^0x([0-9A-Fa-f]{8})$"
          static xRGB  := "^0x([0-9A-Fa-f]{6})$"
          static ARGB  :=   "^([0-9A-Fa-f]{8})$"
@@ -998,7 +998,7 @@ class TextRender {
          return (c != "") ? c : default
       }
 
-      colormap(c) {
+      colormap(c, default := 0xFFFFFFFF) {
          if (c = "random") ; 93% opacity + random RGB.
             return "0xEE" SubStr(ComObjCreate("Scriptlet.TypeLib").GUID, 2, 6)
 
@@ -1170,7 +1170,7 @@ class TextRender {
             "YellowGreen"           : "0xFF9ACD32"
          }
          )
-         return colors1.HasKey(c) ? colors1[c] : colors2[c]
+         return colors1.HasKey(c) ? colors1[c] : colors2.HasKey(c) ? colors2[c] : default
       }
 
       dropShadow(d, vw, vh, width, height, font_size) {

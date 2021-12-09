@@ -2,7 +2,7 @@
 ; License:   MIT License
 ; Author:    Edison Hua (iseahound)
 ; Date:      2021-05-22
-; Version:   v1.06
+; Version:   1.6.0
 
 #Requires AutoHotkey v1.1.33+
 #Persistent

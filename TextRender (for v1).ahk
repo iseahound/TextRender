@@ -17,14 +17,14 @@ class TextRender {
 
    static windows := {}
 
-   __New(title := "", WindowStyle := "", WindowExStyle := "", hwndParent := 0) {
+   __New(title := "", style := 0x80000000, styleEx := 0x80088, parent := "") {
       this.gdiplusStartup()
 
       ; Set a DPI awareness context for CreateWindow().
       dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
 
       ; Create and show the window.
-      this.hwnd := this.CreateWindow(title, WindowStyle, WindowExStyle, hwndParent)
+      this.hwnd := this.CreateWindow(title, style, styleEx, parent)
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
 
       ; Restore old DPI awareness context.
@@ -1551,67 +1551,67 @@ class TextRender {
       WinSet AlwaysOnTop, On, % "ahk_id" this.friend2.hwnd
    }
 
-   RegisterClass(vWinClass) {
-      static atom := 0
+   ; Source: ImagePut 1.5.1 - WindowClass()
+   WindowClass() {
+      ; The window class shares the name of this class.
+      cls := this.__class
+      VarSetCapacity(wc, size := _ ? 48:80)           ; sizeof(WNDCLASSEX) = 48, 80
 
-      ; Return the atom to the class if present.
-      if (atom)
-         return atom
+      ; Check if the window class is already registered.
+      if DllCall("GetClassInfoEx", "ptr", 0, "str", cls, "ptr", wc)
+         return cls
 
-      ; Otherwise register the class name.
-      pWndProc := RegisterCallback(this.WindowProc, "Fast",, &this)
+      ; Create window data.
+      pWndProc := RegisterCallback(this.WindowProc,,, &this)
       hCursor := DllCall("LoadCursor", "ptr", 0, "ptr", 32512, "ptr") ; IDC_ARROW
+      hBrush := DllCall("GetStockObject", "int", 5, "ptr") ; Hollow_brush
 
       ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
       ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
       _ := (A_PtrSize = 4)
-      VarSetCapacity(wc, size := _ ? 48:80, 0)        ; sizeof(WNDCLASSEX) = 48, 80
          NumPut(       size, wc,         0,   "uint") ; cbSize
-         NumPut(        0x8, wc,         4,   "uint") ; style = CS_DBLCLKS
+         NumPut(        0x8, wc,         4,   "uint") ; style
          NumPut(   pWndProc, wc,         8,    "ptr") ; lpfnWndProc
          NumPut(          0, wc, _ ? 12:16,    "int") ; cbClsExtra
          NumPut(          0, wc, _ ? 16:20,    "int") ; cbWndExtra
          NumPut(          0, wc, _ ? 20:24,    "ptr") ; hInstance
          NumPut(          0, wc, _ ? 24:32,    "ptr") ; hIcon
          NumPut(    hCursor, wc, _ ? 28:40,    "ptr") ; hCursor
-         NumPut(         16, wc, _ ? 32:48,    "ptr") ; hbrBackground
+         NumPut(     hBrush, wc, _ ? 32:48,    "ptr") ; hbrBackground
          NumPut(          0, wc, _ ? 36:56,    "ptr") ; lpszMenuName
-         NumPut( &vWinClass, wc, _ ? 40:64,    "ptr") ; lpszClassName
+         NumPut(       &cls, wc, _ ? 40:64,    "ptr") ; lpszClassName
          NumPut(          0, wc, _ ? 44:72,    "ptr") ; hIconSm
 
       ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
-      return atom := DllCall("RegisterClassEx", "ptr", &wc, "ushort")
+      DllCall("RegisterClassEx", "ptr", &wc, "ushort")
+
+      ; Return the class name as a string.
+      return cls
    }
 
-   CreateWindow(title := "", WindowStyle := "", WindowExStyle := "", hwndParent := 0) {
+   CreateWindow(title := "", style := 0x80000000, styleEx := 0x80088, parent := "") {
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
-      WS_POPUP                  := 0x80000000
+      WS_POPUP                  := 0x80000000   ; Allow small windows.
 
       ; Extended Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
-      WS_EX_TOPMOST             :=        0x8
-      WS_EX_TOOLWINDOW          :=       0x80
-      WS_EX_LAYERED             :=    0x80000
-      WS_EX_NOACTIVATE          :=  0x8000000
+      WS_EX_TOPMOST             :=        0x8   ; Always on top.
+      WS_EX_TOOLWINDOW          :=       0x80   ; Hides from Alt+Tab menu. Removes small icon.
+      WS_EX_LAYERED             :=    0x80000   ; For UpdateLayeredWindow.
 
-      if (WindowStyle = "")
-         WindowStyle := WS_POPUP ; start off hidden with WS_VISIBLE off
-
-      if (WindowExStyle = "")
-         WindowExStyle := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED
-
+      ; Start off hidden with WS_VISIBLE off and zero width/height coordinates.
       return DllCall("CreateWindowEx"
-               ,   "uint", WindowExStyle                     ; dwExStyle
-               , "ushort", this.RegisterClass("TextRender")  ; lpClassName
-               ,    "str", title                             ; lpWindowName
-               ,   "uint", WindowStyle                       ; dwStyle
-               ,    "int", 0                                 ; X
-               ,    "int", 0                                 ; Y
-               ,    "int", 0                                 ; nWidth
-               ,    "int", 0                                 ; nHeight
-               ,    "ptr", hwndParent                        ; hWndParent
-               ,    "ptr", 0                                 ; hMenu
-               ,    "ptr", 0                                 ; hInstance
-               ,    "ptr", 0                                 ; lpParam
+               ,   "uint", styleEx                  ; dwExStyle
+               ,    "str", this.WindowClass()       ; lpClassName
+               ,    "str", title                    ; lpWindowName
+               ,   "uint", style                    ; dwStyle
+               ,    "int", 0                        ; X
+               ,    "int", 0                        ; Y
+               ,    "int", 0                        ; nWidth
+               ,    "int", 0                        ; nHeight
+               ,    "ptr", (parent != "") ? parent : A_ScriptHwnd
+               ,    "ptr", 0                        ; hMenu
+               ,    "ptr", 0                        ; hInstance
+               ,    "ptr", 0                        ; lpParam
                ,    "ptr")
    }
 

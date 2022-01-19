@@ -1877,69 +1877,95 @@ class TextRender {
 
    SaveImageToFile(pBitmap, filepath := "", quality := "") {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
+      extension := "png"
 
-      ; Remove whitespace. Seperate the filepath. Adjust for directories.
-      filepath := Trim(filepath)
-      SplitPath filepath,, directory, extension, filename
-      if InStr(FileExist(filepath), "D")
-         directory .= "\" filename, filename := ""
+      ; Save default extension.
+      default := extension
+
+      ; Split the filepath.
+      SplitPath % Trim(filepath),, directory, extension, filename
+
+      ; Check if the entire filepath is a directory.
+      if InStr(FileExist(filepath), "D")   ; If the filepath refers to a directory,
+         directory := (directory != "")    ; then SplitPath wrongly assumes a directory to be a filename.
+            ? ((filename != "")
+               ? directory "\" filename    ; Combine directory + filename.
+               : directory)                ; Do nothing.
+            : (filepath ~= "^\\")
+               ? "\" filename              ; Root level directory.
+               : ".\" filename             ; Script level directory.
+         , filename := ""
+
+      ; Create a new directory if needed.
       if (directory != "" && !InStr(FileExist(directory), "D"))
          FileCreateDir % directory
+
+      ; Default directory is a dot.
       directory := (directory != "") ? directory : "."
 
-      ; Validate filepath, defaulting to PNG. https://stackoverflow.com/a/6804755
+      ; Check if the filename is actually the extension.
+      if (extension == "" && filename ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
+         extension := filename, filename := ""
+
+      ; An invalid extension is actually part of the filename.
       if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$") {
          if (extension != "")
             filename .= "." extension
-         extension := "png"
+
+         ; Restore default extension.
+         extension := default
       }
-      filename := RegExReplace(filename, "S)(?i:^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$|[<>:|?*\x00-\x1F\x22\/\\])")
-      if (filename == "")
+
+      ; Create a filepath based on the timestamp.
+      if (filename == "") {
          FormatTime, filename,, % "yyyy-MM-dd HH꞉mm꞉ss"
-      filepath := directory "\" filename "." extension
+         filepath := directory "\" filename "." extension
+         while FileExist(filepath) ; Check for collisions.
+            filepath := directory "\" filename " (" A_Index ")." extension
+      }
 
-      ; Fill a buffer with the available encoders.
+      ; Filepath is complete!
+      else filepath := directory "\" filename "." extension
+
+      ; Fill a buffer with the available image codec info.
       DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
-      VarSetCapacity(ci, size)
-      DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", &ci)
-      if !(count && size)
-         throw Exception("Could not get a list of image codec encoders on this system.")
+      DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", &ci := VarSetCapacity(ci, size))
 
-      ; Search for an encoder with a matching extension.
-      Loop % count
-         EncoderExtensions := StrGet(NumGet(ci, (idx:=(48+7*A_PtrSize)*(A_Index-1))+32+3*A_PtrSize, "uptr"), "UTF-16")
-      until InStr(EncoderExtensions, "*." extension)
+      ; struct ImageCodecInfo - http://www.jose.it-berater.org/gdiplus/reference/structures/imagecodecinfo.htm
+      loop {
+         if (A_Index > count)
+            throw Exception("Could not find a matching encoder for the specified file format.")
 
-      ; Get the pointer to the index/offset of the matching encoder.
-      if !(pCodec := &ci + idx)
-         throw Exception("Could not find a matching encoder for the specified file format.")
+         idx := (48+7*A_PtrSize)*(A_Index-1)
+      } until InStr(StrGet(NumGet(ci, idx+32+3*A_PtrSize, "ptr"), "UTF-16"), extension) ; FilenameExtension
 
-      ; JPEG is a lossy image format that requires a quality value from 0-100. Default quality is 75.
-      if (extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"
-      && 0 <= quality && quality <= 100 && quality != 75) {
-         DllCall("gdiplus\GdipGetEncoderParameterListSize", "ptr", pBitmap, "ptr", pCodec, "uint*", size:=0)
-         VarSetCapacity(EncoderParameters, size, 0)
-         DllCall("gdiplus\GdipGetEncoderParameterList", "ptr", pBitmap, "ptr", pCodec, "uint", size, "ptr", &EncoderParameters)
+      ; Get the pointer to the clsid of the matching encoder.
+      pCodec := &ci + idx ; ClassID
 
-         ; Search for an encoder parameter with 1 value of type 6.
-         Loop % NumGet(EncoderParameters, "uint")
-            elem := (24+A_PtrSize)*(A_Index-1) + A_PtrSize
-         until (NumGet(EncoderParameters, elem+16, "uint") = 1) && (NumGet(EncoderParameters, elem+20, "uint") = 6)
+      ; JPEG default quality is 75. Otherwise set a quality value from [0-100].
+      if (quality ~= "^-?\d+$") and ("image/jpeg" = StrGet(NumGet(ci, idx+32+4*A_PtrSize, "ptr"), "UTF-16")) { ; MimeType
+         ; Use a separate buffer to store the quality as ValueTypeLong (4).
+         VarSetCapacity(v, 4), NumPut(quality, v, "uint")
 
          ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
-         ep := &EncoderParameters + elem - A_PtrSize                     ; sizeof(EncoderParameter) = 28, 32
-            , NumPut(      1, ep+0,            0,   "uptr")              ; Must be 1.
-            , NumPut(      4, ep+0, 20+A_PtrSize,   "uint")              ; Type
-            , NumPut(quality, NumGet(ep+24+A_PtrSize, "uptr"), "uint")   ; Value (pointer)
+         ; enum ValueType - https://docs.microsoft.com/en-us/dotnet/api/system.drawing.imaging.encoderparametervaluetype
+         ; clsid Image Encoder Constants - http://www.jose.it-berater.org/gdiplus/reference/constants/gdipimageencoderconstants.htm
+         VarSetCapacity(ep, 24+2*A_PtrSize)            ; sizeof(EncoderParameter) = ptr + n*(28, 32)
+            NumPut(    1, ep,            0,   "uptr")  ; Count
+            DllCall("ole32\CLSIDFromString", "wstr", "{1D5BE4B5-FA4A-452D-9CDD-5DB35105E7EB}", "ptr", &ep+A_PtrSize, "uint")
+            NumPut(    1, ep, 16+A_PtrSize,   "uint")  ; Number of Values
+            NumPut(    4, ep, 20+A_PtrSize,   "uint")  ; Type
+            NumPut(   &v, ep, 24+A_PtrSize,    "ptr")  ; Value
       }
 
-      ; Write the file to disk using the specified encoder and encoding parameters.
-      Loop 6 ; Try this 6 times.
-         if (A_Index > 1)
-            Sleep % (2**(A_Index-2) * 30)
-      until (result := !DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "uint", (ep) ? ep : 0))
-      if !(result)
-         throw Exception("Could not save file to disk.")
+      ; Write the file to disk using the specified encoder and encoding parameters with exponential backoff.
+      loop
+         if !DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "ptr", (ep) ? &ep : 0)
+            break
+         else
+            if A_Index < 6
+               Sleep (2**(A_Index-1) * 30)
+            else throw Exception("Could not save file to disk.")
 
       return filepath
    }

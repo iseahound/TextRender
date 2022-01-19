@@ -1583,10 +1583,6 @@ class TextRender {
       return atom := DllCall("RegisterClassEx", "ptr", &wc, "ushort")
    }
 
-   UnregisterClass(vWinClass) {
-      return DllCall("UnregisterClass", "str", vWinClass, "ptr", 0, "int")
-   }
-
    CreateWindow(title := "", WindowStyle := "", WindowExStyle := "", hwndParent := 0) {
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       WS_POPUP                  := 0x80000000

@@ -1875,6 +1875,7 @@ class TextRender {
       return filepath
    }
 
+   ; Source: ImagePut 1.5.1 - put_file()
    SaveImageToFile(pBitmap, filepath := "", quality := "") {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
       extension := "png"
@@ -1970,17 +1971,18 @@ class TextRender {
       return filepath
    }
 
+   ; Source: ImagePut 1.5.1 - from_screenshot()
    GetImageFromScreen(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      VarSetCapacity(bi, 40, 0)                ; sizeof(bi) = 40
-         , NumPut(       40, bi,  0,   "uint") ; Size
-         , NumPut( image[3], bi,  4,   "uint") ; Width
-         , NumPut(-image[4], bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
-         , NumPut(        1, bi, 12, "ushort") ; Planes
-         , NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
+      VarSetCapacity(bi, 40, 0)              ; sizeof(bi) = 40
+         NumPut(       40, bi,  0,   "uint") ; Size
+         NumPut( image[3], bi,  4,   "uint") ; Width
+         NumPut(-image[4], bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+         NumPut(        1, bi, 12, "ushort") ; Planes
+         NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 

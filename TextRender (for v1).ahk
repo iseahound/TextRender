@@ -1491,11 +1491,11 @@ class TextRender {
          DllCall("QueryPerformanceCounter", "int64*", end:=0)
          time_elapsed := (end - this.t0) / frequency * 1000
          remaining_time := this.t - time_elapsed
-         if (remaining_time > 0){
+         if (this.t == 0 || remaining_time > 0) {
             this.UpdateMemory()
             for i, layer in this.layers
                this.Draw(layer[1], layer[2], layer[3])
-            this.t := remaining_time
+            this.t := (this.t == 0) ? 0 : remaining_time
             return this.Render()
          }
       }

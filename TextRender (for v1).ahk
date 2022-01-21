@@ -72,10 +72,10 @@ class TextRender {
       ; Allow Render() to commit only when previous calls to Draw() have occurred.
       if (this.layers.length() > 0) {
          ; Define the smaller of canvas and bitmap coordinates.
-         this.WindowLeft   := (this.BitmapLeft   > this.x)  ? this.BitmapLeft   : this.x
-         this.WindowTop    := (this.BitmapTop    > this.y)  ? this.BitmapTop    : this.y
-         this.WindowRight  := (this.BitmapRight  < this.x2) ? this.BitmapRight  : this.x2
-         this.WindowBottom := (this.BitmapBottom < this.y2) ? this.BitmapBottom : this.y2
+         this.WindowLeft   := Max(this.BitmapLeft, this.x)
+         this.WindowTop    := Max(this.BitmapTop, this.y)
+         this.WindowRight  := Min(this.BitmapRight, this.x2)
+         this.WindowBottom := Min(this.BitmapBottom, this.y2)
          this.WindowWidth  := this.WindowRight - this.WindowLeft
          this.WindowHeight := this.WindowBottom - this.WindowTop
 
@@ -182,10 +182,10 @@ class TextRender {
    Fade(fade_in := 250, fade_out := 250, status := "") {
       if (fade_in > 0) {
          ; Render: Off-Screen areas are not rendered. Clip objects that reside off screen.
-         this.WindowLeft   := (this.BitmapLeft   > this.x)  ? this.BitmapLeft   : this.x
-         this.WindowTop    := (this.BitmapTop    > this.y)  ? this.BitmapTop    : this.y
-         this.WindowRight  := (this.BitmapRight  < this.x2) ? this.BitmapRight  : this.x2
-         this.WindowBottom := (this.BitmapBottom < this.y2) ? this.BitmapBottom : this.y2
+         this.WindowLeft   := Max(this.BitmapLeft, this.x)
+         this.WindowTop    := Max(this.BitmapTop, this.y)
+         this.WindowRight  := Min(this.BitmapRight, this.x2)
+         this.WindowBottom := Min(this.BitmapBottom, this.y2)
          this.WindowWidth  := this.WindowRight - this.WindowLeft
          this.WindowHeight := this.WindowBottom - this.WindowTop
 
@@ -279,11 +279,11 @@ class TextRender {
       this.CanvasChanged()
 
       ; Set canvas coordinates.
-      this.t  := (this.t  == "") ? obj.t  : (this.t  > obj.t)  ? this.t  : obj.t
-      this.x  := (this.x  == "") ? obj.x  : (this.x  < obj.x)  ? this.x  : obj.x
-      this.y  := (this.y  == "") ? obj.y  : (this.y  < obj.y)  ? this.y  : obj.y
-      this.x2 := (this.x2 == "") ? obj.x2 : (this.x2 > obj.x2) ? this.x2 : obj.x2
-      this.y2 := (this.y2 == "") ? obj.y2 : (this.y2 > obj.y2) ? this.y2 : obj.y2
+      this.t  := (this.t  == "") ? obj.t  : Max(this.t, obj.t)
+      this.x  := (this.x  == "") ? obj.x  : Min(this.x, obj.x)
+      this.y  := (this.y  == "") ? obj.y  : Min(this.y, obj.y)
+      this.x2 := (this.x2 == "") ? obj.x2 : Max(this.x2, obj.x2)
+      this.y2 := (this.y2 == "") ? obj.y2 : Max(this.y2, obj.y2)
       this.w  := this.x2 - this.x
       this.h  := this.y2 - this.y
       this.chars := obj.chars
@@ -450,7 +450,7 @@ class TextRender {
       ; Define viewport width and height. This is the visible canvas area.
       vw := 0.01 * CanvasWidth         ; 1% of viewport width.
       vh := 0.01 * CanvasHeight        ; 1% of viewport height.
-      vmin := (vw < vh) ? vw : vh      ; 1vw or 1vh, whichever is smaller.
+      vmin := Min(vw, vh)              ; 1vw or 1vh, whichever is smaller.
       vr := CanvasWidth / CanvasHeight ; Aspect ratio of the viewport.
 
       ; Get background width and height.
@@ -544,7 +544,7 @@ class TextRender {
       ; Extract the simulated width and height of the text string's bounding box...
       width := NumGet(RectF, 8, "float")
       height := NumGet(RectF, 12, "float")
-      minimum := (width < height) ? width : height
+      minimum := Min(width, height)
       aspect := (height != 0) ? width / height : 0
 
       ; And use those values for the background width and height.
@@ -686,7 +686,7 @@ class TextRender {
       }
 
       ; Define the smaller of the backgound width or height.
-      _min := (_w > _h) ? _h : _w
+      _min := Min(_w, _h)
 
       ; Define the maximum roundness of the background bubble.
       _rmax := _min / 2
@@ -699,7 +699,7 @@ class TextRender {
       _r := (_r ~= "i)vh$") ? RegExReplace(_r, "i)vh$", "") * vh : _r
       _r := (_r ~= "i)vmin$") ? RegExReplace(_r, "i)vmin$", "") * vmin : _r
       _r := (_r ~= "%$") ? RegExReplace(_r, "%$", "") * 0.01 * _min : _r ; percentage of minimum
-      _r := (_r > _rmax) ? _rmax : _r ; Exceeding _rmax will create a candy wrapper effect.
+      _r := Min(_r, _rmax) ; Exceeding _rmax will create a candy wrapper effect.
 
       ; Define outline and dropShadow.
       o := this.parse.outline(o, vw, vh, s, c)
@@ -1200,7 +1200,7 @@ class TextRender {
          static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
          static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\\\/\s:#%_a-z\-\.\d]+|\([\\\/\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
          static valid := "(?i)^\s*(\-?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*(%|pt|px|vh|vmin|vw)?\s*$"
-         vmin := (vw < vh) ? vw : vh
+         vmin := Min(vw, vh)
 
          if IsObject(d) {
             d.1 := (d.horizontal != "") ? d.horizontal : (d.h != "") ? d.h : d.1
@@ -1266,7 +1266,7 @@ class TextRender {
          static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
          static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\\\/\s:#%_a-z\-\.\d]+|\([\\\/\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
          static valid := "(?i)^\s*(\-?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*(%|pt|px|vh|vmin|vw)?\s*$"
-         vmin := (vw < vh) ? vw : vh
+         vmin := Min(vw, vh)
 
          if IsObject(m) {
             m.1 := (m.top    != "") ? m.top    : (m.t != "") ? m.t : m.1
@@ -1312,7 +1312,7 @@ class TextRender {
          static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
          static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\\\/\s:#%_a-z\-\.\d]+|\([\\\/\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
          static valid_positive := "(?i)^\s*((?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*(%|pt|px|vh|vmin|vw)?\s*$"
-         vmin := (vw < vh) ? vw : vh
+         vmin := Min(vw, vh)
 
          if IsObject(o) {
             o.1 := (o.stroke != "") ? o.stroke : (o.s != "") ? o.s : o.1
@@ -2185,13 +2185,13 @@ class ImageRender extends TextRender {
       ; Define viewport width and height. This is the visible screen area.
       vw := 0.01 * CanvasWidth         ; 1% of viewport width.
       vh := 0.01 * CanvasHeight        ; 1% of viewport height.
-      vmin := (vw < vh) ? vw : vh      ; 1vw or 1vh, whichever is smaller.
+      vmin := Min(vw, vh)              ; 1vw or 1vh, whichever is smaller.
       vr := CanvasWidth / CanvasHeight ; Aspect ratio of the viewport.
 
       ; Get original image width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
-      minimum := (width < height) ? width : height
+      minimum := Min(width, height)
       aspect := width / height
 
       ; Get width and height.

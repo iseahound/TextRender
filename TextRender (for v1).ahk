@@ -20,14 +20,10 @@ class TextRender {
    __New(title := "", style := 0x80000000, styleEx := 0x80088, parent := "") {
       this.gdiplusStartup()
 
-      ; Set a DPI awareness context for CreateWindow().
+      ; Create and show the window with DPI awareness PER_MONITOR_AWARE_V2.
       dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
-
-      ; Create and show the window.
       this.hwnd := this.CreateWindow(title, style, styleEx, parent)
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
-
-      ; Restore old DPI awareness context.
       DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; Store a reference to this object accessed by the window handle.

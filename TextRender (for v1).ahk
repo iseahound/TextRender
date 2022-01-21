@@ -89,6 +89,8 @@ class TextRender {
 
          ; Create a timer that eventually clears the canvas.
          if (this.t > 0) {
+            DllCall("QueryPerformanceCounter", "int64*", start:=0)
+            this.t0 := start
             ; Create a reference to the object held by a timer.
             blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
             SetTimer % blank, % -this.t ; Calls __Delete.
@@ -163,6 +165,8 @@ class TextRender {
 
       ; Create a timer that eventually clears the canvas.
       if (this.t > 0) {
+         DllCall("QueryPerformanceCounter", "int64*", start:=0)
+         this.t0 := start
          ; Create a reference to the object held by a timer.
          blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
          SetTimer % blank, % -this.t ; Calls __Delete.
@@ -210,6 +214,8 @@ class TextRender {
 
          ; Create a timer that eventually clears the canvas.
          if (this.t > 0) {
+            DllCall("QueryPerformanceCounter", "int64*", start:=0)
+            this.t0 := start
             ; Create a reference to the object held by a timer.
             fade := ObjBindMethod(this, "fade", 0, fade_out, this.status) ; Calls Fade() with no fade_in.
             SetTimer % fade, % -this.t ; Calls __Delete.
@@ -1481,9 +1487,17 @@ class TextRender {
 
       ; WM_DISPLAYCHANGE calls UpdateMemory().
       if (uMsg = 0x7E) {
-         for i, layer in this.layers
-            this.Draw(layer[1], layer[2], layer[3])
-         return this.RenderOnScreen()
+         DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
+         DllCall("QueryPerformanceCounter", "int64*", end:=0)
+         time_elapsed := (end - this.t0) / frequency * 1000
+         remaining_time := this.t - time_elapsed
+         if (remaining_time > 0){
+            this.UpdateMemory()
+            for i, layer in this.layers
+               this.Draw(layer[1], layer[2], layer[3])
+            this.t := remaining_time
+            return this.Render()
+         }
       }
 
       ; Match window messages to Rainmeter event names.

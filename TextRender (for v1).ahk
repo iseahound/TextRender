@@ -312,10 +312,30 @@ class TextRender {
    }
 
    Sleep(milliseconds := 0) {
-      this.Clear()
-      if (milliseconds)
+
+      if (this.t != 0) {
+         ; Prevent the timer from blanking our canvas.
+         this.status := this.status + 1
+
+         DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
+         timer:
+         DllCall("QueryPerformanceCounter", "int64*", end:=0)
+         time_elapsed := (end - this.t0) / frequency * 1000
+         remaining_time := this.t - time_elapsed
+         if (remaining_time > 30) {
+            Sleep 10
+            goto timer
+         }
+         if (remaining_time > 0)
+            goto timer
+      }
+
+      if (milliseconds > 0) {
+         this.Clear() ; Don't clear the canvas if there is no sleep.
          Sleep % milliseconds
-      return this
+      }
+
+      return this ; Allow the next render call to update the current window.
    }
 
    Counter() { ; Returns a number in units of milliseconds.

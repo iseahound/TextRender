@@ -65,7 +65,7 @@ class TextRender {
 
    Render(terms*) {
       ; Check the terms to avoid drawing a default square.
-      if (terms.1 != "" || terms.2 != "" || terms.3 != "") {
+      if (terms[1] != "" || terms[2] != "" || terms[3] != "") {
          this.Draw(terms*)
       }
 
@@ -102,7 +102,7 @@ class TextRender {
 
    RenderOnScreen(terms*) {
       ; Check the terms to avoid drawing a default square.
-      if (terms.1 != "" || terms.2 != "" || terms.3 != "") {
+      if (terms[1] != "" || terms[2] != "" || terms[3] != "") {
          this.Draw(terms*)
       }
 
@@ -668,14 +668,14 @@ class TextRender {
       _m := this.parse.margin_and_padding(_m, vw, vh, (m.void && _w > 0 && _h > 0) ? "1vmin" : "")
 
       ; Modify _x, _y, _w, _h with margin and padding, increasing the size of the background.
-      _w += Round(_m.2) + Round(_m.4) + Round(m.2) + Round(m.4)
-      _h += Round(_m.1) + Round(_m.3) + Round(m.1) + Round(m.3)
-      _x -= Round(_m.4)
-      _y -= Round(_m.1)
+      _w += Round(_m[2]) + Round(_m[4]) + Round(m[2]) + Round(m[4])
+      _h += Round(_m[1]) + Round(_m[3]) + Round(m[1]) + Round(m[3])
+      _x -= Round(_m[4])
+      _y -= Round(_m[1])
 
       ; If margin/padding are defined in the text parameter, shift the position of the text.
-      x  += Round(m.4)
-      y  += Round(m.1)
+      x  += Round(m[4])
+      y  += Round(m[1])
 
       ; Re-run: Condense Text using a Condensed Font if simulated text width exceeds screen width.
       if (z) {
@@ -738,7 +738,7 @@ class TextRender {
 
       ; Draw 2 - DropShadow
       if (!d.void) {
-         offset2 := d.3 + d.6 + Ceil(0.5*o.1)
+         offset2 := d[3] + d[6] + Ceil(0.5*o[1])
 
          ; If blur is present, a second canvas must be seperately processed to apply the Gaussian Blur effect.
          if (true) {
@@ -749,29 +749,29 @@ class TextRender {
             DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", DropShadow, "ptr*", DropShadowG:=0)
             DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", 0) ; SmoothingModeNoAntiAlias
             DllCall("gdiplus\GdipSetTextRenderingHint", "ptr", DropShadowG, "int", 1) ; TextRenderingHintSingleBitPerPixelGridFit
-            DllCall("gdiplus\GdipGraphicsClear", "ptr", gfx, "uint", d.4 & 0xFFFFFF)
+            DllCall("gdiplus\GdipGraphicsClear", "ptr", gfx, "uint", d[4] & 0xFFFFFF)
             VarSetCapacity(RectF, 16, 0)          ; sizeof(RectF) = 16
-               NumPut(d.1+x, RectF,  0,  "float") ; Left
-               NumPut(d.2+y, RectF,  4,  "float") ; Top
+               NumPut(d[1]+x, RectF,  0,  "float") ; Left
+               NumPut(d[2]+y, RectF,  4,  "float") ; Top
                NumPut(    w, RectF,  8,  "float") ; Width
                NumPut(    h, RectF, 12,  "float") ; Height
 
             ;CreateRectF(RC, offset2, offset2, w + 2*offset2, h + 2*offset2)
          } else {
-            ;CreateRectF(RC, x + d.1, y + d.2, w, h)
+            ;CreateRectF(RC, x + d[1], y + d[2], w, h)
             VarSetCapacity(RectF, 16, 0)          ; sizeof(RectF) = 16
-               NumPut(d.1+x, RectF,  0,  "float") ; Left
-               NumPut(d.2+y, RectF,  4,  "float") ; Top
+               NumPut(d[1]+x, RectF,  0,  "float") ; Left
+               NumPut(d[2]+y, RectF,  4,  "float") ; Top
                NumPut(    w, RectF,  8,  "float") ; Width
                NumPut(    h, RectF, 12,  "float") ; Height
             DropShadowG := gfx
          }
 
          ; Use Gdip_DrawString if and only if there is a horizontal/vertical offset.
-         if (o.void && d.6 == 0)
+         if (o.void && d[6] == 0)
          {
             ; Use shadow solid brush.
-            DllCall("gdiplus\GdipCreateSolidFill", "uint", d.4, "ptr*", pBrush:=0)
+            DllCall("gdiplus\GdipCreateSolidFill", "uint", d[4], "ptr*", pBrush:=0)
             DllCall("gdiplus\GdipDrawString"
                      ,    "ptr", DropShadowG
                      ,   "wstr", text
@@ -795,13 +795,13 @@ class TextRender {
                      ,  "float", s
                      ,    "ptr", &RectF
                      ,    "ptr", hFormat)
-            DllCall("gdiplus\GdipCreatePen1", "uint", d.4, "float", 2*d.6 + o.1, "int", 2, "ptr*", pPen:=0)
+            DllCall("gdiplus\GdipCreatePen1", "uint", d[4], "float", 2*d[6] + o[1], "int", 2, "ptr*", pPen:=0)
             DllCall("gdiplus\GdipSetPenLineJoin", "ptr", pPen, "uint", 2) ; LineJoinTypeRound
             DllCall("gdiplus\GdipDrawPath", "ptr", DropShadowG, "ptr", pPen, "ptr", pPath)
             DllCall("gdiplus\GdipDeletePen", "ptr", pPen)
 
             ; Fill in the outline. Turn off antialiasing and alpha blending so the gaps are 100% filled.
-            DllCall("gdiplus\GdipCreateSolidFill", "uint", d.4, "ptr*", pBrush:=0)
+            DllCall("gdiplus\GdipCreateSolidFill", "uint", d[4], "ptr*", pBrush:=0)
             DllCall("gdiplus\GdipSetCompositingMode", "ptr", DropShadowG, "int", 1) ; CompositingModeSourceCopy
             DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", 0) ; SmoothingModeNoAntiAlias
             DllCall("gdiplus\GdipFillPath", "ptr", DropShadowG, "ptr", pBrush, "ptr", pPath) ; DRAWING!
@@ -813,10 +813,10 @@ class TextRender {
 
          if (true) {
             DllCall("gdiplus\GdipDeleteGraphics", "ptr", DropShadowG)
-            this.filter.GaussianBlur(DropShadow, d.3, d.5)
+            this.filter.GaussianBlur(DropShadow, d[3], d[5])
             DllCall("gdiplus\GdipSetInterpolationMode", "ptr", gfx, "int", 5) ; NearestNeighbor
             DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", 0) ; SmoothingModeNoAntiAlias
-            ;Gdip_DrawImage(gfx, DropShadow, x + d.1 - offset2, y + d.2 - offset2, w + 2*offset2, h + 2*offset2) ; DRAWING!
+            ;Gdip_DrawImage(gfx, DropShadow, x + d[1] - offset2, y + d[2] - offset2, w + 2*offset2, h + 2*offset2) ; DRAWING!
             ;Gdip_DrawImage(gfx, DropShadow, 0, 0, A_Screenwidth, A_ScreenHeight) ; DRAWING!
             DllCall("gdiplus\GdipDrawImageRectRectI" ; DRAWING!
                      ,    "ptr", gfx
@@ -853,15 +853,15 @@ class TextRender {
                   ,    "ptr", hFormat)
 
          ; Create a glow effect around the edges.
-         if (o.3) {
+         if (o[3]) {
             DllCall("gdiplus\GdipSetClipPath", "ptr", gfx, "ptr", pPath, "int", 3) ; Exclude original text region from being drawn on.
-            ARGB := Format("0x{:02X}",((o.4 & 0xFF000000) >> 24)/o.3) . Format("{:06X}",(o.4 & 0x00FFFFFF))
+            ARGB := Format("0x{:02X}",((o[4] & 0xFF000000) >> 24)/o[3]) . Format("{:06X}",(o[4] & 0x00FFFFFF))
             DllCall("gdiplus\GdipCreatePen1", "uint", ARGB, "float", 1, "int", 2, "ptr*", pPenGlow:=0) ; UnitTypePixel = 2
             DllCall("gdiplus\GdipSetPenLineJoin", "ptr",pPenGlow, "uint",2) ; LineJoinTypeRound
 
-            Loop % o.3
+            Loop % o[3]
             {
-               DllCall("gdiplus\GdipSetPenWidth", "ptr", pPenGlow, "float", o.1 + 2*A_Index)
+               DllCall("gdiplus\GdipSetPenWidth", "ptr", pPenGlow, "float", o[1] + 2*A_Index)
                DllCall("gdiplus\GdipDrawPath", "ptr", gfx, "ptr", pPenGlow, "ptr", pPath) ; DRAWING!
             }
             DllCall("gdiplus\GdipDeletePen", "ptr", pPenGlow)
@@ -869,8 +869,8 @@ class TextRender {
          }
 
          ; Draw outline text.
-         if (o.1) {
-            DllCall("gdiplus\GdipCreatePen1", "uint", o.2, "float", o.1, "int", 2, "ptr*", pPen:=0) ; UnitTypePixel = 2
+         if (o[1]) {
+            DllCall("gdiplus\GdipCreatePen1", "uint", o[2], "float", o[1], "int", 2, "ptr*", pPen:=0) ; UnitTypePixel = 2
             DllCall("gdiplus\GdipSetPenLineJoin", "ptr", pPen, "uint", 2) ; LineJoinTypeRound
             DllCall("gdiplus\GdipDrawPath", "ptr", gfx, "ptr", pPen, "ptr", pPath) ; DRAWING!
             DllCall("gdiplus\GdipDeletePen", "ptr", pPen)
@@ -954,18 +954,18 @@ class TextRender {
       y2_bound := (_c & 0xFF000000) ? Max(_y+_h, y+h) : y+h
 
       ; outline boundary.
-      o_bound  := Ceil(0.5 * o.1 + o.3)
+      o_bound  := Ceil(0.5 * o[1] + o[3])
       x_bound  := Min(x - o_bound, x_bound)
       y_bound  := Min(y - o_bound, y_bound)
       x2_bound := Max(x + w + o_bound, x2_bound)
       y2_bound := Max(y + h + o_bound, y2_bound)
 
       ; dropShadow boundary.
-      d_bound  := Ceil(0.5 * o.1 + d.3 + d.6)
-      x_bound  := Min(x + d.1 - d_bound, x_bound)
-      y_bound  := Min(y + d.2 - d_bound, y_bound)
-      x2_bound := Max(x + w + d.1 + d_bound, x2_bound)
-      y2_bound := Max(y + h + d.2 + d_bound, y2_bound)
+      d_bound  := Ceil(0.5 * o[1] + d[3] + d[6])
+      x_bound  := Min(x + d[1] - d_bound, x_bound)
+      y_bound  := Min(y + d[2] - d_bound, y_bound)
+      x2_bound := Max(x + w + d[1] + d_bound, x2_bound)
+      y2_bound := Max(y + h + d[2] + d_bound, y2_bound)
 
       return {t: t_bound
             , x: x_bound
@@ -1209,22 +1209,22 @@ class TextRender {
          vmin := Min(vw, vh)
 
          if IsObject(d) {
-            d.1 := (d.horizontal != "") ? d.horizontal : (d.h != "") ? d.h : d.1
-            d.2 := (d.vertical   != "") ? d.vertical   : (d.v != "") ? d.h : d.2
-            d.3 := (d.blur       != "") ? d.blur       : (d.b != "") ? d.h : d.3
-            d.4 := (d.color      != "") ? d.color      : (d.c != "") ? d.h : d.4
-            d.5 := (d.opacity    != "") ? d.opacity    : (d.o != "") ? d.h : d.5
-            d.6 := (d.size       != "") ? d.size       : (d.s != "") ? d.h : d.6
+            d[1] := (d.horizontal != "") ? d.horizontal : (d.h != "") ? d.h : d[1]
+            d[2] := (d.vertical   != "") ? d.vertical   : (d.v != "") ? d.h : d[2]
+            d[3] := (d.blur       != "") ? d.blur       : (d.b != "") ? d.h : d[3]
+            d[4] := (d.color      != "") ? d.color      : (d.c != "") ? d.h : d[4]
+            d[5] := (d.opacity    != "") ? d.opacity    : (d.o != "") ? d.h : d[5]
+            d[6] := (d.size       != "") ? d.size       : (d.s != "") ? d.h : d[6]
          } else if (d != "") {
             _ := RegExReplace(d, ":\s+", ":")
             _ := RegExReplace(_, "\s+", " ")
             _ := StrSplit(_, " ")
-            _.1 := ((___ := RegExReplace(d, q1    "(h(orizontal)?)"    q2, "${value}")) != d) ? ___ : _.1
-            _.2 := ((___ := RegExReplace(d, q1    "(v(ertical)?)"      q2, "${value}")) != d) ? ___ : _.2
-            _.3 := ((___ := RegExReplace(d, q1    "(b(lur)?)"          q2, "${value}")) != d) ? ___ : _.3
-            _.4 := ((___ := RegExReplace(d, q1    "(c(olor)?)"         q2, "${value}")) != d) ? ___ : _.4
-            _.5 := ((___ := RegExReplace(d, q1    "(o(pacity)?)"       q2, "${value}")) != d) ? ___ : _.5
-            _.6 := ((___ := RegExReplace(d, q1    "(s(ize)?)"          q2, "${value}")) != d) ? ___ : _.6
+            _[1] := ((___ := RegExReplace(d, q1    "(h(orizontal)?)"    q2, "${value}")) != d) ? ___ : _[1]
+            _[2] := ((___ := RegExReplace(d, q1    "(v(ertical)?)"      q2, "${value}")) != d) ? ___ : _[2]
+            _[3] := ((___ := RegExReplace(d, q1    "(b(lur)?)"          q2, "${value}")) != d) ? ___ : _[3]
+            _[4] := ((___ := RegExReplace(d, q1    "(c(olor)?)"         q2, "${value}")) != d) ? ___ : _[4]
+            _[5] := ((___ := RegExReplace(d, q1    "(o(pacity)?)"       q2, "${value}")) != d) ? ___ : _[5]
+            _[6] := ((___ := RegExReplace(d, q1    "(s(ize)?)"          q2, "${value}")) != d) ? ___ : _[6]
             d := _
          }
          else return {"void":true, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0}
@@ -1239,13 +1239,13 @@ class TextRender {
             d[key] := (d[key] ~= "i)vmin$") ? RegExReplace(d[key], "i)vmin$", "") * vmin : d[key]
          }
 
-         d.1 := (d.1 ~= "%$") ? SubStr(d.1, 1, -1) * 0.01 * width : d.1
-         d.2 := (d.2 ~= "%$") ? SubStr(d.2, 1, -1) * 0.01 * height : d.2
-         d.3 := (d.3 ~= "%$") ? SubStr(d.3, 1, -1) * 0.01 * font_size : d.3
-         d.4 := this.color(d.4, 0xFFFF0000) ; Default color is red.
-         d.5 := (d.5 ~= "%$") ? SubStr(d.5, 1, -1) / 100 : d.5
-         d.5 := (d.5 <= 0 || d.5 > 1) ? 1 : d.5 ; Range Opacity is a float from 0-1.
-         d.6 := (d.6 ~= "%$") ? SubStr(d.6, 1, -1) * 0.01 * font_size : d.6
+         d[1] := (d[1] ~= "%$") ? SubStr(d[1], 1, -1) * 0.01 * width : d[1]
+         d[2] := (d[2] ~= "%$") ? SubStr(d[2], 1, -1) * 0.01 * height : d[2]
+         d[3] := (d[3] ~= "%$") ? SubStr(d[3], 1, -1) * 0.01 * font_size : d[3]
+         d[4] := this.color(d[4], 0xFFFF0000) ; Default color is red.
+         d[5] := (d[5] ~= "%$") ? SubStr(d[5], 1, -1) / 100 : d[5]
+         d[5] := (d[5] <= 0 || d[5] > 1) ? 1 : d[5] ; Range Opacity is a float from 0-1.
+         d[6] := (d[6] ~= "%$") ? SubStr(d[6], 1, -1) * 0.01 * font_size : d[6]
          return d
       }
 
@@ -1275,30 +1275,30 @@ class TextRender {
          vmin := Min(vw, vh)
 
          if IsObject(m) {
-            m.1 := (m.top    != "") ? m.top    : (m.t != "") ? m.t : m.1
-            m.2 := (m.right  != "") ? m.right  : (m.r != "") ? m.r : m.2
-            m.3 := (m.bottom != "") ? m.bottom : (m.b != "") ? m.b : m.3
-            m.4 := (m.left   != "") ? m.left   : (m.l != "") ? m.l : m.4
+            m[1] := (m.top    != "") ? m.top    : (m.t != "") ? m.t : m[1]
+            m[2] := (m.right  != "") ? m.right  : (m.r != "") ? m.r : m[2]
+            m[3] := (m.bottom != "") ? m.bottom : (m.b != "") ? m.b : m[3]
+            m[4] := (m.left   != "") ? m.left   : (m.l != "") ? m.l : m[4]
          } else if (m != "") {
             _ := RegExReplace(m, ":\s+", ":")
             _ := RegExReplace(_, "\s+", " ")
             _ := StrSplit(_, " ")
-            _.1 := ((___ := RegExReplace(m, q1    "(t(op)?)"           q2, "${value}")) != m) ? ___ : _.1
-            _.2 := ((___ := RegExReplace(m, q1    "(r(ight)?)"         q2, "${value}")) != m) ? ___ : _.2
-            _.3 := ((___ := RegExReplace(m, q1    "(b(ottom)?)"        q2, "${value}")) != m) ? ___ : _.3
-            _.4 := ((___ := RegExReplace(m, q1    "(l(eft)?)"          q2, "${value}")) != m) ? ___ : _.4
+            _[1] := ((___ := RegExReplace(m, q1    "(t(op)?)"           q2, "${value}")) != m) ? ___ : _[1]
+            _[2] := ((___ := RegExReplace(m, q1    "(r(ight)?)"         q2, "${value}")) != m) ? ___ : _[2]
+            _[3] := ((___ := RegExReplace(m, q1    "(b(ottom)?)"        q2, "${value}")) != m) ? ___ : _[3]
+            _[4] := ((___ := RegExReplace(m, q1    "(l(eft)?)"          q2, "${value}")) != m) ? ___ : _[4]
             m := _
          } else if (default != "")
             m := {1:default, 2:default, 3:default, 4:default}
          else return {"void":true, 1:0, 2:0, 3:0, 4:0}
 
          ; Follow CSS guidelines for margin!
-         if (m.2 == "" && m.3 == "" && m.4 == "")
-            m.4 := m.3 := m.2 := m.1, exception := true
-         if (m.3 == "" && m.4 == "")
-            m.4 := m.2, m.3 := m.1
-         if (m.4 == "")
-            m.4 := m.2
+         if (m[2] == "" && m[3] == "" && m[4] == "")
+            m[4] := m[3] := m[2] := m[1], exception := true
+         if (m[3] == "" && m[4] == "")
+            m[4] := m[2], m[3] := m[1]
+         if (m[4] == "")
+            m[4] := m[2]
 
          for key, value in m {
             m[key] := (m[key] ~= valid) ? RegExReplace(m[key], "\s") : default
@@ -1307,10 +1307,10 @@ class TextRender {
             m[key] := (m[key] ~= "i)vh$") ? RegExReplace(m[key], "i)vh$", "") * vh : m[key]
             m[key] := (m[key] ~= "i)vmin$") ? RegExReplace(m[key], "i)vmin$", "") * vmin : m[key]
          }
-         m.1 := (m.1 ~= "%$") ? SubStr(m.1, 1, -1) * vh : m.1
-         m.2 := (m.2 ~= "%$") ? SubStr(m.2, 1, -1) * (exception ? vh : vw) : m.2
-         m.3 := (m.3 ~= "%$") ? SubStr(m.3, 1, -1) * vh : m.3
-         m.4 := (m.4 ~= "%$") ? SubStr(m.4, 1, -1) * (exception ? vh : vw) : m.4
+         m[1] := (m[1] ~= "%$") ? SubStr(m[1], 1, -1) * vh : m[1]
+         m[2] := (m[2] ~= "%$") ? SubStr(m[2], 1, -1) * (exception ? vh : vw) : m[2]
+         m[3] := (m[3] ~= "%$") ? SubStr(m[3], 1, -1) * vh : m[3]
+         m[4] := (m[4] ~= "%$") ? SubStr(m[4], 1, -1) * (exception ? vh : vw) : m[4]
          return m
       }
 
@@ -1321,18 +1321,18 @@ class TextRender {
          vmin := Min(vw, vh)
 
          if IsObject(o) {
-            o.1 := (o.stroke != "") ? o.stroke : (o.s != "") ? o.s : o.1
-            o.2 := (o.color  != "") ? o.color  : (o.c != "") ? o.c : o.2
-            o.3 := (o.glow   != "") ? o.glow   : (o.g != "") ? o.g : o.3
-            o.4 := (o.tint   != "") ? o.tint   : (o.t != "") ? o.t : o.4
+            o[1] := (o.stroke != "") ? o.stroke : (o.s != "") ? o.s : o[1]
+            o[2] := (o.color  != "") ? o.color  : (o.c != "") ? o.c : o[2]
+            o[3] := (o.glow   != "") ? o.glow   : (o.g != "") ? o.g : o[3]
+            o[4] := (o.tint   != "") ? o.tint   : (o.t != "") ? o.t : o[4]
          } else if (o != "") {
             _ := RegExReplace(o, ":\s+", ":")
             _ := RegExReplace(_, "\s+", " ")
             _ := StrSplit(_, " ")
-            _.1 := ((___ := RegExReplace(o, q1    "(s(troke)?)"        q2, "${value}")) != o) ? ___ : _.1
-            _.2 := ((___ := RegExReplace(o, q1    "(c(olor)?)"         q2, "${value}")) != o) ? ___ : _.2
-            _.3 := ((___ := RegExReplace(o, q1    "(g(low)?)"          q2, "${value}")) != o) ? ___ : _.3
-            _.4 := ((___ := RegExReplace(o, q1    "(t(int)?)"          q2, "${value}")) != o) ? ___ : _.4
+            _[1] := ((___ := RegExReplace(o, q1    "(s(troke)?)"        q2, "${value}")) != o) ? ___ : _[1]
+            _[2] := ((___ := RegExReplace(o, q1    "(c(olor)?)"         q2, "${value}")) != o) ? ___ : _[2]
+            _[3] := ((___ := RegExReplace(o, q1    "(g(low)?)"          q2, "${value}")) != o) ? ___ : _[3]
+            _[4] := ((___ := RegExReplace(o, q1    "(t(int)?)"          q2, "${value}")) != o) ? ___ : _[4]
             o := _
          }
          else return {"void":true, 1:0, 2:0, 3:0, 4:0}
@@ -1347,10 +1347,10 @@ class TextRender {
             o[key] := (o[key] ~= "i)vmin$") ? RegExReplace(o[key], "i)vmin$", "") * vmin : o[key]
          }
 
-         o.1 := (o.1 ~= "%$") ? SubStr(o.1, 1, -1) * 0.01 * font_size : o.1
-         o.2 := this.color(o.2, font_color) ; Default color is the text font color.
-         o.3 := (o.3 ~= "%$") ? SubStr(o.3, 1, -1) * 0.01 * font_size : o.3
-         o.4 := this.color(o.4, o.2) ; Default color is outline color.
+         o[1] := (o[1] ~= "%$") ? SubStr(o[1], 1, -1) * 0.01 * font_size : o[1]
+         o[2] := this.color(o[2], font_color) ; Default color is the text font color.
+         o[3] := (o[3] ~= "%$") ? SubStr(o[3], 1, -1) * 0.01 * font_size : o[3]
+         o[4] := this.color(o[4], o[2]) ; Default color is outline color.
          return o
       }
 
@@ -2328,10 +2328,10 @@ class ImageRender extends TextRender {
       m  := this.parse.margin_and_padding(m, vw, vh)
 
       ; Calculate border using margin.
-      _w := w + Round(m.2) + Round(m.4)
-      _h := h + Round(m.1) + Round(m.3)
-      _x := x - Round(m.4)
-      _y := y - Round(m.1)
+      _w := w + Round(m[2]) + Round(m[4])
+      _h := h + Round(m[1]) + Round(m[3])
+      _x := x - Round(m[4])
+      _y := y - Round(m[1])
 
       ; Save original Graphics settings.
       DllCall("gdiplus\GdipSaveGraphics", "ptr", gfx, "ptr*", pState:=0)

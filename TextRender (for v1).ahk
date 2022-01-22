@@ -456,22 +456,22 @@ class TextRender {
       ; Get background width and height.
       _w := (_w ~= valid_positive) ? RegExReplace(_w, "\s") : ""
       _w := (_w ~= "i)(pt|px)$") ? SubStr(_w, 1, -2) : _w
-      _w := (_w ~= "i)(%|vw)$") ? RegExReplace(_w, "i)(%|vw)$", "") * vw : _w
-      _w := (_w ~= "i)vh$") ? RegExReplace(_w, "i)vh$", "") * vh : _w
-      _w := (_w ~= "i)vmin$") ? RegExReplace(_w, "i)vmin$", "") * vmin : _w
+      _w := (_w ~= "i)(%|vw)$") ? RegExReplace(_w, "i)(%|vw)$") * vw : _w
+      _w := (_w ~= "i)vh$") ? RegExReplace(_w, "i)vh$") * vh : _w
+      _w := (_w ~= "i)vmin$") ? RegExReplace(_w, "i)vmin$") * vmin : _w
 
       _h := (_h ~= valid_positive) ? RegExReplace(_h, "\s") : ""
       _h := (_h ~= "i)(pt|px)$") ? SubStr(_h, 1, -2) : _h
-      _h := (_h ~= "i)vw$") ? RegExReplace(_h, "i)vw$", "") * vw : _h
-      _h := (_h ~= "i)(%|vh)$") ? RegExReplace(_h, "i)(%|vh)$", "") * vh : _h
-      _h := (_h ~= "i)vmin$") ? RegExReplace(_h, "i)vmin$", "") * vmin : _h
+      _h := (_h ~= "i)vw$") ? RegExReplace(_h, "i)vw$") * vw : _h
+      _h := (_h ~= "i)(%|vh)$") ? RegExReplace(_h, "i)(%|vh)$") * vh : _h
+      _h := (_h ~= "i)vmin$") ? RegExReplace(_h, "i)vmin$") * vmin : _h
 
       ; Get Font size.
       s  := (s ~= valid_positive) ? RegExReplace(s, "\s") : "2.23vh"          ; Default font size is 2.23vh.
       s  := (s ~= "i)(pt|px)$") ? SubStr(s, 1, -2) : s                            ; Strip spaces, px, and pt.
-      s  := (s ~= "i)vh$") ? RegExReplace(s, "i)vh$", "") * vh : s                ; Relative to viewport height.
-      s  := (s ~= "i)vw$") ? RegExReplace(s, "i)vw$", "") * vw : s                ; Relative to viewport width.
-      s  := (s ~= "i)(%|vmin)$") ? RegExReplace(s, "i)(%|vmin)$", "") * vmin : s  ; Relative to viewport minimum.
+      s  := (s ~= "i)vh$") ? RegExReplace(s, "i)vh$") * vh : s                ; Relative to viewport height.
+      s  := (s ~= "i)vw$") ? RegExReplace(s, "i)vw$") * vw : s                ; Relative to viewport width.
+      s  := (s ~= "i)(%|vmin)$") ? RegExReplace(s, "i)(%|vmin)$") * vmin : s  ; Relative to viewport minimum.
 
       ; Get Bold, Italic, Underline, NoWrap, and Justification of text.
       style := (b) ? 1 : 0         ; bold
@@ -572,15 +572,15 @@ class TextRender {
       ; Get _x and _y.
       _x := (_x ~= valid) ? RegExReplace(_x, "\s") : ""
       _x := (_x ~= "i)(pt|px)$") ? SubStr(_x, 1, -2) : _x
-      _x := (_x ~= "i)(%|vw)$") ? RegExReplace(_x, "i)(%|vw)$", "") * vw : _x
-      _x := (_x ~= "i)vh$") ? RegExReplace(_x, "i)vh$", "") * vh : _x
-      _x := (_x ~= "i)vmin$") ? RegExReplace(_x, "i)vmin$", "") * vmin : _x
+      _x := (_x ~= "i)(%|vw)$") ? RegExReplace(_x, "i)(%|vw)$") * vw : _x
+      _x := (_x ~= "i)vh$") ? RegExReplace(_x, "i)vh$") * vh : _x
+      _x := (_x ~= "i)vmin$") ? RegExReplace(_x, "i)vmin$") * vmin : _x
 
       _y := (_y ~= valid) ? RegExReplace(_y, "\s") : ""
       _y := (_y ~= "i)(pt|px)$") ? SubStr(_y, 1, -2) : _y
-      _y := (_y ~= "i)vw$") ? RegExReplace(_y, "i)vw$", "") * vw : _y
-      _y := (_y ~= "i)(%|vh)$") ? RegExReplace(_y, "i)(%|vh)$", "") * vh : _y
-      _y := (_y ~= "i)vmin$") ? RegExReplace(_y, "i)vmin$", "") * vmin : _y
+      _y := (_y ~= "i)vw$") ? RegExReplace(_y, "i)vw$") * vw : _y
+      _y := (_y ~= "i)(%|vh)$") ? RegExReplace(_y, "i)(%|vh)$") * vh : _y
+      _y := (_y ~= "i)vmin$") ? RegExReplace(_y, "i)vmin$") * vmin : _y
 
       ; Default x and y to center of the canvas. Default anchor to horizontal center and vertical center.
       if (_x == "")
@@ -602,17 +602,17 @@ class TextRender {
       ; Get the text width and text height.
       w  := ( w ~= valid_positive) ? RegExReplace( w, "\s") : width ; Default is simulated text width.
       w  := ( w ~= "i)(pt|px)$") ? SubStr( w, 1, -2) :  w
-      w  := ( w ~= "i)vw$") ? RegExReplace( w, "i)vw$", "") * vw :  w
-      w  := ( w ~= "i)vh$") ? RegExReplace( w, "i)vh$", "") * vh :  w
-      w  := ( w ~= "i)vmin$") ? RegExReplace( w, "i)vmin$", "") * vmin :  w
-      w  := ( w ~= "%$") ? RegExReplace( w, "%$", "") * 0.01 * _w :  w
+      w  := ( w ~= "i)vw$") ? RegExReplace( w, "i)vw$") * vw :  w
+      w  := ( w ~= "i)vh$") ? RegExReplace( w, "i)vh$") * vh :  w
+      w  := ( w ~= "i)vmin$") ? RegExReplace( w, "i)vmin$") * vmin :  w
+      w  := ( w ~= "%$") ? RegExReplace( w, "%$") * 0.01 * _w :  w
 
       h  := ( h ~= valid_positive) ? RegExReplace( h, "\s") : height ; Default is simulated text height.
       h  := ( h ~= "i)(pt|px)$") ? SubStr( h, 1, -2) :  h
-      h  := ( h ~= "i)vw$") ? RegExReplace( h, "i)vw$", "") * vw :  h
-      h  := ( h ~= "i)vh$") ? RegExReplace( h, "i)vh$", "") * vh :  h
-      h  := ( h ~= "i)vmin$") ? RegExReplace( h, "i)vmin$", "") * vmin :  h
-      h  := ( h ~= "%$") ? RegExReplace( h, "%$", "") * 0.01 * _h :  h
+      h  := ( h ~= "i)vw$") ? RegExReplace( h, "i)vw$") * vw :  h
+      h  := ( h ~= "i)vh$") ? RegExReplace( h, "i)vh$") * vh :  h
+      h  := ( h ~= "i)vmin$") ? RegExReplace( h, "i)vmin$") * vmin :  h
+      h  := ( h ~= "%$") ? RegExReplace( h, "%$") * 0.01 * _h :  h
 
       ; Manually justify because text width and height may be set above.
       ; If text justification is set but x is not, align the justified text relative to the center
@@ -644,18 +644,18 @@ class TextRender {
       ; Default text x is background x.
       x  := ( x ~= valid) ? RegExReplace( x, "\s") : _x
       x  := ( x ~= "i)(pt|px)$") ? SubStr( x, 1, -2) :  x
-      x  := ( x ~= "i)vw$") ? RegExReplace( x, "i)vw$", "") * vw :  x
-      x  := ( x ~= "i)vh$") ? RegExReplace( x, "i)vh$", "") * vh :  x
-      x  := ( x ~= "i)vmin$") ? RegExReplace( x, "i)vmin$", "") * vmin :  x
-      x  := ( x ~= "%$") ? RegExReplace( x, "%$", "") * 0.01 * _w :  x
+      x  := ( x ~= "i)vw$") ? RegExReplace( x, "i)vw$") * vw :  x
+      x  := ( x ~= "i)vh$") ? RegExReplace( x, "i)vh$") * vh :  x
+      x  := ( x ~= "i)vmin$") ? RegExReplace( x, "i)vmin$") * vmin :  x
+      x  := ( x ~= "%$") ? RegExReplace( x, "%$") * 0.01 * _w :  x
 
       ; Default text y is background y.
       y  := ( y ~= valid) ? RegExReplace( y, "\s") : _y
       y  := ( y ~= "i)(pt|px)$") ? SubStr( y, 1, -2) :  y
-      y  := ( y ~= "i)vw$") ? RegExReplace( y, "i)vw$", "") * vw :  y
-      y  := ( y ~= "i)vh$") ? RegExReplace( y, "i)vh$", "") * vh :  y
-      y  := ( y ~= "i)vmin$") ? RegExReplace( y, "i)vmin$", "") * vmin :  y
-      y  := ( y ~= "%$") ? RegExReplace( y, "%$", "") * 0.01 * _h :  y
+      y  := ( y ~= "i)vw$") ? RegExReplace( y, "i)vw$") * vw :  y
+      y  := ( y ~= "i)vh$") ? RegExReplace( y, "i)vh$") * vh :  y
+      y  := ( y ~= "i)vmin$") ? RegExReplace( y, "i)vmin$") * vmin :  y
+      y  := ( y ~= "%$") ? RegExReplace( y, "%$") * 0.01 * _h :  y
 
       ; Modify text x and text y values with the anchor, so that the text has a new point of origin.
       ; The text anchor is relative to the text width and height before margin/padding.
@@ -695,10 +695,10 @@ class TextRender {
       _r := (_r ~= "i)max") ? _rmax : _r
       _r := (_r ~= valid_positive) ? RegExReplace(_r, "\s") : 0
       _r := (_r ~= "i)(pt|px)$") ? SubStr(_r, 1, -2) : _r
-      _r := (_r ~= "i)vw$") ? RegExReplace(_r, "i)vw$", "") * vw : _r
-      _r := (_r ~= "i)vh$") ? RegExReplace(_r, "i)vh$", "") * vh : _r
-      _r := (_r ~= "i)vmin$") ? RegExReplace(_r, "i)vmin$", "") * vmin : _r
-      _r := (_r ~= "%$") ? RegExReplace(_r, "%$", "") * 0.01 * _min : _r ; percentage of minimum
+      _r := (_r ~= "i)vw$") ? RegExReplace(_r, "i)vw$") * vw : _r
+      _r := (_r ~= "i)vh$") ? RegExReplace(_r, "i)vh$") * vh : _r
+      _r := (_r ~= "i)vmin$") ? RegExReplace(_r, "i)vmin$") * vmin : _r
+      _r := (_r ~= "%$") ? RegExReplace(_r, "%$") * 0.01 * _min : _r ; percentage of minimum
       _r := Min(_r, _rmax) ; Exceeding _rmax will create a candy wrapper effect.
 
       ; Define outline and dropShadow.
@@ -1239,9 +1239,9 @@ class TextRender {
                continue
             d[i] := (d[i] ~= valid) ? RegExReplace(d[i], "\s") : 0 ; Default for everything is 0.
             d[i] := (d[i] ~= "i)(pt|px)$") ? SubStr(d[i], 1, -2) : d[i]
-            d[i] := (d[i] ~= "i)vw$") ? RegExReplace(d[i], "i)vw$", "") * vw : d[i]
-            d[i] := (d[i] ~= "i)vh$") ? RegExReplace(d[i], "i)vh$", "") * vh : d[i]
-            d[i] := (d[i] ~= "i)vmin$") ? RegExReplace(d[i], "i)vmin$", "") * vmin : d[i]
+            d[i] := (d[i] ~= "i)vw$") ? RegExReplace(d[i], "i)vw$") * vw : d[i]
+            d[i] := (d[i] ~= "i)vh$") ? RegExReplace(d[i], "i)vh$") * vh : d[i]
+            d[i] := (d[i] ~= "i)vmin$") ? RegExReplace(d[i], "i)vmin$") * vmin : d[i]
          }
 
          d[1] := (d[1] ~= "%$") ? SubStr(d[1], 1, -1) * 0.01 * width : d[1]
@@ -1308,9 +1308,9 @@ class TextRender {
          for i, x in m {
             m[i] := (m[i] ~= valid) ? RegExReplace(m[i], "\s") : default
             m[i] := (m[i] ~= "i)(pt|px)$") ? SubStr(m[i], 1, -2) : m[i]
-            m[i] := (m[i] ~= "i)vw$") ? RegExReplace(m[i], "i)vw$", "") * vw : m[i]
-            m[i] := (m[i] ~= "i)vh$") ? RegExReplace(m[i], "i)vh$", "") * vh : m[i]
-            m[i] := (m[i] ~= "i)vmin$") ? RegExReplace(m[i], "i)vmin$", "") * vmin : m[i]
+            m[i] := (m[i] ~= "i)vw$") ? RegExReplace(m[i], "i)vw$") * vw : m[i]
+            m[i] := (m[i] ~= "i)vh$") ? RegExReplace(m[i], "i)vh$") * vh : m[i]
+            m[i] := (m[i] ~= "i)vmin$") ? RegExReplace(m[i], "i)vmin$") * vmin : m[i]
          }
 
          m[1] := (m[1] ~= "%$") ? SubStr(m[1], 1, -1) * vh : m[1]
@@ -1352,9 +1352,9 @@ class TextRender {
                continue
             o[i] := (o[i] ~= valid_positive) ? RegExReplace(o[i], "\s") : 0 ; Default for everything is 0.
             o[i] := (o[i] ~= "i)(pt|px)$") ? SubStr(o[i], 1, -2) : o[i]
-            o[i] := (o[i] ~= "i)vw$") ? RegExReplace(o[i], "i)vw$", "") * vw : o[i]
-            o[i] := (o[i] ~= "i)vh$") ? RegExReplace(o[i], "i)vh$", "") * vh : o[i]
-            o[i] := (o[i] ~= "i)vmin$") ? RegExReplace(o[i], "i)vmin$", "") * vmin : o[i]
+            o[i] := (o[i] ~= "i)vw$") ? RegExReplace(o[i], "i)vw$") * vw : o[i]
+            o[i] := (o[i] ~= "i)vh$") ? RegExReplace(o[i], "i)vh$") * vh : o[i]
+            o[i] := (o[i] ~= "i)vmin$") ? RegExReplace(o[i], "i)vmin$") * vmin : o[i]
          }
 
          o[1] := (o[1] ~= "%$") ? SubStr(o[1], 1, -1) * 0.01 * font_size : o[1]
@@ -2213,17 +2213,17 @@ class ImageRender extends TextRender {
       ; Get width and height.
       w  := ( w ~= valid_positive) ? RegExReplace( w, "\s") : ""
       w  := ( w ~= "i)(pt|px)$") ? SubStr( w, 1, -2) :  w
-      w  := ( w ~= "i)vw$") ? RegExReplace( w, "i)vw$", "") * vw :  w
-      w  := ( w ~= "i)vh$") ? RegExReplace( w, "i)vh$", "") * vh :  w
-      w  := ( w ~= "i)vmin$") ? RegExReplace( w, "i)vmin$", "") * vmin :  w
-      w  := ( w ~= "%$") ? RegExReplace( w, "%$", "") * 0.01 * width :  w
+      w  := ( w ~= "i)vw$") ? RegExReplace( w, "i)vw$") * vw :  w
+      w  := ( w ~= "i)vh$") ? RegExReplace( w, "i)vh$") * vh :  w
+      w  := ( w ~= "i)vmin$") ? RegExReplace( w, "i)vmin$") * vmin :  w
+      w  := ( w ~= "%$") ? RegExReplace( w, "%$") * 0.01 * width :  w
 
       h  := ( h ~= valid_positive) ? RegExReplace( h, "\s") : ""
       h  := ( h ~= "i)(pt|px)$") ? SubStr( h, 1, -2) :  h
-      h  := ( h ~= "i)vw$") ? RegExReplace( h, "i)vw$", "") * vw :  h
-      h  := ( h ~= "i)vh$") ? RegExReplace( h, "i)vh$", "") * vh :  h
-      h  := ( h ~= "i)vmin$") ? RegExReplace( h, "i)vmin$", "") * vmin :  h
-      h  := ( h ~= "%$") ? RegExReplace( h, "%$", "") * 0.01 * height :  h
+      h  := ( h ~= "i)vw$") ? RegExReplace( h, "i)vw$") * vw :  h
+      h  := ( h ~= "i)vh$") ? RegExReplace( h, "i)vh$") * vh :  h
+      h  := ( h ~= "i)vmin$") ? RegExReplace( h, "i)vmin$") * vmin :  h
+      h  := ( h ~= "%$") ? RegExReplace( h, "%$") * 0.01 * height :  h
 
       ; Default width and height.
       if (w == "" && h == "")
@@ -2250,10 +2250,10 @@ class ImageRender extends TextRender {
 
       s  := ( s ~= valid) ? RegExReplace( s, "\s") : ""
       s  := ( s ~= "i)(pt|px)$") ? SubStr( s, 1, -2) :  s
-      s  := ( s ~= "i)vw$") ? RegExReplace( s, "i)vw$", "") * vw / width :  s
-      s  := ( s ~= "i)vh$") ? RegExReplace( s, "i)vh$", "") * vh / height:  s
-      s  := ( s ~= "i)vmin$") ? RegExReplace( s, "i)vmin$", "") * vmin / minimum :  s
-      s  := ( s ~= "%$") ? RegExReplace( s, "%$", "") * 0.01 :  s
+      s  := ( s ~= "i)vw$") ? RegExReplace( s, "i)vw$") * vw / width :  s
+      s  := ( s ~= "i)vh$") ? RegExReplace( s, "i)vh$") * vh / height:  s
+      s  := ( s ~= "i)vmin$") ? RegExReplace( s, "i)vmin$") * vmin / minimum :  s
+      s  := ( s ~= "%$") ? RegExReplace( s, "%$") * 0.01 :  s
 
       ; If scale is negative automatically scale by a geometric series constant.
       ; Example: If scale is -0.5, then downscale by 50%, 25%, 12.5%, 6.25%...
@@ -2308,15 +2308,15 @@ class ImageRender extends TextRender {
       ; Get x and y.
       x  := ( x ~= valid) ? RegExReplace( x, "\s") : ""
       x  := ( x ~= "i)(pt|px)$") ? SubStr( x, 1, -2) :  x
-      x  := ( x ~= "i)(%|vw)$") ? RegExReplace( x, "i)(%|vw)$", "") * vw :  x
-      x  := ( x ~= "i)vh$") ? RegExReplace( x, "i)vh$", "") * vh :  x
-      x  := ( x ~= "i)vmin$") ? RegExReplace( x, "i)vmin$", "") * vmin :  x
+      x  := ( x ~= "i)(%|vw)$") ? RegExReplace( x, "i)(%|vw)$") * vw :  x
+      x  := ( x ~= "i)vh$") ? RegExReplace( x, "i)vh$") * vh :  x
+      x  := ( x ~= "i)vmin$") ? RegExReplace( x, "i)vmin$") * vmin :  x
 
       y  := ( y ~= valid) ? RegExReplace( y, "\s") : ""
       y  := ( y ~= "i)(pt|px)$") ? SubStr( y, 1, -2) :  y
-      y  := ( y ~= "i)vw$") ? RegExReplace( y, "i)vw$", "") * vw :  y
-      y  := ( y ~= "i)(%|vh)$") ? RegExReplace( y, "i)(%|vh)$", "") * vh :  y
-      y  := ( y ~= "i)vmin$") ? RegExReplace( y, "i)vmin$", "") * vmin :  y
+      y  := ( y ~= "i)vw$") ? RegExReplace( y, "i)vw$") * vw :  y
+      y  := ( y ~= "i)(%|vh)$") ? RegExReplace( y, "i)(%|vh)$") * vh :  y
+      y  := ( y ~= "i)vmin$") ? RegExReplace( y, "i)vmin$") * vmin :  y
 
       ; Default x and y.
       if (x == "")

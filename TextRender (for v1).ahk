@@ -1244,13 +1244,13 @@ class TextRender {
             d[i] := (d[i] ~= "i)vmin$") ? RegExReplace(d[i], "i)vmin$") * vmin : d[i]
          }
 
-         d[1] := (d[1] ~= "%$") ? SubStr(d[1], 1, -1) * 0.01 * width : d[1]
-         d[2] := (d[2] ~= "%$") ? SubStr(d[2], 1, -1) * 0.01 * height : d[2]
-         d[3] := (d[3] ~= "%$") ? SubStr(d[3], 1, -1) * 0.01 * font_size : d[3]
+         d[1] := (d[1] ~= "%$") ? RTrim(d[1], "%") * 0.01 * width : d[1]
+         d[2] := (d[2] ~= "%$") ? RTrim(d[2], "%") * 0.01 * height : d[2]
+         d[3] := (d[3] ~= "%$") ? RTrim(d[3], "%") * 0.01 * font_size : d[3]
          d[4] := this.color(d[4], 0xFFFF0000) ; Default color is red.
-         d[5] := (d[5] ~= "%$") ? SubStr(d[5], 1, -1) / 100 : d[5]
+         d[5] := (d[5] ~= "%$") ? RTrim(d[5], "%") / 100 : d[5]
          d[5] := (d[5] <= 0 || d[5] > 1) ? 1 : d[5] ; Range Opacity is a float from 0-1.
-         d[6] := (d[6] ~= "%$") ? SubStr(d[6], 1, -1) * 0.01 * font_size : d[6]
+         d[6] := (d[6] ~= "%$") ? RTrim(d[6], "%") * 0.01 * font_size : d[6]
          return d
       }
 
@@ -1313,10 +1313,10 @@ class TextRender {
             m[i] := (m[i] ~= "i)vmin$") ? RegExReplace(m[i], "i)vmin$") * vmin : m[i]
          }
 
-         m[1] := (m[1] ~= "%$") ? SubStr(m[1], 1, -1) * vh : m[1]
-         m[2] := (m[2] ~= "%$") ? SubStr(m[2], 1, -1) * (exception ? vh : vw) : m[2]
-         m[3] := (m[3] ~= "%$") ? SubStr(m[3], 1, -1) * vh : m[3]
-         m[4] := (m[4] ~= "%$") ? SubStr(m[4], 1, -1) * (exception ? vh : vw) : m[4]
+         m[1] := (m[1] ~= "%$") ? RTrim(m[1], "%") * vh : m[1]
+         m[2] := (m[2] ~= "%$") ? RTrim(m[2], "%") * (exception ? vh : vw) : m[2]
+         m[3] := (m[3] ~= "%$") ? RTrim(m[3], "%") * vh : m[3]
+         m[4] := (m[4] ~= "%$") ? RTrim(m[4], "%") * (exception ? vh : vw) : m[4]
 
          for i, x in m
             m[i] := Round(m[i])
@@ -1357,9 +1357,9 @@ class TextRender {
             o[i] := (o[i] ~= "i)vmin$") ? RegExReplace(o[i], "i)vmin$") * vmin : o[i]
          }
 
-         o[1] := (o[1] ~= "%$") ? SubStr(o[1], 1, -1) * 0.01 * font_size : o[1]
+         o[1] := (o[1] ~= "%$") ? RTrim(o[1], "%") * 0.01 * font_size : o[1]
          o[2] := this.color(o[2], font_color) ; Default color is the text font color.
-         o[3] := (o[3] ~= "%$") ? SubStr(o[3], 1, -1) * 0.01 * font_size : o[3]
+         o[3] := (o[3] ~= "%$") ? RTrim(o[3], "%") * 0.01 * font_size : o[3]
          o[4] := this.color(o[4], o[2]) ; Default color is outline color.
          return o
       }

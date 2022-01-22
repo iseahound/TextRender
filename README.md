@@ -5,7 +5,6 @@
 * Features background color, text outline, and drop shadow.
 * Renders to the screen, desktop, or behind desktop icons as a wallpaper.
 * Supports events such as OnEvent("LeftMouseDown", callback).
-* Interactive GUI that generates code.
 * Extremely fast and lightweight, capable of rendering at 300+ fps. 
 
 ## Graphics Library

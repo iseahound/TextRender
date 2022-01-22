@@ -444,8 +444,8 @@ class TextRender {
       DllCall("gdiplus\GdipSetTextRenderingHint",  "ptr", gfx, "int", q)
 
       ; These are the type checkers.
-      static valid := "(?i)^\s*(\-?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*(%|pt|px|vh|vmin|vw)?\s*$"
-      static valid_positive := "(?i)^\s*((?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*(%|pt|px|vh|vmin|vw)?\s*$"
+      static valid := "^\s*(-?((\d+(\.\d*)?)|(\.\d+)))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
+      static valid_positive := "^\s*((\d+(\.\d*)?)|(\.\d+))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
 
       ; Define viewport width and height. This is the visible canvas area.
       vw := 0.01 * CanvasWidth         ; 1% of viewport width.
@@ -1210,7 +1210,7 @@ class TextRender {
       dropShadow(d, vw, vh, width, height, font_size) {
          static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
          static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\\\/\s:#%_a-z\-\.\d]+|\([\\\/\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
-         static valid := "(?i)^\s*(\-?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*(%|pt|px|vh|vmin|vw)?\s*$"
+         static valid := "^\s*(-?((\d+(\.\d*)?)|(\.\d+)))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
          vmin := Min(vw, vh)
 
          if IsObject(d) {
@@ -1276,7 +1276,7 @@ class TextRender {
       margin_and_padding(m, vw, vh, default := "") {
          static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
          static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\\\/\s:#%_a-z\-\.\d]+|\([\\\/\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
-         static valid := "(?i)^\s*(\-?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*(%|pt|px|vh|vmin|vw)?\s*$"
+         static valid := "^\s*(-?((\d+(\.\d*)?)|(\.\d+)))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
          vmin := Min(vw, vh)
 
          if IsObject(m) {
@@ -1327,7 +1327,7 @@ class TextRender {
       outline(o, vw, vh, font_size, font_color) {
          static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
          static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\\\/\s:#%_a-z\-\.\d]+|\([\\\/\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
-         static valid_positive := "(?i)^\s*((?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*(%|pt|px|vh|vmin|vw)?\s*$"
+         static valid_positive := "^\s*((\d+(\.\d*)?)|(\.\d+))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
          vmin := Min(vw, vh)
 
          if IsObject(o) {
@@ -2195,8 +2195,8 @@ class ImageRender extends TextRender {
       }
 
       ; These are the type checkers.
-      static valid := "(?i)^\s*(\-?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*(%|pt|px|vh|vmin|vw)?\s*$"
-      static valid_positive := "(?i)^\s*((?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*(%|pt|px|vh|vmin|vw)?\s*$"
+      static valid := "^\s*(-?((\d+(\.\d*)?)|(\.\d+)))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
+      static valid_positive := "^\s*((\d+(\.\d*)?)|(\.\d+))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
 
       ; Define viewport width and height. This is the visible screen area.
       vw := 0.01 * CanvasWidth         ; 1% of viewport width.

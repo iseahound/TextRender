@@ -1234,14 +1234,14 @@ class TextRender {
          }
          else return {"void":true, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0}
 
-         for key, value in d {
-            if (key = 4) ; Don't mess with color data.
+         for i, x in d {
+            if (i = 4) ; Don't mess with color data.
                continue
-            d[key] := (d[key] ~= valid) ? RegExReplace(d[key], "\s") : 0 ; Default for everything is 0.
-            d[key] := (d[key] ~= "i)(pt|px)$") ? SubStr(d[key], 1, -2) : d[key]
-            d[key] := (d[key] ~= "i)vw$") ? RegExReplace(d[key], "i)vw$", "") * vw : d[key]
-            d[key] := (d[key] ~= "i)vh$") ? RegExReplace(d[key], "i)vh$", "") * vh : d[key]
-            d[key] := (d[key] ~= "i)vmin$") ? RegExReplace(d[key], "i)vmin$", "") * vmin : d[key]
+            d[i] := (d[i] ~= valid) ? RegExReplace(d[i], "\s") : 0 ; Default for everything is 0.
+            d[i] := (d[i] ~= "i)(pt|px)$") ? SubStr(d[i], 1, -2) : d[i]
+            d[i] := (d[i] ~= "i)vw$") ? RegExReplace(d[i], "i)vw$", "") * vw : d[i]
+            d[i] := (d[i] ~= "i)vh$") ? RegExReplace(d[i], "i)vh$", "") * vh : d[i]
+            d[i] := (d[i] ~= "i)vmin$") ? RegExReplace(d[i], "i)vmin$", "") * vmin : d[i]
          }
 
          d[1] := (d[1] ~= "%$") ? SubStr(d[1], 1, -1) * 0.01 * width : d[1]
@@ -1305,12 +1305,12 @@ class TextRender {
          if (m[4] == "")
             m[4] := m[2]
 
-         for key, value in m {
-            m[key] := (m[key] ~= valid) ? RegExReplace(m[key], "\s") : default
-            m[key] := (m[key] ~= "i)(pt|px)$") ? SubStr(m[key], 1, -2) : m[key]
-            m[key] := (m[key] ~= "i)vw$") ? RegExReplace(m[key], "i)vw$", "") * vw : m[key]
-            m[key] := (m[key] ~= "i)vh$") ? RegExReplace(m[key], "i)vh$", "") * vh : m[key]
-            m[key] := (m[key] ~= "i)vmin$") ? RegExReplace(m[key], "i)vmin$", "") * vmin : m[key]
+         for i, x in m {
+            m[i] := (m[i] ~= valid) ? RegExReplace(m[i], "\s") : default
+            m[i] := (m[i] ~= "i)(pt|px)$") ? SubStr(m[i], 1, -2) : m[i]
+            m[i] := (m[i] ~= "i)vw$") ? RegExReplace(m[i], "i)vw$", "") * vw : m[i]
+            m[i] := (m[i] ~= "i)vh$") ? RegExReplace(m[i], "i)vh$", "") * vh : m[i]
+            m[i] := (m[i] ~= "i)vmin$") ? RegExReplace(m[i], "i)vmin$", "") * vmin : m[i]
          }
 
          m[1] := (m[1] ~= "%$") ? SubStr(m[1], 1, -1) * vh : m[1]
@@ -1347,14 +1347,14 @@ class TextRender {
          }
          else return {"void":true, 1:0, 2:0, 3:0, 4:0}
 
-         for key, value in o {
-            if (key = 2) || (key = 4) ; Don't mess with color data.
+         for i, x in o {
+            if (i = 2) || (i = 4) ; Don't mess with color data.
                continue
-            o[key] := (o[key] ~= valid_positive) ? RegExReplace(o[key], "\s") : 0 ; Default for everything is 0.
-            o[key] := (o[key] ~= "i)(pt|px)$") ? SubStr(o[key], 1, -2) : o[key]
-            o[key] := (o[key] ~= "i)vw$") ? RegExReplace(o[key], "i)vw$", "") * vw : o[key]
-            o[key] := (o[key] ~= "i)vh$") ? RegExReplace(o[key], "i)vh$", "") * vh : o[key]
-            o[key] := (o[key] ~= "i)vmin$") ? RegExReplace(o[key], "i)vmin$", "") * vmin : o[key]
+            o[i] := (o[i] ~= valid_positive) ? RegExReplace(o[i], "\s") : 0 ; Default for everything is 0.
+            o[i] := (o[i] ~= "i)(pt|px)$") ? SubStr(o[i], 1, -2) : o[i]
+            o[i] := (o[i] ~= "i)vw$") ? RegExReplace(o[i], "i)vw$", "") * vw : o[i]
+            o[i] := (o[i] ~= "i)vh$") ? RegExReplace(o[i], "i)vh$", "") * vh : o[i]
+            o[i] := (o[i] ~= "i)vmin$") ? RegExReplace(o[i], "i)vmin$", "") * vmin : o[i]
          }
 
          o[1] := (o[1] ~= "%$") ? SubStr(o[1], 1, -1) * 0.01 * font_size : o[1]

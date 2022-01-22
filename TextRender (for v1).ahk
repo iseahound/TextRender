@@ -947,10 +947,12 @@ class TextRender {
 
       ; Define canvas coordinates.
       t_bound := this.parse.time(t)              ; string/background boundary.
-      x_bound := (_c & 0xFF000000) ? _x : x
-      y_bound := (_c & 0xFF000000) ? _y : y
-      w_bound := (_c & 0xFF000000) ? _w : w
-      h_bound := (_c & 0xFF000000) ? _h : h
+      x_bound := (_c & 0xFF000000) ? Min(_x, x) : x
+      y_bound := (_c & 0xFF000000) ? Min(_y, y) : y
+      x2_bound := (_c & 0xFF000000) ? Max(_x+_w, x+w) : x+w
+      y2_bound := (_c & 0xFF000000) ? Max(_y+_h, y+h) : y+h
+      w_bound := x2_bound - x_bound
+      h_bound := y2_bound - y_bound
 
       o_bound := Ceil(0.5 * o.1 + o.3)                     ; outline boundary.
       x_bound := (x - o_bound < x_bound)        ? x - o_bound        : x_bound

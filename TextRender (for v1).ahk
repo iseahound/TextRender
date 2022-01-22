@@ -946,30 +946,34 @@ class TextRender {
          t := 250 + 300*words ; Using 200 words/minute, divide 60,000 ms by 200 words to get 300 ms per word.
 
       ; Define canvas coordinates.
-      t_bound := this.parse.time(t)              ; string/background boundary.
-      x_bound := (_c & 0xFF000000) ? Min(_x, x) : x
-      y_bound := (_c & 0xFF000000) ? Min(_y, y) : y
+      ; string/background boundary.
+      t_bound  := this.parse.time(t)
+      x_bound  := (_c & 0xFF000000) ? Min(_x, x) : x
+      y_bound  := (_c & 0xFF000000) ? Min(_y, y) : y
       x2_bound := (_c & 0xFF000000) ? Max(_x+_w, x+w) : x+w
       y2_bound := (_c & 0xFF000000) ? Max(_y+_h, y+h) : y+h
-      w_bound := x2_bound - x_bound
-      h_bound := y2_bound - y_bound
 
-      o_bound := Ceil(0.5 * o.1 + o.3)                     ; outline boundary.
-      x_bound := (x - o_bound < x_bound)        ? x - o_bound        : x_bound
-      y_bound := (y - o_bound < y_bound)        ? y - o_bound        : y_bound
-      w_bound := (w + 2 * o_bound > w_bound)    ? w + 2 * o_bound    : w_bound
-      h_bound := (h + 2 * o_bound > h_bound)    ? h + 2 * o_bound    : h_bound
-      ; Tooltip % x_bound ", " y_bound ", " w_bound ", " h_bound
-      d_bound := Ceil(0.5 * o.1 + d.3 + d.6)            ; dropShadow boundary.
-      x_bound := (x + d.1 - d_bound < x_bound)  ? x + d.1 - d_bound  : x_bound
-      y_bound := (y + d.2 - d_bound < y_bound)  ? y + d.2 - d_bound  : y_bound
-      w_bound := (w + 2 * d_bound > w_bound)    ? w + 2 * d_bound    : w_bound
-      h_bound := (h + 2 * d_bound > h_bound)    ? h + 2 * d_bound    : h_bound
+      ; outline boundary.
+      o_bound  := Ceil(0.5 * o.1 + o.3)
+      x_bound  := Min(x - o_bound, x_bound)
+      y_bound  := Min(y - o_bound, y_bound)
+      x2_bound := Max(x + w + o_bound, x2_bound)
+      y2_bound := Max(y + h + o_bound, y2_bound)
+
+      ; dropShadow boundary.
+      d_bound  := Ceil(0.5 * o.1 + d.3 + d.6)
+      x_bound  := Min(x + d.1 - d_bound, x_bound)
+      y_bound  := Min(y + d.2 - d_bound, y_bound)
+      x2_bound := Max(x + w + d.1 + d_bound, x2_bound)
+      y2_bound := Max(y + h + d.2 + d_bound, y2_bound)
 
       return {t: t_bound
-            , x: x_bound, y: y_bound
-            , w: w_bound, h: h_bound
-            , x2: x_bound + w_bound, y2: y_bound + h_bound
+            , x: x_bound
+            , y: y_bound
+            , x2: x2_bound
+            , y2: y2_bound
+            , w: x2_bound - x_bound
+            , h: y2_bound - y_bound
             , chars: chars
             , words: words
             , lines: lines}
@@ -2502,9 +2506,12 @@ class ImageRender extends TextRender {
       h_bound := _h
 
       return {t: t_bound
-            , x: x_bound, y: y_bound
-            , w: w_bound, h: h_bound
-            , x2: x_bound + w_bound, y2: y_bound + h_bound}
+            , x: x_bound
+            , y: y_bound
+            , w: w_bound
+            , h: h_bound
+            , x2: x_bound + w_bound
+            , y2: y_bound + h_bound}
    }
 } ; End of ImageRender class.
 

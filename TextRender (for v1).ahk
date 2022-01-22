@@ -922,6 +922,11 @@ class TextRender {
          y := NumGet(RectF,  4, "float")
          w := NumGet(RectF,  8, "float")
          h := NumGet(RectF, 12, "float")
+
+         x := Round(x)
+         y := Round(y)
+         w := Round(x + w) - Round(x)
+         h := Round(y + h) - Round(y)
       }
 
 

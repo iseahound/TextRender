@@ -668,14 +668,14 @@ class TextRender {
       _m := this.parse.margin_and_padding(_m, vw, vh, (m.void && _w > 0 && _h > 0) ? "1vmin" : "")
 
       ; Modify _x, _y, _w, _h with margin and padding, increasing the size of the background.
-      _w += Round(_m[2]) + Round(_m[4]) + Round(m[2]) + Round(m[4])
-      _h += Round(_m[1]) + Round(_m[3]) + Round(m[1]) + Round(m[3])
-      _x -= Round(_m[4])
-      _y -= Round(_m[1])
+      _w += _m[2] + _m[4] + m[2] + m[4]
+      _h += _m[1] + _m[3] + m[1] + m[3]
+      _x -= _m[4]
+      _y -= _m[1]
 
       ; If margin/padding are defined in the text parameter, shift the position of the text.
-      x  += Round(m[4])
-      y  += Round(m[1])
+      x  += m[4]
+      y  += m[1]
 
       ; Re-run: Condense Text using a Condensed Font if simulated text width exceeds screen width.
       if (z) {
@@ -1312,10 +1312,15 @@ class TextRender {
             m[key] := (m[key] ~= "i)vh$") ? RegExReplace(m[key], "i)vh$", "") * vh : m[key]
             m[key] := (m[key] ~= "i)vmin$") ? RegExReplace(m[key], "i)vmin$", "") * vmin : m[key]
          }
+
          m[1] := (m[1] ~= "%$") ? SubStr(m[1], 1, -1) * vh : m[1]
          m[2] := (m[2] ~= "%$") ? SubStr(m[2], 1, -1) * (exception ? vh : vw) : m[2]
          m[3] := (m[3] ~= "%$") ? SubStr(m[3], 1, -1) * vh : m[3]
          m[4] := (m[4] ~= "%$") ? SubStr(m[4], 1, -1) * (exception ? vh : vw) : m[4]
+
+         for i, x in m
+            m[i] := Round(m[i])
+
          return m
       }
 
@@ -2333,10 +2338,10 @@ class ImageRender extends TextRender {
       m  := this.parse.margin_and_padding(m, vw, vh)
 
       ; Calculate border using margin.
-      _w := w + Round(m[2]) + Round(m[4])
-      _h := h + Round(m[1]) + Round(m[3])
-      _x := x - Round(m[4])
-      _y := y - Round(m[1])
+      _w := w + m[2] + m[4]
+      _h := h + m[1] + m[3]
+      _x := x - m[4]
+      _y := y - m[1]
 
       ; Save original Graphics settings.
       DllCall("gdiplus\GdipSaveGraphics", "ptr", gfx, "ptr*", pState:=0)

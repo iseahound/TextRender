@@ -311,7 +311,7 @@ class TextRender {
       return this
    }
 
-   Sleep(milliseconds := 0) {
+   Wait(milliseconds := 0) {
 
       if (this.t != 0) {
          ; Prevent the timer from blanking our canvas.

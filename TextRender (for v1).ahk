@@ -31,11 +31,8 @@ class TextRender {
       TextRender.windows[this.hwnd] := this
       ObjRelease(&this) ; Allow __Delete() to be called. RefCount - 1.
 
-      ; Fail UpdateMemory() check to access LoadMemory().
-      this.BitmapWidth := this.BitmapHeight := 0
-
-      ; Bypass FreeMemory() check before LoadMemory().
-      this.gfx := this.obm := this.hbm := this.hdc := ""
+      ; Allocates the graphics buffer from the virtual screen coordinates.
+      this.UpdateMemory()
 
       ; Saves repeated calls of Draw().
       this.layers := {}
@@ -263,8 +260,6 @@ class TextRender {
       ; If the drawing flag is false then a render to screen operation has occurred.
       if (this.drawing = false)
          this.Flush() ; Clear the internal canvas.
-
-      this.UpdateMemory()
 
       if (styles[1] = "" && styles[2] = "")
          styles := this.styles

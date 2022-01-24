@@ -31,20 +31,14 @@ class TextRender {
       TextRender.windows[this.hwnd] := this
       ObjRelease(&this) ; Allow __Delete() to be called. RefCount - 1.
 
-      ; Allocates the graphics buffer from the virtual screen coordinates.
-      this.UpdateMemory()
-
-      ; Saves repeated calls of Draw().
-      this.layers := {}
-
       ; Initalize default events.
       this.events := {}
       this.OnEvent("LeftMouseDown", this.EventMoveWindow)
       this.OnEvent("MiddleMouseDown", this.EventShowCoordinates)
       this.OnEvent("RightMouseDown", this.EventCopyText)
 
-      ; Prevents an unnecessary call of Flush().
-      this.drawing := true
+      ; Calls Flush() to allocate the graphics buffer via UpdateMemory().
+      this.drawing := false
 
       return this
    }
@@ -289,9 +283,15 @@ class TextRender {
    }
 
    Flush() {
-      DllCall("gdiplus\GdipSetClipRect", "ptr", this.gfx, "float", this.x, "float", this.y, "float", this.w, "float", this.h, "int", 0)
-      DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF)
-      DllCall("gdiplus\GdipResetClip", "ptr", this.gfx)
+      ; Reallocate the graphics buffer between draws.
+      this.UpdateMemory()
+
+      if (this.x != "") {
+         DllCall("gdiplus\GdipSetClipRect", "ptr", this.gfx, "float", this.x, "float", this.y, "float", this.w, "float", this.h, "int", 0)
+         DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF)
+         DllCall("gdiplus\GdipResetClip", "ptr", this.gfx)
+      }
+
       this.CanvasChanged()
 
       this.t := this.x := this.y := this.x2 := this.y2 := this.w := this.h := ""
@@ -1523,7 +1523,6 @@ class TextRender {
          time_elapsed := (end - this.t0) / frequency * 1000
          remaining_time := this.t - time_elapsed
          if (this.t == 0 || remaining_time > 0) {
-            this.UpdateMemory()
             for i, layer in this.layers
                this.Draw(layer[1], layer[2], layer[3])
             this.t := (this.t == 0) ? 0 : remaining_time

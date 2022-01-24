@@ -1575,7 +1575,10 @@ class TextRender {
          this.friend2.OnEvent("MiddleMouseDown", "")
          this.friend2.OnEvent("RightMouseDown", "")
       }
-      clipboard := this.data
+      for i, layer in this.layers
+         if data := layer[1]
+            break
+      clipboard := data
       this.friend2.Render("Saved text to clipboard.", "t:1250 c:#F9E486 y:75vh r:10%")
       WinSet AlwaysOnTop, On, % "ahk_id" this.friend2.hwnd
    }

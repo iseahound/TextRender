@@ -248,7 +248,9 @@ class TextRender {
       this.layers.push([data, styles*])
 
       ; Drawing
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
       obj := this.DrawOnGraphics(this.gfx, data, styles[1], styles[2], A_ScreenWidth, A_ScreenHeight)
+      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; Create a unique signature for each call to Draw().
       this.CanvasChanged()

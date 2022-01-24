@@ -1511,8 +1511,14 @@ class TextRender {
          if (this.t == 0 || remaining_time > 0) {
             for i, layer in this.layers
                this.Draw(layer[1], layer[2], layer[3])
-            this.t := (this.t == 0) ? 0 : remaining_time
-            return this.Render()
+            this.UpdateLayeredWindow()
+            this.flush_pending := true
+            ; Create a timer that eventually clears the canvas.
+            if (remaining_time > 0) {
+               ; Create a reference to the object held by a timer.
+               blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
+               SetTimer % blank, % -remaining_time ; Calls __Delete.
+            }
          }
       }
 

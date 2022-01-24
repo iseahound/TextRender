@@ -290,9 +290,8 @@ class TextRender {
          DllCall("gdiplus\GdipSetClipRect", "ptr", this.gfx, "float", this.x, "float", this.y, "float", this.w, "float", this.h, "int", 0)
          DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF)
          DllCall("gdiplus\GdipResetClip", "ptr", this.gfx)
+         this.CanvasChanged()
       }
-
-      this.CanvasChanged()
 
       this.t := this.x := this.y := this.x2 := this.y2 := this.w := this.h := ""
       this.layers := {}

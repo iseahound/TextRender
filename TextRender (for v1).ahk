@@ -38,7 +38,7 @@ class TextRender {
       this.OnEvent("RightMouseDown", this.EventCopyData)
 
       ; Calls Flush() to allocate the graphics buffer via UpdateMemory().
-      this.drawing := false
+      this.flush_pending := true
 
       return this
    }
@@ -76,7 +76,7 @@ class TextRender {
          ; Ensure that Flush() will be called at the start of a new drawing.
          ; This approach keeps this.layers and the underlying graphics intact,
          ; so that calls to Save() and Screenshot() will not encounter a blank canvas.
-         this.drawing := false
+         this.flush_pending := true
 
          ; Create a timer that eventually clears the canvas.
          if (this.t > 0) {
@@ -166,7 +166,7 @@ class TextRender {
       ; Ensure that Flush() will be called at the start of a new drawing.
       ; This approach keeps this.layers and the underlying graphics intact,
       ; so that calls to Save() and Screenshot() will not encounter a blank canvas.
-      this.drawing := false
+      this.flush_pending := true
       return this
    }
 
@@ -215,7 +215,7 @@ class TextRender {
          ; Ensure that Flush() will be called at the start of a new drawing.
          ; This approach keeps this.layers and the underlying graphics intact,
          ; so that calls to Save() and Screenshot() will not encounter a blank canvas.
-         this.drawing := false
+         this.flush_pending := true
          return this
       }
 
@@ -251,9 +251,9 @@ class TextRender {
    }
 
    Draw(data := "", styles*) {
-      ; If the drawing flag is false then a render to screen operation has occurred.
-      if (this.drawing = false)
-         this.Flush() ; Clear the internal canvas.
+      ; A render to screen operation has occurred.
+      if (this.flush_pending == true)
+         this.Flush() ; Clears the graphics buffer.
 
       if (styles[1] = "" && styles[2] = "")
          styles := this.styles
@@ -295,7 +295,7 @@ class TextRender {
 
       this.t := this.x := this.y := this.x2 := this.y2 := this.w := this.h := ""
       this.layers := {}
-      this.drawing := true
+      this.flush_pending := false
       return this
    }
 
@@ -1515,7 +1515,7 @@ class TextRender {
       if (uMsg = 0x2)
          return this.DestroyWindow()
 
-      ; WM_DISPLAYCHANGE calls UpdateMemory().
+      ; WM_DISPLAYCHANGE calls UpdateMemory() via Draw().
       if (uMsg = 0x7E) {
          DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
          DllCall("QueryPerformanceCounter", "int64*", end:=0)

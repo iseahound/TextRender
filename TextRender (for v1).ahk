@@ -319,11 +319,6 @@ class TextRender {
       return this ; Allow the next render call to update the current window.
    }
 
-   Counter() { ; Returns a number in units of milliseconds.
-      static freq := DllCall("QueryPerformanceFrequency", "int64*", freq:=0, "int") ? freq*1000 : false
-      return DllCall("QueryPerformanceCounter", "int64*", counter:=0, "int") ? counter/freq : false
-   }
-
    CanvasChanged() {
       Random rand, -2147483648, 2147483647
       this.status := rand

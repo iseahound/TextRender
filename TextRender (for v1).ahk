@@ -62,16 +62,9 @@ class TextRender {
 
       ; Allow Render() to commit only when previous calls to Draw() have occurred.
       if (this.layers.length() > 0) {
-         ; Define the smaller of canvas and bitmap coordinates.
-         this.WindowLeft   := Max(this.BitmapLeft, this.x)
-         this.WindowTop    := Max(this.BitmapTop, this.y)
-         this.WindowRight  := Min(this.BitmapRight, this.x2)
-         this.WindowBottom := Min(this.BitmapBottom, this.y2)
-         this.WindowWidth  := this.WindowRight - this.WindowLeft
-         this.WindowHeight := this.WindowBottom - this.WindowTop
 
          ; Reminder: Only the visible screen area will be rendered. Clipping will occur.
-         this.UpdateLayeredWindow(this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight)
+         this.UpdateLayeredWindow()
 
          ; Ensure that Flush() will be called at the start of a new drawing.
          ; This approach keeps this.layers and the underlying graphics intact,
@@ -173,17 +166,10 @@ class TextRender {
    Fade(fade_in := 250, fade_out := 250, status := "") {
       if (fade_in > 0) {
          ; Render: Off-Screen areas are not rendered. Clip objects that reside off screen.
-         this.WindowLeft   := Max(this.BitmapLeft, this.x)
-         this.WindowTop    := Max(this.BitmapTop, this.y)
-         this.WindowRight  := Min(this.BitmapRight, this.x2)
-         this.WindowBottom := Min(this.BitmapBottom, this.y2)
-         this.WindowWidth  := this.WindowRight - this.WindowLeft
-         this.WindowHeight := this.WindowBottom - this.WindowTop
 
          duration := 0
          current := -1
          ;count := 0
-
 
          DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
          DllCall("QueryPerformanceCounter", "int64*", start:=0)
@@ -193,7 +179,7 @@ class TextRender {
                ;if (count != alpha)
                ;   FileAppend % count ", " alpha "`n", log.txt
                ;count++
-               this.UpdateLayeredWindow(this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight, alpha)
+               this.UpdateLayeredWindow(alpha)
                current := alpha
             }
             DllCall("QueryPerformanceCounter", "int64*", now:=0)
@@ -201,7 +187,7 @@ class TextRender {
          }
 
          if (alpha != 255)
-            this.UpdateLayeredWindow(this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight)
+            this.UpdateLayeredWindow()
 
          ; Create a timer that eventually clears the canvas.
          if (this.t > 0) {
@@ -232,13 +218,13 @@ class TextRender {
                ;if (count != alpha)
                ;   FileAppend % count ", " alpha "`n", log.txt
                ;count++
-               this.UpdateLayeredWindow(this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight, alpha)
+               this.UpdateLayeredWindow(alpha)
                current := alpha
             }
             DllCall("QueryPerformanceCounter", "int64*", now:=0)
             duration := (now - start)/frequency * 1000
          }
-         this.UpdateLayeredWindow(this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight, 0)
+         this.UpdateLayeredWindow(0)
          return this
       }
    }
@@ -246,7 +232,7 @@ class TextRender {
    Blank(status) {
       ; Check to see if the state of the canvas has changed before clearing and updating.
       if (this.status = status) {
-         this.UpdateLayeredWindow(this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight, 0)
+         this.UpdateLayeredWindow(0)
       }
    }
 
@@ -287,6 +273,7 @@ class TextRender {
       this.UpdateMemory()
 
       if (this.x != "") {
+         ; All colors are the same speed.
          DllCall("gdiplus\GdipSetClipRect", "ptr", this.gfx, "float", this.x, "float", this.y, "float", this.w, "float", this.h, "int", 0)
          DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF)
          DllCall("gdiplus\GdipResetClip", "ptr", this.gfx)
@@ -301,7 +288,7 @@ class TextRender {
 
    Clear() {
       this.Flush()
-      this.UpdateLayeredWindow(this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight, 0)
+      this.UpdateLayeredWindow(0)
       return this
    }
 
@@ -2043,7 +2030,29 @@ class TextRender {
       return pBitmap
    }
 
-   UpdateLayeredWindow(x, y, w, h, alpha := 255) {
+   UpdateLayeredWindow(alpha := 255) {
+      if (this.x == "") {
+         return DllCall("UpdateLayeredWindow"
+                  ,    "ptr", this.hwnd                ; hWnd
+                  ,    "ptr", 0                        ; hdcDst
+                  ,    "ptr", 0                        ; *pptDst
+                  ,    "ptr", 0                        ; *psize
+                  ,    "ptr", 0                        ; hdcSrc
+                  ,    "ptr", 0                        ; *pptSrc
+                  ,   "uint", 0                        ; crKey
+                  ,  "uint*", alpha << 16 | 0x01 << 24 ; *pblend
+                  ,   "uint", 2                        ; dwFlags
+                  ,    "int")                          ; Success = 1
+      }
+
+      ; Define the smaller of canvas and bitmap coordinates.
+      x  := this.WindowLeft   := Max(this.BitmapLeft, this.x)
+      y  := this.WindowTop    := Max(this.BitmapTop, this.y)
+      x2 := this.WindowRight  := Min(this.BitmapRight, this.x2)
+      y2 := this.WindowBottom := Min(this.BitmapBottom, this.y2)
+      w  := this.WindowWidth  := this.WindowRight - this.WindowLeft
+      h  := this.WindowHeight := this.WindowBottom - this.WindowTop
+
       return DllCall("UpdateLayeredWindow"
                ,    "ptr", this.hwnd                ; hWnd
                ,    "ptr", 0                        ; hdcDst

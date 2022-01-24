@@ -49,8 +49,8 @@ class TextRender {
       this.gdiplusShutdown()
 
       ; Re-add the reference to avoid calling __Delete() twice.
-      ObjAddRef(&this)
       ; An unmanaged reference to "this" should be deleted manually.
+      ObjAddRef(&this)
       TextRender.windows[this.hwnd] := ""
    }
 

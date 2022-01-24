@@ -312,16 +312,16 @@ class TextRender {
          this.status := this.status + 1
 
          DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
-         timer:
+         TextRender_timer:
          DllCall("QueryPerformanceCounter", "int64*", end:=0)
          time_elapsed := (end - this.t0) / frequency * 1000
          remaining_time := this.t - time_elapsed
          if (remaining_time > 30) {
             Sleep 10
-            goto timer
+            goto TextRender_timer
          }
          if (remaining_time > 0)
-            goto timer
+            goto TextRender_timer
       }
 
       if (milliseconds > 0) {

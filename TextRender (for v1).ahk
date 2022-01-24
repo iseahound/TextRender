@@ -35,7 +35,7 @@ class TextRender {
       this.events := {}
       this.OnEvent("LeftMouseDown", this.EventMoveWindow)
       this.OnEvent("MiddleMouseDown", this.EventShowCoordinates)
-      this.OnEvent("RightMouseDown", this.EventCopyText)
+      this.OnEvent("RightMouseDown", this.EventCopyData)
 
       ; Calls Flush() to allocate the graphics buffer via UpdateMemory().
       this.drawing := false
@@ -1578,7 +1578,7 @@ class TextRender {
       WinSet AlwaysOnTop, On, % "ahk_id" this.friend1.hwnd
    }
 
-   EventCopyText() {
+   EventCopyData() {
       ; Copies the rendered text to clipboard.
       if !this.friend2 {
          this.friend2 := new TextRender(,,, this.hwnd)

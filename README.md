@@ -7,7 +7,7 @@
 * Supports events such as OnEvent("LeftMouseDown", callback).
 * Extremely fast and lightweight, capable of rendering at 300+ fps. 
 
-## For full ImageRender() functionality add ImagePut.ahk
+### For full ImageRender() functionality add ImagePut.ahk
 
 Include [ImagePut](https://github.com/iseahound/ImagePut) to decode over 12+ image types including files, urls, streams, windows and more!
 

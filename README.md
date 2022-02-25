@@ -13,7 +13,7 @@ Include [ImagePut](https://github.com/iseahound/ImagePut) to decode over 12+ ima
 
     #include TextRender.ahk
     #include ImagePut.ahk
-    ImageRender("https://picsum.photos/300/200")
+    ir := ImageRender("https://picsum.photos/300/200")
 
 ## Graphics Library
 

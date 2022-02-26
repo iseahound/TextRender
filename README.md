@@ -15,16 +15,17 @@ Include [ImagePut](https://github.com/iseahound/ImagePut) to decode over 12+ ima
     #include ImagePut.ahk
     ir := ImageRender("https://picsum.photos/300/200")
 
+## Documentation
+
+* [Quick Start](https://github.com/iseahound/TextRender/wiki/Quick-Start)
+* [Methods and Properties](https://github.com/iseahound/TextRender/wiki/Methods-and-Properties)
+* [Background and Text Styles](https://github.com/iseahound/TextRender/wiki/Styles)
+* [Tips & Tricks](https://github.com/iseahound/TextRender/wiki/Tips-&-Tricks)
+
 ## Graphics Library
 
 * [ImagePut/ImageEqual](https://github.com/iseahound/ImagePut)
 * [TextRender & ImageRender](https://github.com/iseahound/TextRender) (you are here.)
 * [ScreenSelect](https://github.com/iseahound/ScreenSelect)
-
-## Documentation
-
-* [Methods and Properties](https://github.com/iseahound/TextRender/wiki/Methods-and-Properties)
-* [Background and Text Styles](https://github.com/iseahound/TextRender/wiki/Styles)
-* [Tips & Tricks](https://github.com/iseahound/TextRender/wiki/Tips-&-Tricks)
 
 # Showcase

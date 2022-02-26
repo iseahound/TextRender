@@ -53,6 +53,49 @@ class TextRender {
       ObjAddRef(&this)
       TextRender.windows[this.hwnd] := ""
    }
+   
+   Default() {
+      ; Removes all events except for left-click to drag.
+      return this
+         .OnEvent("MiddleMouseDown")
+         .OnEvent("RightMouseDown")
+   }
+
+   None() {
+      ; Removes all events.
+      return this
+         .OnEvent("LeftMouseDown")
+         .OnEvent("MiddleMouseDown")
+         .OnEvent("RightMouseDown")
+   }
+
+   Show() {
+      DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
+      return this
+   }
+
+   Hide() {
+      DllCall("ShowWindow", "ptr", this.hwnd, "int", 0) ; SW_HIDE
+      return this
+   }
+
+   ToggleVisible() {
+      DllCall("IsWindowVisible", "ptr", this.hwnd) ? this.Hide() : this.Show()
+      return this
+   }
+
+   AlwaysOnTop() {
+      WinSet, AlwaysOnTop, Toggle, % "ahk_id" this.hwnd
+      return this
+   }
+
+   ClickThrough() {
+      styleEx := DllCall("GetWindowLong", "ptr", this.hwnd, "int", -20, "int")
+      (styleEx & 0x20) == 0x20
+         ? DllCall("SetWindowLong", "ptr", this.hwnd, "int", -20, "int", styleEx ^ 0x20)
+         : DllCall("SetWindowLong", "ptr", this.hwnd, "int", -20, "int", styleEx | 0x20)
+      return this
+   }
 
    Render(terms*) {
       ; Check the terms to avoid drawing a default square.

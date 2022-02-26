@@ -366,6 +366,8 @@ class TextRender {
 
    CanvasChanged() {
       Random rand, -2147483648, 2147483647
+      if rand == this.status
+         Random rand, -2147483648, 2147483647
       this.status := rand
       if callback := this.events["CanvasChange"]
          return %callback%(this) ; Callbacks have a reference to "this".

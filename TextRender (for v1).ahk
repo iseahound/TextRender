@@ -280,6 +280,15 @@ class TextRender {
    }
 
    Draw(data := "", styles*) {
+
+      ; Check if FreeMemory() was called between draws.
+      if (!this.hdc && this.flush_pending == False) {
+         this.UpdateMemory()
+         ; Redraw on the canvas.
+         for i, layer in this.layers
+            this.DrawOnGraphics(this.gfx, layer[1], layer[2], layer[3])
+      }
+
       ; A render to screen operation has occurred.
       if (this.flush_pending == true)
          this.Flush() ; Clears the graphics buffer.
@@ -1740,6 +1749,9 @@ class TextRender {
       DllCall("DeleteObject", "ptr", this.hbm)
       DllCall("DeleteDC",     "ptr", this.hdc)
       this.gfx := this.obm := this.hbm := this.hdc := ""
+
+      ; Allow subsequent calls to UpdateMemory() to call LoadMemory()
+      this.BitmapWidth := "", this.BitmapHeight := ""
       return this
    }
 

@@ -1751,7 +1751,12 @@ class TextRender {
       this.gfx := this.obm := this.hbm := this.hdc := ""
 
       ; Allow subsequent calls to UpdateMemory() to call LoadMemory()
-      this.BitmapWidth := "", this.BitmapHeight := ""
+      this.BitmapWidth := ""
+      this.BitmapHeight := ""
+      this.BitmapLeft := ""
+      this.BitmapTop := ""
+      this.BitmapRight := ""
+      this.BitmapBottom := ""
       return this
    }
 
@@ -1767,13 +1772,16 @@ class TextRender {
       if (sw = this.BitmapWidth && sh = this.BitmapHeight)
          return this
 
+      ; Deletes bitmap coordinates.
+      this.FreeMemory()
+
+      ; Sets bitmap coordinates.
       this.BitmapLeft := sx
       this.BitmapTop := sy
       this.BitmapRight := sx + sw
       this.BitmapBottom := sy + sh
       this.BitmapWidth := sw
       this.BitmapHeight := sh
-      this.FreeMemory()
       this.LoadMemory()
 
       return this

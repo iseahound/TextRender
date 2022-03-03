@@ -20,7 +20,7 @@ class TextRender {
    __New(title := "", style := 0x80000000, styleEx := 0x80088, parent := "") {
       this.gdiplusStartup()
 
-      ; Create and show the window with DPI awareness PER_MONITOR_AWARE_V2.
+      ; Create and show the window with DPI awareness PER_MONITOR_AWARE.
       dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       this.hwnd := this.CreateWindow(title, style, styleEx, parent)
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
@@ -1561,7 +1561,7 @@ class TextRender {
          remaining_time := this.t - time_elapsed
          if (this.t == 0 || remaining_time > 0) {
             for i, layer in this.layers
-               this.Draw(this.gfx, layer[1], layer[2], layer[3])
+               this.Draw(layer[1], layer[2], layer[3])
             this.UpdateLayeredWindow()
             this.flush_pending := true
             ; Create a timer that eventually clears the canvas.

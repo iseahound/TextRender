@@ -21,7 +21,7 @@ class TextRender {
       this.gdiplusStartup()
 
       ; Create and show the window with DPI awareness PER_MONITOR_AWARE_V2.
-      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       this.hwnd := this.CreateWindow(title, style, styleEx, parent)
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
       DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
@@ -300,7 +300,7 @@ class TextRender {
       this.layers.push([data, styles*])
 
       ; Drawing
-      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       obj := this.DrawOnGraphics(this.gfx, data, styles[1], styles[2], A_ScreenWidth, A_ScreenHeight)
       DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
@@ -1561,7 +1561,7 @@ class TextRender {
          remaining_time := this.t - time_elapsed
          if (this.t == 0 || remaining_time > 0) {
             for i, layer in this.layers
-               this.Draw(layer[1], layer[2], layer[3])
+               this.Draw(this.gfx, layer[1], layer[2], layer[3])
             this.UpdateLayeredWindow()
             this.flush_pending := true
             ; Create a timer that eventually clears the canvas.
@@ -1762,7 +1762,7 @@ class TextRender {
 
    UpdateMemory() {
       ; Get true virtual screen coordinates.
-      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       sx := DllCall("GetSystemMetrics", "int", 76, "int")
       sy := DllCall("GetSystemMetrics", "int", 77, "int")
       sw := DllCall("GetSystemMetrics", "int", 78, "int")

@@ -114,10 +114,12 @@ class TextRender {
          ; so that calls to Save() and Screenshot() will not encounter a blank canvas.
          this.flush_pending := True
 
+         ; Start Timestamp
+         DllCall("QueryPerformanceCounter", "int64*", start:=0)
+         this.t0 := start
+
          ; Create a timer that eventually clears the canvas.
          if (this.t > 0) {
-            DllCall("QueryPerformanceCounter", "int64*", start:=0)
-            this.t0 := start
             ; Create a reference to the object held by a timer.
             blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
             SetTimer % blank, % -this.t ; Calls __Delete.
@@ -190,10 +192,12 @@ class TextRender {
          this.WindowBottom := this.WindowTop + this.WindowHeight
       }
 
+      ; Start Timestamp
+      DllCall("QueryPerformanceCounter", "int64*", start:=0)
+      this.t0 := start
+
       ; Create a timer that eventually clears the canvas.
       if (this.t > 0) {
-         DllCall("QueryPerformanceCounter", "int64*", start:=0)
-         this.t0 := start
          ; Create a reference to the object held by a timer.
          blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
          SetTimer % blank, % -this.t ; Calls __Delete.
@@ -232,10 +236,12 @@ class TextRender {
          if (alpha != 255)
             this.UpdateLayeredWindow()
 
+         ; Start Timestamp
+         DllCall("QueryPerformanceCounter", "int64*", start:=0)
+         this.t0 := start
+
          ; Create a timer that eventually clears the canvas.
          if (this.t > 0) {
-            DllCall("QueryPerformanceCounter", "int64*", start:=0)
-            this.t0 := start
             ; Create a reference to the object held by a timer.
             fade := ObjBindMethod(this, "fade", 0, fade_out, this.status) ; Calls Fade() with no fade_in.
             SetTimer % fade, % -this.t ; Calls __Delete.

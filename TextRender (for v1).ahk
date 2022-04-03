@@ -98,10 +98,8 @@ class TextRender {
    }
 
    Render(terms*) {
-      ; Check the terms to avoid drawing a default square.
-      if (terms[1] != "" || terms[2] != "" || terms[3] != "") {
-         this.Draw(terms*)
-      }
+
+      this.Draw(terms*)
 
       ; Allow Render() to commit only when previous calls to Draw() have occurred.
       if (this.layers.length() > 0) {
@@ -130,10 +128,8 @@ class TextRender {
    }
 
    RenderOnScreen(terms*) {
-      ; Check the terms to avoid drawing a default square.
-      if (terms[1] != "" || terms[2] != "" || terms[3] != "") {
-         this.Draw(terms*)
-      }
+
+      this.Draw(terms*)
 
       ; Allow Render() to commit when previous Draw() has happened.
       if (this.layers.length() > 0) {

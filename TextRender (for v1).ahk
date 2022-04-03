@@ -53,7 +53,7 @@ class TextRender {
       ObjAddRef(&this)
       TextRender.windows[this.hwnd] := ""
    }
-   
+
    Default() {
       ; Removes all events except for left-click to drag.
       return this
@@ -327,9 +327,8 @@ class TextRender {
       this.UpdateMemory()
 
       if (this.x != "") {
-         ; All colors are the same speed.
          DllCall("gdiplus\GdipSetClipRect", "ptr", this.gfx, "float", this.x, "float", this.y, "float", this.w, "float", this.h, "int", 0)
-         DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF)
+         DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF) ; All colors are the same speed.
          DllCall("gdiplus\GdipResetClip", "ptr", this.gfx)
          this.CanvasChanged()
       }

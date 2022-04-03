@@ -374,7 +374,8 @@ class TextRender {
    Sleep(sleep_time := 0, wait_time := 0) {
       this.Wait(wait_time)
       if (sleep_time > 0) {
-         this.Clear()
+         this.UpdateLayeredWindow(0)
+         this.flush_pending := True
          Sleep sleep_time
       }
       return this

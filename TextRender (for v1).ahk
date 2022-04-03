@@ -349,7 +349,7 @@ class TextRender {
 
       if (this.t != 0) {
          ; Prevent the timer from blanking our canvas.
-         this.status := this.status + 1
+         this.UpdateStatus()
 
          DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
          TextRender_timer:
@@ -372,11 +372,15 @@ class TextRender {
       return this ; Allow the next render call to update the current window.
    }
 
-   CanvasChanged() {
-      Random rand, -2147483648, 2147483647
-      if rand == this.status
+   UpdateStatus() {
+      loop
          Random rand, -2147483648, 2147483647
+      until (rand != this.status)
       this.status := rand
+   }
+
+   CanvasChanged() {
+      this.UpdateStatus()
       if callback := this.events["CanvasChange"]
          return %callback%(this) ; Callbacks have a reference to "this".
    }

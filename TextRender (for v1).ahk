@@ -85,7 +85,7 @@ class TextRender {
    }
 
    AlwaysOnTop() {
-      WinSet, AlwaysOnTop, Toggle, % "ahk_id" this.hwnd
+      WinSet AlwaysOnTop, Toggle, % "ahk_id" this.hwnd
       return this
    }
 

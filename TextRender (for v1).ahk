@@ -373,7 +373,7 @@ class TextRender {
    }
 
    UpdateStatus() {
-      loop
+      loop ; Collision free
          Random rand, -2147483648, 2147483647
       until (rand != this.status)
       this.status := rand

@@ -345,28 +345,34 @@ class TextRender {
       return this
    }
 
-   Wait(milliseconds := 0) {
+   Pause(wait_time := 0) {
+      if (wait_time > 0) {
+         this.Clear() ; Don't clear the canvas if there is no sleep.
+         Sleep % wait_time
+      }
+   }
 
-      if (this.t != 0) {
-         ; Prevent the timer from blanking our canvas.
+   Wait(wait_time := 0) {
+
+      ; Allow the passed wait_time to replace the original duration.
+      wait_time := (wait_time > 0) ? wait_time : this.t
+
+      if (wait_time > 0) {
+         ; Prevents the timer from blanking the canvas.
          this.UpdateStatus()
 
+         ; Always use QPC over GetTickCount for finer time intervals.
          DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
 
          loop {
             DllCall("QueryPerformanceCounter", "int64*", end:=0)
-            time_elapsed := (end - this.t0) / frequency * 1000
-            remaining_time := this.t - time_elapsed
+            elapsed_time := (end - this.t0) / frequency * 1000
+            remaining_time := wait_time - elapsed_time
             if (remaining_time > 30)
                Sleep 10
             if (remaining_time <= 0)
                break
          }
-      }
-
-      if (milliseconds > 0) {
-         this.Clear() ; Don't clear the canvas if there is no sleep.
-         Sleep % milliseconds
       }
 
       return this ; Allow the next render call to update the current window.

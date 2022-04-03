@@ -345,13 +345,6 @@ class TextRender {
       return this
    }
 
-   Pause(wait_time := 0) {
-      if (wait_time > 0) {
-         this.Clear() ; Don't clear the canvas if there is no sleep.
-         Sleep % wait_time
-      }
-   }
-
    Wait(wait_time := 0) {
 
       ; Allow the passed wait_time to replace the original duration.
@@ -376,6 +369,15 @@ class TextRender {
       }
 
       return this ; Allow the next render call to update the current window.
+   }
+
+   Sleep(sleep_time := 0, wait_time := 0) {
+      this.Wait(wait_time)
+      if (sleep_time > 0) {
+         this.Clear()
+         Sleep sleep_time
+      }
+      return this
    }
 
    UpdateStatus() {

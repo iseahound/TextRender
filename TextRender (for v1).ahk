@@ -534,7 +534,7 @@ class TextRender {
 
       ; Get Font size.
       s  := (s ~= valid_positive) ? RegExReplace(s, "\s") : "2.23vh"          ; Default font size is 2.23vh.
-      s  := (s ~= "i)(pt|px)$") ? SubStr(s, 1, -2) : s                            ; Strip spaces, px, and pt.
+      s  := (s ~= "i)(pt|px)$") ? SubStr(s, 1, -2) : s                        ; Strip spaces, px, and pt.
       s  := (s ~= "i)vh$") ? RegExReplace(s, "i)vh$") * vh : s                ; Relative to viewport height.
       s  := (s ~= "i)vw$") ? RegExReplace(s, "i)vw$") * vw : s                ; Relative to viewport width.
       s  := (s ~= "i)(%|vmin)$") ? RegExReplace(s, "i)(%|vmin)$") * vmin : s  ; Relative to viewport minimum.
@@ -587,7 +587,7 @@ class TextRender {
 
       DllCall("gdiplus\GdipCreateFont", "ptr", hFamily, "float", s, "int", style, "int", 0, "ptr*", hFont:=0)
       DllCall("gdiplus\GdipCreateStringFormat", "int", n, "int", 0, "ptr*", hFormat:=0)
-      DllCall("gdiplus\GdipSetStringFormatAlign", "ptr", hFormat, "int", j) ; Left = 0, Center = 1, Right = 2
+      DllCall("gdiplus\GdipSetStringFormatAlign", "ptr", hFormat, "int", j)     ; Left = 0, Center = 1, Right = 2
       DllCall("gdiplus\GdipSetStringFormatLineAlign", "ptr", hFormat, "int", v) ; Top = 0, Center = 1, Bottom = 2
 
       ; Use the declared width and height of the text box if given.

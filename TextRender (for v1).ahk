@@ -2120,7 +2120,8 @@ class TextRender {
    }
 
    UpdateLayeredWindow(alpha := 255) {
-      if (this.x == "") {
+      ; If width and height are unset or zero, blank the canvas.
+      if (!this.w || !this.h) {
          return DllCall("UpdateLayeredWindow"
                   ,    "ptr", this.hwnd                ; hWnd
                   ,    "ptr", 0                        ; hdcDst
@@ -2129,7 +2130,7 @@ class TextRender {
                   ,    "ptr", 0                        ; hdcSrc
                   ,    "ptr", 0                        ; *pptSrc
                   ,   "uint", 0                        ; crKey
-                  ,  "uint*", alpha << 16 | 0x01 << 24 ; *pblend
+                  ,  "uint*", 0 << 16 | 0x01 << 24     ; *pblend
                   ,   "uint", 2                        ; dwFlags
                   ,    "int")                          ; Success = 1
       }

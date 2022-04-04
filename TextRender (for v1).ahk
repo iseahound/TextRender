@@ -2028,7 +2028,7 @@ class TextRender {
 
       ; Create a filepath based on the timestamp.
       if (filename == "") {
-         FormatTime, filename,, % "yyyy-MM-dd HH꞉mm꞉ss"
+         FormatTime, filename,, % "yyyy-MM-dd HH?mm?ss"
          filepath := directory "\" filename "." extension
          while FileExist(filepath) ; Check for collisions.
             filepath := directory "\" filename " (" A_Index ")." extension
@@ -2653,7 +2653,7 @@ class ImageRender extends TextRender {
 } ; End of ImageRender class.
 
 
-; |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾|
+; |??????????????????????????????????????????????????|
 ; | Double click TextRender.ahk or .exe to show GUI. |
 ; |__________________________________________________|
 if (A_LineFile == A_ScriptFullPath) {

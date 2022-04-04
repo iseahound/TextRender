@@ -9,6 +9,8 @@
 #Persistent
 
 TextRender(text:="", background_style:="", text_style:="") {
+   if (text == "" || background_style == "" || text_style == "")
+      return new TextRender
    return (new TextRender).Render(text, background_style, text_style)
 }
 

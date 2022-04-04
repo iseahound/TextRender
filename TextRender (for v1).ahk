@@ -8,13 +8,13 @@
 #Requires AutoHotkey v1.1.33+
 #Persistent
 
+; TextRender() - Display custom text on screen.
 TextRender(text:="", background_style:="", text_style:="") {
    if (text == "" && background_style == "" && text_style == "")
       return new TextRender
    return (new TextRender).Render(text, background_style, text_style)
 }
 
-; TextRender() - Display custom text on screen.
 class TextRender {
 
    static windows := {}
@@ -185,7 +185,10 @@ class TextRender {
 
          ; Set Coordinates
          WinGetPos x, y, w, h, % "ahk_id " this.hwnd
-         this.WindowLeft := x, this.WindowTop := y, this.WindowWidth := w, this.WindowHeight := h
+         this.WindowLeft := x
+         this.WindowTop := y
+         this.WindowWidth := w
+         this.WindowHeight := h
          this.WindowRight  := this.WindowLeft + this.WindowWidth
          this.WindowBottom := this.WindowTop + this.WindowHeight
       }
@@ -593,9 +596,9 @@ class TextRender {
       DllCall("gdiplus\GdipSetStringFormatLineAlign", "ptr", hFormat, "int", v) ; Top = 0, Center = 1, Bottom = 2
 
       ; Use the declared width and height of the text box if given.
-      VarSetCapacity(RectF, 16, 0)                         ; sizeof(RectF) = 16
-         (_w != "") ? NumPut(_w, RectF,  8,  "float") : "" ; Width
-         (_h != "") ? NumPut(_h, RectF, 12,  "float") : "" ; Height
+      VarSetCapacity(RectF, 16, 0)                        ; sizeof(RectF) = 16
+         (_w != "") ? NumPut(_w, RectF,  8, "float") : "" ; Width
+         (_h != "") ? NumPut(_h, RectF, 12, "float") : "" ; Height
 
       ; Otherwise simulate the drawing...
       DllCall("gdiplus\GdipMeasureString"
@@ -812,26 +815,25 @@ class TextRender {
          if (True) {
             ;DropShadow := Gdip_CreateBitmap(w + 2*offset2, h + 2*offset2)
             ;DropShadow := Gdip_CreateBitmap(A_ScreenWidth, A_ScreenHeight, 0xE200B)
-            DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", A_ScreenWidth, "int", A_ScreenHeight
-               , "uint", 0, "uint", 0xE200B, "ptr", 0, "ptr*", DropShadow:=0)
+            DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", A_ScreenWidth, "int", A_ScreenHeight, "uint", 0, "uint", 0xE200B, "ptr", 0, "ptr*", DropShadow:=0)
             DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", DropShadow, "ptr*", DropShadowG:=0)
             DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", 0) ; SmoothingModeNoAntiAlias
             DllCall("gdiplus\GdipSetTextRenderingHint", "ptr", DropShadowG, "int", 1) ; TextRenderingHintSingleBitPerPixelGridFit
             DllCall("gdiplus\GdipGraphicsClear", "ptr", gfx, "uint", d[4] & 0xFFFFFF)
             VarSetCapacity(RectF, 16, 0)          ; sizeof(RectF) = 16
-               NumPut(d[1]+x, RectF,  0,  "float") ; Left
-               NumPut(d[2]+y, RectF,  4,  "float") ; Top
-               NumPut(    w, RectF,  8,  "float") ; Width
-               NumPut(    h, RectF, 12,  "float") ; Height
+               NumPut(d[1]+x, RectF,  0, "float") ; Left
+               NumPut(d[2]+y, RectF,  4, "float") ; Top
+               NumPut(     w, RectF,  8, "float") ; Width
+               NumPut(     h, RectF, 12, "float") ; Height
 
             ;CreateRectF(RC, offset2, offset2, w + 2*offset2, h + 2*offset2)
          } else {
             ;CreateRectF(RC, x + d[1], y + d[2], w, h)
             VarSetCapacity(RectF, 16, 0)          ; sizeof(RectF) = 16
-               NumPut(d[1]+x, RectF,  0,  "float") ; Left
-               NumPut(d[2]+y, RectF,  4,  "float") ; Top
-               NumPut(    w, RectF,  8,  "float") ; Width
-               NumPut(    h, RectF, 12,  "float") ; Height
+               NumPut(d[1]+x, RectF,  0, "float") ; Left
+               NumPut(d[2]+y, RectF,  4, "float") ; Top
+               NumPut(     w, RectF,  8, "float") ; Width
+               NumPut(     h, RectF, 12, "float") ; Height
             DropShadowG := gfx
          }
 
@@ -853,7 +855,7 @@ class TextRender {
          else ; Otherwise, use the below code if blur, size, and opacity are set.
          {
             ; Draw the outer edge of the text string.
-            DllCall("gdiplus\GdipCreatePath", "int",1, "ptr*",pPath:=0)
+            DllCall("gdiplus\GdipCreatePath", "int", 1, "ptr*", pPath:=0)
             DllCall("gdiplus\GdipAddPathString"
                      ,    "ptr", pPath
                      ,   "wstr", text
@@ -904,11 +906,11 @@ class TextRender {
       ; Draw 3 - Outline
       if (!o.void) {
          ; Convert our text to a path.
-         VarSetCapacity(RectF, 16, 0)          ; sizeof(RectF) = 16
-            NumPut(    x, RectF,  0,  "float") ; Left
-            NumPut(    y, RectF,  4,  "float") ; Top
-            NumPut(    w, RectF,  8,  "float") ; Width
-            NumPut(    h, RectF, 12,  "float") ; Height
+         VarSetCapacity(RectF, 16, 0)     ; sizeof(RectF) = 16
+            NumPut(x, RectF,  0, "float") ; Left
+            NumPut(y, RectF,  4, "float") ; Top
+            NumPut(w, RectF,  8, "float") ; Width
+            NumPut(h, RectF, 12, "float") ; Height
          DllCall("gdiplus\GdipCreatePath", "int", 1, "ptr*", pPath:=0)
          DllCall("gdiplus\GdipAddPathString"
                   ,    "ptr", pPath
@@ -925,9 +927,9 @@ class TextRender {
             DllCall("gdiplus\GdipSetClipPath", "ptr", gfx, "ptr", pPath, "int", 3) ; Exclude original text region from being drawn on.
             ARGB := Format("0x{:02X}",((o[4] & 0xFF000000) >> 24)/o[3]) . Format("{:06X}",(o[4] & 0x00FFFFFF))
             DllCall("gdiplus\GdipCreatePen1", "uint", ARGB, "float", 1, "int", 2, "ptr*", pPenGlow:=0) ; UnitTypePixel = 2
-            DllCall("gdiplus\GdipSetPenLineJoin", "ptr",pPenGlow, "uint",2) ; LineJoinTypeRound
+            DllCall("gdiplus\GdipSetPenLineJoin", "ptr", pPenGlow, "uint", 2) ; LineJoinTypeRound
 
-            Loop % o[3]
+            loop % o[3]
             {
                DllCall("gdiplus\GdipSetPenWidth", "ptr", pPenGlow, "float", o[1] + 2*A_Index)
                DllCall("gdiplus\GdipDrawPath", "ptr", gfx, "ptr", pPenGlow, "ptr", pPath) ; DRAWING!
@@ -958,11 +960,11 @@ class TextRender {
       if (text != "" && o.void) {
          DllCall("gdiplus\GdipSetCompositingMode", "ptr", gfx, "int", AlphaCopy)
 
-         VarSetCapacity(RectF, 16, 0)          ; sizeof(RectF) = 16
-            NumPut(    x, RectF,  0,  "float") ; Left
-            NumPut(    y, RectF,  4,  "float") ; Top
-            NumPut(    w, RectF,  8,  "float") ; Width
-            NumPut(    h, RectF, 12,  "float") ; Height
+         VarSetCapacity(RectF, 16, 0)     ; sizeof(RectF) = 16
+            NumPut(x, RectF,  0, "float") ; Left
+            NumPut(y, RectF,  4, "float") ; Top
+            NumPut(w, RectF,  8, "float") ; Width
+            NumPut(h, RectF, 12, "float") ; Height
 
          DllCall("gdiplus\GdipMeasureString"
                   ,    "ptr", gfx
@@ -1362,7 +1364,7 @@ class TextRender {
             _[4] := ((___ := RegExReplace(m, q1    "(l(eft)?)"          q2, "${value}")) != m) ? ___ : _[4]
             m := _
          } else if (default != "")
-            m := {1:default, 2:default, 3:default, 4:default}
+            m := [default, default, default, default]
          else return {"void":True, 1:0, 2:0, 3:0, 4:0}
 
          ; Follow CSS guidelines for margin!
@@ -1511,14 +1513,14 @@ class TextRender {
          DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
          ; Create a buffer of raw 32-bit ARGB pixel data.
-         VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-            NumPut(  width, Rect,  8,   "uint") ; Width
-            NumPut( height, Rect, 12,   "uint") ; Height
+         VarSetCapacity(Rect, 16, 0)          ; sizeof(Rect) = 16
+            NumPut(  width, Rect,  8, "uint") ; Width
+            NumPut( height, Rect, 12, "uint") ; Height
          VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0) ; sizeof(BitmapData) = 24, 32
          DllCall("gdiplus\GdipBitmapLockBits", "ptr", pBitmap, "ptr", &Rect, "uint", 3, "int", 0x26200A, "ptr", &BitmapData)
 
          ; Get the Scan0 of the pixel data. Create a working buffer of the exact same size.
-         stride := NumGet(BitmapData,  8, "int")
+         stride := NumGet(BitmapData, 8, "int")
          Scan01 := NumGet(BitmapData, 16, "ptr")
          Scan02 := DllCall("GlobalAlloc", "uint", 0x40, "uptr", stride * height, "ptr")
 
@@ -1653,14 +1655,15 @@ class TextRender {
       WinSet AlwaysOnTop, On, % "ahk_id" this.friend2.hwnd
    }
 
-   ; Source: ImagePut 1.5.1 - WindowClass()
+   ; Source: ImagePut 1.6.0 - WindowClass()
    WindowClass() {
       ; The window class shares the name of this class.
       cls := this.__class
-      VarSetCapacity(wc, size := _ ? 48:80)           ; sizeof(WNDCLASSEX) = 48, 80
+      VarSetCapacity(wc, size := A_PtrSize = 4 ? 48:80) ; sizeof(WNDCLASSEX) = 48, 80
 
       ; Check if the window class is already registered.
-      if DllCall("GetClassInfoEx", "ptr", 0, "str", cls, "ptr", wc)
+      hInstance := DllCall("GetModuleHandle", "ptr", 0, "ptr")
+      if DllCall("GetClassInfoEx", "ptr", hInstance, "str", cls, "ptr", &wc)
          return cls
 
       ; Create window data.
@@ -1822,9 +1825,9 @@ class TextRender {
          NumPut(      y, Rect,  4,    "int") ; Y
          NumPut(      w, Rect,  8,   "uint") ; Width
          NumPut(      h, Rect, 12,   "uint") ; Height
-      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
-         NumPut(       4*w, BitmapData,  8,    "int") ; Stride
-         NumPut(   &buffer, BitmapData, 16,    "ptr") ; Scan0
+      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0) ; sizeof(BitmapData) = 24, 32
+         NumPut(    4*w, BitmapData,  8,    "int")  ; Stride
+         NumPut(&buffer, BitmapData, 16,    "ptr")  ; Scan0
 
       ; Convert pARGB to ARGB using a writable buffer created by LockBits.
       DllCall("gdiplus\GdipBitmapLockBits"
@@ -1992,6 +1995,9 @@ class TextRender {
       ; Save default extension.
       default := extension
 
+      ; Convert forward style slashes into Windows style backslashes.
+      filepath := RegExReplace(filepath, "/", "\")
+
       ; Split the filepath.
       SplitPath % Trim(filepath),, directory, extension, filename
 
@@ -2019,6 +2025,7 @@ class TextRender {
 
       ; An invalid extension is actually part of the filename.
       if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$") {
+         ; Avoid appending an extra period without an extension.
          if (extension != "")
             filename .= "." extension
 
@@ -2034,7 +2041,14 @@ class TextRender {
             filepath := directory "\" filename " (" A_Index ")." extension
       }
 
-      ; Filepath is complete!
+      ; Create a numeric sequence of files...
+      else if (filename == "0" or filename == "1") {
+         filepath := directory "\" filename "." extension
+         while FileExist(filepath) ; Check for collisions.
+            filepath := directory "\" A_Index "." extension
+      }
+
+      ; Always overwrite specific filenames.
       else filepath := directory "\" filename "." extension
 
       ; Fill a buffer with the available image codec info.

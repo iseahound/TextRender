@@ -1554,107 +1554,6 @@ class TextRender {
       }
    }
 
-   OnEvent(event, callback := "") {
-      this.events[event] := callback
-      return this
-   }
-
-   WindowProc(uMsg, wParam, lParam) {
-      ; Because the first parameter of an object is "this",
-      ; the callback function will overwrite that parameter as hwnd.
-      hwnd := this
-
-      ; A dictionary of "this" objects is stored as hwnd:this.
-      this := TextRender.windows[hwnd]
-
-      ; WM_DESTROY calls FreeMemory().
-      if (uMsg = 0x2)
-         return this.DestroyWindow()
-
-      ; WM_DISPLAYCHANGE calls UpdateMemory() via Draw().
-      if (uMsg = 0x7E) {
-         DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
-         DllCall("QueryPerformanceCounter", "int64*", end:=0)
-         time_elapsed := (end - this.t0) / frequency * 1000
-         remaining_time := this.t - time_elapsed
-         if (this.t == 0 || remaining_time > 0) {
-            for i, layer in this.layers
-               this.Draw(layer[1], layer[2], layer[3])
-            this.UpdateLayeredWindow()
-            this.flush_pending := True
-            ; Create a timer that eventually clears the canvas.
-            if (remaining_time > 0) {
-               ; Create a reference to the object held by a timer.
-               blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
-               SetTimer % blank, % -remaining_time ; Calls __Delete.
-            }
-         }
-      }
-
-      ; Match window messages to Rainmeter event names.
-      ; https://docs.rainmeter.net/manual/mouse-actions/
-      static dict :=
-      ( LTrim Join
-      {
-         WM_LBUTTONDOWN := 0x0201    : "LeftMouseDown",
-         WM_LBUTTONUP := 0x0202      : "LeftMouseUp",
-         WM_LBUTTONDBLCLK := 0x0203  : "LeftMouseDoubleClick",
-         WM_RBUTTONDOWN := 0x0204    : "RightMouseDown",
-         WM_RBUTTONUP := 0x0205      : "RightMouseUp",
-         WM_RBUTTONDBLCLK := 0x0206  : "RightMouseDoubleClick",
-         WM_MBUTTONDOWN := 0x0207    : "MiddleMouseDown",
-         WM_MBUTTONUP := 0x0208      : "MiddleMouseUp",
-         WM_MBUTTONDBLCLK := 0x0209  : "MiddleMouseDoubleClick",
-         WM_MOUSEHOVER := 0x02A1     : "MouseOver",
-         WM_MOUSELEAVE := 0x02A3     : "MouseLeave"
-      }
-      )
-
-      ; Process windows messages by invoking the associated callback.
-      for message, event in dict
-         if (uMsg = message)
-            if callback := this.events[event]
-               return %callback%(this) ; Callbacks have a reference to "this".
-
-      ; Default processing of window messages.
-      return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
-   }
-
-   EventMoveWindow() {
-      ; Allows the user to drag to reposition the window.
-      DllCall("DefWindowProc", "ptr", this.hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
-   }
-
-   EventShowCoordinates() {
-      ; Shows a bubble displaying the current window coordinates.
-      if !this.friend1 {
-         this.friend1 := new TextRender(,,, this.hwnd)
-         this.friend1.OnEvent("MiddleMouseDown", "")
-      }
-      CoordMode Mouse
-      MouseGetPos _x, _y
-      WinGetPos x, y, w, h, % "ahk_id " this.hwnd
-      this.friend1.Render(Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
-         , "t:7000 r:0.5vmin x" _x+20 " y" _y+20
-         , "s:1.5vmin f:(Consolas) o:(0.5) m:0.5vmin j:right")
-      WinSet AlwaysOnTop, On, % "ahk_id" this.friend1.hwnd
-   }
-
-   EventCopyData() {
-      ; Copies the rendered text to clipboard.
-      if !this.friend2 {
-         this.friend2 := new TextRender(,,, this.hwnd)
-         this.friend2.OnEvent("MiddleMouseDown", "")
-         this.friend2.OnEvent("RightMouseDown", "")
-      }
-      for i, layer in this.layers
-         if data := layer[1]
-            break
-      clipboard := data
-      this.friend2.Render("Saved text to clipboard.", "t:1250 c:#F9E486 y:75vh r:10%")
-      WinSet AlwaysOnTop, On, % "ahk_id" this.friend2.hwnd
-   }
-
    ; Source: ImagePut 1.6.0 - WindowClass()
    WindowClass() {
       ; The window class shares the name of this class.
@@ -1692,6 +1591,107 @@ class TextRender {
 
       ; Return the class name as a string.
       return cls
+   }
+
+      WindowProc(uMsg, wParam, lParam) {
+         ; Because the first parameter of an object is "this",
+         ; the callback function will overwrite that parameter as hwnd.
+         hwnd := this
+
+         ; A dictionary of "this" objects is stored as hwnd:this.
+         this := TextRender.windows[hwnd]
+
+         ; WM_DESTROY calls FreeMemory().
+         if (uMsg = 0x2)
+            return this.DestroyWindow()
+
+         ; WM_DISPLAYCHANGE calls UpdateMemory() via Draw().
+         if (uMsg = 0x7E) {
+            DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
+            DllCall("QueryPerformanceCounter", "int64*", end:=0)
+            time_elapsed := (end - this.t0) / frequency * 1000
+            remaining_time := this.t - time_elapsed
+            if (this.t == 0 || remaining_time > 0) {
+               for i, layer in this.layers
+                  this.Draw(layer[1], layer[2], layer[3])
+               this.UpdateLayeredWindow()
+               this.flush_pending := True
+               ; Create a timer that eventually clears the canvas.
+               if (remaining_time > 0) {
+                  ; Create a reference to the object held by a timer.
+                  blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
+                  SetTimer % blank, % -remaining_time ; Calls __Delete.
+               }
+            }
+         }
+
+         ; Match window messages to Rainmeter event names.
+         ; https://docs.rainmeter.net/manual/mouse-actions/
+         static dict :=
+         ( LTrim Join
+         {
+            WM_LBUTTONDOWN := 0x0201    : "LeftMouseDown",
+            WM_LBUTTONUP := 0x0202      : "LeftMouseUp",
+            WM_LBUTTONDBLCLK := 0x0203  : "LeftMouseDoubleClick",
+            WM_RBUTTONDOWN := 0x0204    : "RightMouseDown",
+            WM_RBUTTONUP := 0x0205      : "RightMouseUp",
+            WM_RBUTTONDBLCLK := 0x0206  : "RightMouseDoubleClick",
+            WM_MBUTTONDOWN := 0x0207    : "MiddleMouseDown",
+            WM_MBUTTONUP := 0x0208      : "MiddleMouseUp",
+            WM_MBUTTONDBLCLK := 0x0209  : "MiddleMouseDoubleClick",
+            WM_MOUSEHOVER := 0x02A1     : "MouseOver",
+            WM_MOUSELEAVE := 0x02A3     : "MouseLeave"
+         }
+         )
+
+         ; Process windows messages by invoking the associated callback.
+         for message, event in dict
+            if (uMsg = message)
+               if callback := this.events[event]
+                  return %callback%(this) ; Callbacks have a reference to "this".
+
+         ; Default processing of window messages.
+         return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
+      }
+
+   OnEvent(event, callback := "") {
+      this.events[event] := callback
+      return this
+   }
+
+   EventMoveWindow() {
+      ; Allows the user to drag to reposition the window.
+      DllCall("DefWindowProc", "ptr", this.hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
+   }
+
+   EventShowCoordinates() {
+      ; Shows a bubble displaying the current window coordinates.
+      if !this.friend1 {
+         this.friend1 := new TextRender(,,, this.hwnd)
+         this.friend1.OnEvent("MiddleMouseDown", "")
+      }
+      CoordMode Mouse
+      MouseGetPos _x, _y
+      WinGetPos x, y, w, h, % "ahk_id " this.hwnd
+      this.friend1.Render(Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
+         , "t:7000 r:0.5vmin x" _x+20 " y" _y+20
+         , "s:1.5vmin f:(Consolas) o:(0.5) m:0.5vmin j:right")
+      WinSet AlwaysOnTop, On, % "ahk_id" this.friend1.hwnd
+   }
+
+   EventCopyData() {
+      ; Copies the rendered text to clipboard.
+      if !this.friend2 {
+         this.friend2 := new TextRender(,,, this.hwnd)
+         this.friend2.OnEvent("MiddleMouseDown", "")
+         this.friend2.OnEvent("RightMouseDown", "")
+      }
+      for i, layer in this.layers
+         if data := layer[1]
+            break
+      clipboard := data
+      this.friend2.Render("Saved text to clipboard.", "t:1250 c:#F9E486 y:75vh r:10%")
+      WinSet AlwaysOnTop, On, % "ahk_id" this.friend2.hwnd
    }
 
    CreateWindow(title := "", style := 0x80000000, styleEx := 0x80088, parent := "") {

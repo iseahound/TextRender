@@ -1082,7 +1082,12 @@ class TextRender {
          ; Check string buffer.
          if ObjGetCapacity([c], 1) {
             c := Trim(c)                    ; Remove surrounding whitespace.
-            c := LTrim(c, "#")              ; Remove leading number sign.
+            if (c ~= "^#") {
+               c := LTrim(c, "#")
+               c := (c ~= ARGB) ? RegExReplace(c, "^([0-9A-Fa-f]{6})([0-9A-Fa-f]{2})$", "$2$1")
+                  : (c ~= RGB) ? "0xFF" c 
+                  : default
+            }
             c := this.colormap(c, c)        ; Convert CSS color names to hexadecimal.
             c := (c ~= xRGB) ? "0xFF" RegExReplace(c, xRGB, "$1")
                : (c ~= ARGB) ? "0x" c

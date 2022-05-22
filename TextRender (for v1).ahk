@@ -819,7 +819,7 @@ class TextRender {
             DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", DropShadow, "ptr*", DropShadowG:=0)
             DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", 0) ; SmoothingModeNoAntiAlias
             DllCall("gdiplus\GdipSetTextRenderingHint", "ptr", DropShadowG, "int", 1) ; TextRenderingHintSingleBitPerPixelGridFit
-            DllCall("gdiplus\GdipGraphicsClear", "ptr", gfx, "uint", d[4] & 0xFFFFFF)
+            ;DllCall("gdiplus\GdipGraphicsClear", "ptr", gfx, "uint", d[4] & 0xFFFFFF)
             VarSetCapacity(RectF, 16, 0)          ; sizeof(RectF) = 16
                NumPut(d[1]+x, RectF,  0, "float") ; Left
                NumPut(d[2]+y, RectF,  4, "float") ; Top

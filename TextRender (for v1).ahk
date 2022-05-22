@@ -2289,19 +2289,21 @@ class ImageRender extends TextRender {
    DrawOnGraphics(gfx, image := "", style := "", polygons := "", CanvasWidth := "", CanvasHeight := "") {
 
       ; Requires the ImagePut class for full features.
-      if ImagePut {
-         try type := ImagePut.DontVerifyImageType(image)
-         catch
-            type := ImagePut.ImageType(image)
-         pBitmap := ImagePut.ToBitmap(type, image)
-      }
+      if (image != "") {
+         if ImagePut {
+            try type := ImagePut.DontVerifyImageType(image)
+            catch
+               type := ImagePut.ImageType(image)
+            pBitmap := ImagePut.ToBitmap(type, image)
+         }
 
-      ; Assume a pointer to a bitmap is passed.
-      else {
-         DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", type:=0)
-         if (type != 1)
-            throw Exception("Invalid pointer to a GDI+ bitmap.`n`nPlease #include ImagePut.ahk in the script.", -3)
-         pBitmap := image
+         ; Assume a pointer to a bitmap is passed.
+         else {
+            DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", type:=0)
+            if (type != 1)
+               throw Exception("Invalid pointer to a GDI+ bitmap.`n`nPlease #include ImagePut.ahk in the script.", -3)
+            pBitmap := image
+         }
       }
 
       ; Get default width and height from undocumented graphics pointer offset.

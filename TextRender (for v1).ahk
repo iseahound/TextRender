@@ -360,8 +360,8 @@ class TextRender {
 
    Wait(wait_time := 0) {
 
-      ; Allow the passed wait_time to replace the original duration.
-      wait_time := (wait_time > 0) ? wait_time : this.t
+      ; Allow the user to override the original duration with a positive number.
+      (wait_time <= 0) && wait_time := this.t
 
       if (wait_time > 0) {
          ; Prevents the timer from blanking the canvas.
@@ -409,8 +409,8 @@ class TextRender {
 
    DrawOnGraphics(gfx, text := "", style1 := "", style2 := "", CanvasWidth := "", CanvasHeight := "") {
       ; Get default width and height from undocumented graphics pointer offset.
-      CanvasWidth := (CanvasWidth != "") ? CanvasWidth : NumGet(gfx + 20 + A_PtrSize, "uint")
-      CanvasHeight := (CanvasHeight != "") ? CanvasHeight : NumGet(gfx + 24 + A_PtrSize, "uint")
+      (CanvasWidth == "") && CanvasWidth := NumGet(gfx + 20 + A_PtrSize, "uint")
+      (CanvasHeight == "") && CanvasHeight := NumGet(gfx + 24 + A_PtrSize, "uint")
 
       ; RegEx help? https://regex101.com/r/rNsP6n/1
       static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
@@ -610,9 +610,9 @@ class TextRender {
       DllCall("gdiplus\GdipSetStringFormatLineAlign", "ptr", hFormat, "int", v) ; Top = 0, Center = 1, Bottom = 2
 
       ; Use the declared width and height of the text box if given.
-      VarSetCapacity(RectF, 16, 0)                        ; sizeof(RectF) = 16
-         (_w != "") ? NumPut(_w, RectF,  8, "float") : "" ; Width
-         (_h != "") ? NumPut(_h, RectF, 12, "float") : "" ; Height
+      VarSetCapacity(RectF, 16, 0)                    ; sizeof(RectF) = 16
+         (_w != "") && NumPut(_w, RectF,  8, "float") ; Width
+         (_h != "") && NumPut(_h, RectF, 12, "float") ; Height
 
       ; Otherwise simulate the drawing...
       DllCall("gdiplus\GdipMeasureString"
@@ -633,8 +633,8 @@ class TextRender {
       aspect := (height != 0) ? width / height : 0
 
       ; And use those values for the background width and height.
-      (_w == "") ? _w := width : ""
-      (_h == "") ? _h := height : ""
+      (_w == "") && _w := width
+      (_h == "") && _h := height
 
       ; Get background anchor. This is where the origin of the background is located.
       _a := (_a ~= "i)top" && _a ~= "i)left") ? 1
@@ -2345,8 +2345,8 @@ class ImageRender extends TextRender {
       }
 
       ; Get default width and height from undocumented graphics pointer offset.
-      CanvasWidth := (CanvasWidth != "") ? CanvasWidth : NumGet(gfx + 20 + A_PtrSize, "uint")
-      CanvasHeight := (CanvasHeight != "") ? CanvasHeight : NumGet(gfx + 24 + A_PtrSize, "uint")
+      (CanvasWidth == "") && CanvasWidth := NumGet(gfx + 20 + A_PtrSize, "uint")
+      (CanvasHeight == "") && CanvasHeight := NumGet(gfx + 24 + A_PtrSize, "uint")
 
       ; RegEx help? https://regex101.com/r/rNsP6n/1
       static q1 := "(?i)^.*?\b(?<!:|:\s)\b"

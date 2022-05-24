@@ -636,15 +636,22 @@ class TextRender {
       (_w == "") ? _w := width : ""
       (_h == "") ? _h := height : ""
 
-
-      ; Get background anchor. This is where the origin of the image is located.
-      _a := RegExReplace(_a, "\s")
-      _a := (_a ~= "i)top" && _a ~= "i)left") ? 1 : (_a ~= "i)top" && _a ~= "i)cent(er|re)") ? 2
-         : (_a ~= "i)top" && _a ~= "i)right") ? 3 : (_a ~= "i)cent(er|re)" && _a ~= "i)left") ? 4
-         : (_a ~= "i)cent(er|re)" && _a ~= "i)right") ? 6 : (_a ~= "i)bottom" && _a ~= "i)left") ? 7
-         : (_a ~= "i)bottom" && _a ~= "i)cent(er|re)") ? 8 : (_a ~= "i)bottom" && _a ~= "i)right") ? 9
-         : (_a ~= "i)top") ? 2 : (_a ~= "i)left") ? 4 : (_a ~= "i)right") ? 6 : (_a ~= "i)bottom") ? 8
-         : (_a ~= "i)cent(er|re)") ? 5 : (_a ~= "^[1-9]$") ? _a : 1 ; Default anchor is top-left.
+      ; Get background anchor. This is where the origin of the background is located.
+      _a := (_a ~= "i)top" && _a ~= "i)left") ? 1
+         : (_a ~= "i)top" && _a ~= "i)cent(er|re)") ? 2
+         : (_a ~= "i)top" && _a ~= "i)right") ? 3
+         : (_a ~= "i)cent(er|re)" && _a ~= "i)left") ? 4
+         : (_a ~= "i)cent(er|re)" && _a ~= "i)right") ? 6
+         : (_a ~= "i)bottom" && _a ~= "i)left") ? 7
+         : (_a ~= "i)bottom" && _a ~= "i)cent(er|re)") ? 8
+         : (_a ~= "i)bottom" && _a ~= "i)right") ? 9
+         : (_a ~= "i)top") ? 2
+         : (_a ~= "i)left") ? 4
+         : (_a ~= "i)right") ? 6
+         : (_a ~= "i)bottom") ? 8
+         : (_a ~= "i)cent(er|re)") ? 5
+         : (_a ~= "^[1-9]$") ? _a
+         : 1 ; Default anchor is top-left.
 
       ; The anchor can be implied from _x and _y (left, center, right, top, bottom).
       _a := (_x ~= "i)left") ? 1+(((_a-1)//3)*3) : (_x ~= "i)cent(er|re)") ? 2+(((_a-1)//3)*3) : (_x ~= "i)right") ? 3+(((_a-1)//3)*3) : _a
@@ -707,14 +714,22 @@ class TextRender {
       if (y == "")
          y  := (v = 1) ? _y + (_h/2) - (h/2) : (v = 2) ? _y + _h - h : y
 
-      ; Get anchor.
-      a  := RegExReplace( a, "\s")
-      a  := (a ~= "i)top" && a ~= "i)left") ? 1 : (a ~= "i)top" && a ~= "i)cent(er|re)") ? 2
-         : (a ~= "i)top" && a ~= "i)right") ? 3 : (a ~= "i)cent(er|re)" && a ~= "i)left") ? 4
-         : (a ~= "i)cent(er|re)" && a ~= "i)right") ? 6 : (a ~= "i)bottom" && a ~= "i)left") ? 7
-         : (a ~= "i)bottom" && a ~= "i)cent(er|re)") ? 8 : (a ~= "i)bottom" && a ~= "i)right") ? 9
-         : (a ~= "i)top") ? 2 : (a ~= "i)left") ? 4 : (a ~= "i)right") ? 6 : (a ~= "i)bottom") ? 8
-         : (a ~= "i)cent(er|re)") ? 5 : (a ~= "^[1-9]$") ? a : 1 ; Default anchor is top-left.
+      ; Get text anchor. This is where the origin of the text is located.
+      a := (a ~= "i)top" && a ~= "i)left") ? 1
+         : (a ~= "i)top" && a ~= "i)cent(er|re)") ? 2
+         : (a ~= "i)top" && a ~= "i)right") ? 3
+         : (a ~= "i)cent(er|re)" && a ~= "i)left") ? 4
+         : (a ~= "i)cent(er|re)" && a ~= "i)right") ? 6
+         : (a ~= "i)bottom" && a ~= "i)left") ? 7
+         : (a ~= "i)bottom" && a ~= "i)cent(er|re)") ? 8
+         : (a ~= "i)bottom" && a ~= "i)right") ? 9
+         : (a ~= "i)top") ? 2
+         : (a ~= "i)left") ? 4
+         : (a ~= "i)right") ? 6
+         : (a ~= "i)bottom") ? 8
+         : (a ~= "i)cent(er|re)") ? 5
+         : (a ~= "^[1-9]$") ? a
+         : 1 ; Default anchor is top-left.
 
       ; Text x and text y can be specified as locations (left, center, right, top, bottom).
       ; These location words in text x and text y take precedence over the values in the text anchor.

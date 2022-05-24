@@ -31,8 +31,6 @@ class TextRender {
       ; Store a reference to this object accessed by the window handle.
       ; When processing window messages the hwnd can be used to retrieve "this".
       TextRender.windows[this.hwnd] := this
-      MsgBox ObjPtr(TextRender.windows[this.hwnd]) "`n" this.hwnd
-      MsgBox TextRender.windows[this.hwnd].hwnd
       ObjRelease(ObjPtr(this)) ; Allow __Delete() to be called. RefCount - 1.
 
       ; Initalize default events.
@@ -294,7 +292,7 @@ class TextRender {
       }
    }
 
-   Draw(data := "", styles*) {
+   Draw(data := "", style1 := "", style2 := "") {
 
       ; Check if FreeMemory() was called between draws.
       if (!this.hdc && this.flush_pending == False) {
@@ -308,15 +306,15 @@ class TextRender {
       if (this.flush_pending == True)
          this.Flush() ; Clears the graphics buffer.
 
-      if (styles[1] = "" && styles[2] = "")
-         styles := this.styles
+      if (style1 = "" && style2 = "")
+         style1 := this.style1, style2 := this.style2
       this.data := data
-      this.styles := styles
-      this.layers.push([data, styles*])
+      this.style1 := style1, this.style2 := style2
+      this.layers.push([data, style1, style2])
 
       ; Drawing
       dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-      obj := this.DrawOnGraphics(this.gfx, data, styles[1], styles[2], A_ScreenWidth, A_ScreenHeight)
+      obj := this.DrawOnGraphics(this.gfx, data, style1, style2, A_ScreenWidth, A_ScreenHeight)
       DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; Create a unique signature for each call to Draw().
@@ -406,7 +404,7 @@ class TextRender {
    CanvasChanged() {
       this.UpdateStatus()
       try if callback := this.events["CanvasChange"]
-         return %callback%(this) ; Callbacks have a reference to "this".
+         return callback(this) ; Callbacks have a reference to "this".
    }
 
    DrawOnGraphics(gfx, text := "", style1 := "", style2 := "", CanvasWidth := "", CanvasHeight := "") {
@@ -1088,24 +1086,29 @@ class TextRender {
          return default
 
       ; Check string buffer.
-      ; if ObjGetCapacity([c], 1) { ; BROKEN
+      if (Type(c) == "String") {
          c := Trim(c)                    ; Remove surrounding whitespace.
-         c := LTrim(c, "#")              ; Remove leading number sign.
+         if (c ~= "^#") {
+            c := LTrim(c, "#")
+            c := (c ~= ARGB) ? RegExReplace(c, "^([0-9A-Fa-f]{6})([0-9A-Fa-f]{2})$", "$2$1")
+               : (c ~= RGB) ? "0xFF" c
+               : default
+         }
          c := this.colormap(c, c)        ; Convert CSS color names to hexadecimal.
          c := (c ~= xRGB) ? "0xFF" RegExReplace(c, xRGB, "$1")
             : (c ~= ARGB) ? "0x" c
             : (c ~= RGB) ? "0xFF" c : c
          c := (c ~= xARGB) ? c : default ; Ensure hexadecimal format is valid ARGB.
-      ;}
+      }
 
       ; Assume number buffer.
-      ;else {
+      else {
          c := Round(c)                   ; Integers only.
          if (c > 0 && c < 0x01000000)    ; Lift RGB to solid ARGB.
             c += 0xFF000000              ; But do not convert zero to solid black.
          if (c < 0 || c > 0xFFFFFFFF)    ; Catch integers outside of 0 - 0xFFFFFFFF.
             c := default
-      ;}
+      }
 
       return c
    }
@@ -1121,8 +1124,8 @@ class TextRender {
          return SubStr(ComObject("Scriptlet.TypeLib").GUID, 2, 8)
 
       static colors :=
-      {
 
+      {
          Clear                 : "0x00000000",
          None                  : "0x00000000",
          Off                   : "0x00000000",
@@ -1139,7 +1142,6 @@ class TextRender {
          Blue                  : "0xFF0000FF",
          BlueViolet            : "0xFF8A2BE2",
          Brown                 : "0xFFA52A2A",
-
          BurlyWood             : "0xFFDEB887",
          CadetBlue             : "0xFF5F9EA0",
          Chartreuse            : "0xFF7FFF00",
@@ -1278,6 +1280,11 @@ class TextRender {
          YellowGreen           : "0xFF9ACD32"
       }
 
+
+
+
+
+
       return colors.HasOwnProp(c) ? colors.%c% : default
    }
 
@@ -1342,7 +1349,7 @@ class TextRender {
       c2 := 255 & ( sRGB >> 8 )
       c3 := 255 & ( sRGB )
 
-      Loop 3 {
+      loop 3 {
          c%A_Index% := c%A_Index% / 255
          c%A_Index% := (c%A_Index% <= 0.04045) ? c%A_Index%/12.92 : ((c%A_Index%+0.055)/(1.055))**2.4
       }
@@ -1376,7 +1383,7 @@ class TextRender {
       } else if (default != "")
          m := [default, default, default, default]
       else {
-         m := [0, 0, 0, 0, 0, 0]
+         m := [0, 0, 0, 0]
          m.void := True
          return m
       }
@@ -1607,6 +1614,7 @@ class TextRender {
       ; Return the class name as a string.
       return cls
 
+
       WindowProc(hwnd, uMsg, wParam, lParam) {
          ; Because the first parameter of an object is "this",
          ; the callback function will overwrite that parameter as hwnd.
@@ -1638,30 +1646,32 @@ class TextRender {
                }
             }
          }
-/*
+
          ; Match window messages to Rainmeter event names.
          ; https://docs.rainmeter.net/manual/mouse-actions/
          static dict :=
          {
-            0x0201    : "LeftMouseDown",
-            0x0202      : "LeftMouseUp",
+            0x0201  : "LeftMouseDown",
+            0x0202  : "LeftMouseUp",
             0x0203  : "LeftMouseDoubleClick",
-            0x0204    : "RightMouseDown",
-            0x0205      : "RightMouseUp",
+            0x0204  : "RightMouseDown",
+            0x0205  : "RightMouseUp",
             0x0206  : "RightMouseDoubleClick",
-            0x0207    : "MiddleMouseDown",
-            0x0208      : "MiddleMouseUp",
+            0x0207  : "MiddleMouseDown",
+            0x0208  : "MiddleMouseUp",
             0x0209  : "MiddleMouseDoubleClick",
-            0x02A1     : "MouseOver",
-            0x02A3     : "MouseLeave"
+            0x02A1  : "MouseOver",
+            0x02A3  : "MouseLeave"
          }
+
+
 
          ; Process windows messages by invoking the associated callback.
          for message, event in dict.OwnProps()
             if (uMsg = message)
-               if callback := this.events[event]
-                  return %callback%(this) ; Callbacks have a reference to "this".
-*/
+               try if callback := this.events[event]
+                  return callback(this) ; Callbacks have a reference to "this".
+
          ; Default processing of window messages.
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
       }
@@ -1703,7 +1713,7 @@ class TextRender {
          if data := layer[1]
             break
       A_Clipboard := data
-      this.friend2.Render("Saved text to A_Clipboard.", "t:1250 c:#F9E486 y:75vh r:10%")
+      this.friend2.Render("Saved text to clipboard.", "t:1250 c:#F9E486 y:75vh r:10%")
       WinSetAlwaysOnTop(1, "ahk_id" this.friend2.hwnd)
    }
 
@@ -1886,7 +1896,8 @@ class TextRender {
       buffer := DllCall("GlobalAlloc", "uint", 0, "uptr", 4 * this.w * this.h, "ptr")
 
       ; Create a Bitmap with 32-bit pre-multiplied ARGB. (Owned by this object!)
-      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.BitmapWidth, "int", this.BitmapHeight, "uint", 4 * this.BitmapWidth, "uint", 0xE200B, "ptr", this.ptr, "ptr*", &pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.BitmapWidth, "int", this.BitmapHeight
+         , "uint", 4 * this.BitmapWidth, "uint", 0xE200B, "ptr", this.ptr, "ptr*", &pBitmap:=0)
 
       ; Crop the bitmap.
       Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
@@ -1926,7 +1937,7 @@ class TextRender {
 
       DllCall("gdi32\BitBlt"
                , "ptr", hdc, "int", 0, "int", 0, "int", this.w, "int", this.h
-               , "ptr", this.hdc, "int", this.x, "int", this.y, "uint", 0x00CC0020)
+               , "ptr", this.hdc, "int", this.x, "int", this.y, "uint", 0x00CC0020) ; SRCCOPY
 
       DllCall("SelectObject", "ptr", hdc, "ptr", obm)
       DllCall("DeleteDC",     "ptr", hdc)
@@ -1999,16 +2010,18 @@ class TextRender {
       return filepath
    }
 
-   ; Source: ImagePut 1.6.0 - put_file()
+   ; Source: ImagePut 1.7.0 - put_file()
    SaveImageToFile(pBitmap, filepath := "", quality := "") {
+      ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
+      extension := "png"
+
       ; Save default extension.
       default := extension
 
-      ; Convert forward style slashes into Windows style backslashes.
+      ; Split the filepath, convert forward slashes, strip invalid chars.
       filepath := RegExReplace(filepath, "/", "\")
-
-      ; Split the filepath.
-      SplitPath Trim(filepath),, &directory, &extension, &filename
+      filepath := RegExReplace(filepath, "[*?\x22<>|\x00-\x1F]")
+      SplitPath filepath,, &directory, &extension, &filename
 
       ; Check if the entire filepath is a directory.
       if DirExist(filepath)                ; If the filepath refers to a directory,
@@ -2026,7 +2039,7 @@ class TextRender {
          DirCreate(directory)
 
       ; Default directory is a dot.
-      directory := (directory != "") ? directory : "."
+      (directory == "") && directory := "."
 
       ; Check if the filename is actually the extension.
       if (extension == "" && filename ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
@@ -2046,14 +2059,14 @@ class TextRender {
       if (filename == "") {
          filename := FormatTime(, "yyyy-MM-dd HH?mm?ss")
          filepath := directory "\" filename "." extension
-         while FileExist(filepath) ; Check for collisions.
+         while FileExist(filepath)
             filepath := directory "\" filename " (" A_Index ")." extension
       }
 
       ; Create a numeric sequence of files...
       else if (filename == "0" or filename == "1") {
          filepath := directory "\" filename "." extension
-         while FileExist(filepath) ; Check for collisions.
+         while FileExist(filepath)
             filepath := directory "\" A_Index "." extension
       }
 
@@ -2096,14 +2109,14 @@ class TextRender {
          if !DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "ptr", IsSet(ep) ? ep : 0)
             break
          else
-            if (A_Index < 6)
-               Sleep((2**(A_Index-1) * 30))
+            if A_Index < 6
+               Sleep (2**(A_Index-1) * 30)
             else throw Error("Could not save file to disk.")
 
       return filepath
    }
 
-   ; Source: ImagePut 1.6.0 - from_screenshot()
+   ; Source: ImagePut 1.7.0 - from_screenshot()
    GetImageFromScreen(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
@@ -2141,6 +2154,7 @@ class TextRender {
    }
 
    UpdateLayeredWindow(alpha := 255) {
+      ; If width and height are unset or zero, blank the canvas.
       if (!this.w || !this.h) {
          return DllCall("UpdateLayeredWindow"
                   ,    "ptr", this.hwnd                ; hWnd

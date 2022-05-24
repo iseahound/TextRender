@@ -42,6 +42,12 @@ class TextRender {
       ; Calls Flush() to allocate the graphics buffer via UpdateMemory().
       this.flush_pending := True
 
+      ; xd
+      this.hdc := ""
+      this.BitmapWidth := 0, this.BitmapHeight := 0
+      this.x := ""
+      this.status := ""
+
       return this
    }
 
@@ -150,7 +156,7 @@ class TextRender {
             NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
          hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
          obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-         gfx := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", gfx:=0, "int") ? False : gfx
+         gfx := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", gfx:=0, "int") ? False : gfx
 
          ; Set the origin to this.x and this.y
          DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", gfx, "float", -this.x, "float", -this.y, "int", 0)
@@ -286,7 +292,7 @@ class TextRender {
       }
    }
 
-   Draw(data := "", styles*) {
+   Draw(data := "", style1 := "", style2 := "") {
 
       ; Check if FreeMemory() was called between draws.
       if (!this.hdc && this.flush_pending == False) {
@@ -300,15 +306,15 @@ class TextRender {
       if (this.flush_pending == True)
          this.Flush() ; Clears the graphics buffer.
 
-      if (styles[1] = "" && styles[2] = "")
-         styles := this.styles
+      if (style1 = "" && style2 = "")
+         style1 := this.style1, style2 := this.style2
       this.data := data
-      this.styles := styles
-      this.layers.push([data, styles*])
+      this.style1 := style1, this.style2 := style2
+      this.layers.push([data, style1, style2])
 
       ; Drawing
       dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-      obj := this.DrawOnGraphics(this.gfx, data, styles[1], styles[2], A_ScreenWidth, A_ScreenHeight)
+      obj := this.DrawOnGraphics(this.gfx, data, style1, style2, A_ScreenWidth, A_ScreenHeight)
       DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; Create a unique signature for each call to Draw().
@@ -397,7 +403,7 @@ class TextRender {
 
    CanvasChanged() {
       this.UpdateStatus()
-      if callback := this.events["CanvasChange"]
+      try if callback := this.events["CanvasChange"]
          return %callback%(this) ; Callbacks have a reference to "this".
    }
 
@@ -482,7 +488,7 @@ class TextRender {
       }
 
       ; Parse background color.
-      _c := this.parse.color(_c, 0xDD212121) ; Default color for background is transparent gray.
+      _c := this.color(_c, 0xDD212121) ; Default color for background is transparent gray.
 
       ; Parse text color.
       AlphaCopy := False
@@ -491,14 +497,16 @@ class TextRender {
       if (c ~= "^-") ; Allow negative color values to overwrite alpha.
          AlphaCopy := True, c := LTrim(c, "-")
       ; Default color is white text on a dark background or black text on a light background.
-      c  := this.parse.color(c, this.parse.grayscale(_c) < 128 ? 0xFFFFFFFF : 0xFF000000)
+      c  := this.color(c, this.grayscale(_c) < 128 ? 0xFFFFFFFF : 0xFF000000)
 
       ; Default SmoothingMode is 5 for outlines and rounded corners. To disable use 0. See Draw 1, 2, 3.
-      _q := (_q >= 0 && _q <= 5) ? _q : 5 ; SmoothingModeAntiAlias8x8
+      _q := (_q ~= "^\d+$" && _q >= 0 && _q <= 5) ? _q : 5 ; SmoothingModeAntiAlias8x8
 
       ; Default TextRenderingHint is Cleartype on a opaque background and Anti-Alias on a transparent background.
-      if (q < 0 || q > 5)
+      if (q ~= "^\d+$") and (q < 0 || q > 5)
          q := (_c & 0xFF000000 = 0xFF000000) && (!AlphaCopy) ? 5 : 4 ; TextRenderingHintClearTypeGridFit = 5, TextRenderingHintAntialias = 4
+      else
+         q := 4
 
       ; Save original Graphics settings.
       DllCall("gdiplus\GdipSaveGraphics", "ptr", gfx, "ptr*", pState:=0)
@@ -575,7 +583,7 @@ class TextRender {
          DllCall("gdiplus\GdipGetFontCollectionFamilyList", "ptr", hCollection, "int", 1, "ptr*", pFontFamily:=0, "int*", found:=0)
 
          ; Normally, pFontFamily is an array of pointers. For a single pointer, no special requirements are needed.
-         VarSetCapacity(FontName, 256)
+         VarSetCapacity(FontName, 256*(A_IsUnicode?2:1))
          DllCall("gdiplus\GdipGetFamilyName", "ptr", pFontFamily, "str", FontName, "ushort", 1033) ; en-US
 
          ; Create a font family. For ANSI compatibility, use str as the output type and StrGet to pass wide chars.
@@ -735,8 +743,8 @@ class TextRender {
       y  -= (((a-1)//3) == 0) ? 0 : (((a-1)//3) == 1) ? h/2 : (((a-1)//3) == 2) ? h : 0
 
       ; Get margin. Default margin is 1vmin.
-      m  := this.parse.margin_and_padding( m, vw, vh)
-      _m := this.parse.margin_and_padding(_m, vw, vh, (m.void && _w > 0 && _h > 0) ? "1vmin" : "")
+      m  := this.margin_and_padding( m, vw, vh)
+      _m := this.margin_and_padding(_m, vw, vh, (m.void && _w > 0 && _h > 0) ? "1vmin" : "")
 
       ; Modify _x, _y, _w, _h with margin and padding, increasing the size of the background.
       _w += _m[2] + _m[4] + m[2] + m[4]
@@ -773,8 +781,8 @@ class TextRender {
       _r := Min(_r, _rmax) ; Exceeding _rmax will create a candy wrapper effect.
 
       ; Define outline and dropShadow.
-      o := this.parse.outline(o, vw, vh, s, c)
-      d := this.parse.dropShadow(d, vw, vh, width, height, s)
+      o := this.outline(o, vw, vh, s, c)
+      d := this.dropShadow(d, vw, vh, width, height, s)
 
 
       ; Draw 1 - Background
@@ -883,7 +891,7 @@ class TextRender {
 
          if (True) {
             DllCall("gdiplus\GdipDeleteGraphics", "ptr", DropShadowG)
-            this.filter.GaussianBlur(DropShadow, d[3], d[5])
+            this.GaussianBlur(DropShadow, d[3], d[5])
             DllCall("gdiplus\GdipSetInterpolationMode", "ptr", gfx, "int", 5) ; NearestNeighbor
             DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", 0) ; SmoothingModeNoAntiAlias
             ;Gdip_DrawImage(gfx, DropShadow, x + d[1] - offset2, y + d[2] - offset2, w + 2*offset2, h + 2*offset2) ; DRAWING!
@@ -1022,7 +1030,7 @@ class TextRender {
 
       ; Define canvas coordinates.
       ; string/background boundary.
-      t_bound  := this.parse.time(t)
+      t_bound  := this.time(t)
       x_bound  := (_c & 0xFF000000) ? Min(_x, x) : x
       y_bound  := (_c & 0xFF000000) ? Min(_y, y) : y
       x2_bound := (_c & 0xFF000000) ? Max(_x+_w, x+w) : x+w
@@ -1068,495 +1076,504 @@ class TextRender {
       return obj
    }
 
-   class parse {
+   color(c, default := 0xFFFFFFFF) {
+      static xARGB := "^0x([0-9A-Fa-f]{8})$"
+      static  xRGB := "^0x([0-9A-Fa-f]{6})$"
+      static  ARGB :=   "^([0-9A-Fa-f]{8})$"
+      static   RGB :=   "^([0-9A-Fa-f]{6})$"
 
-      color(c, default := 0xFFFFFFFF) {
-         static xARGB := "^0x([0-9A-Fa-f]{8})$"
-         static  xRGB := "^0x([0-9A-Fa-f]{6})$"
-         static  ARGB :=   "^([0-9A-Fa-f]{8})$"
-         static   RGB :=   "^([0-9A-Fa-f]{6})$"
+      if (c == "")
+         return default
 
-         if (c == "")
-            return default
-
-         ; Check string buffer.
-         if ObjGetCapacity([c], 1) {
-            c := Trim(c)                    ; Remove surrounding whitespace.
-            if (c ~= "^#") {
-               c := LTrim(c, "#")
-               c := (c ~= ARGB) ? RegExReplace(c, "^([0-9A-Fa-f]{6})([0-9A-Fa-f]{2})$", "$2$1")
-                  : (c ~= RGB) ? "0xFF" c 
-                  : default
-            }
-            c := this.colormap(c, c)        ; Convert CSS color names to hexadecimal.
-            c := (c ~= xRGB) ? "0xFF" RegExReplace(c, xRGB, "$1")
-               : (c ~= ARGB) ? "0x" c
-               : (c ~= RGB) ? "0xFF" c : c
-            c := (c ~= xARGB) ? c : default ; Ensure hexadecimal format is valid ARGB.
+      ; Check string buffer.
+      if ObjGetCapacity([c], 1) {
+         c := Trim(c)                    ; Remove surrounding whitespace.
+         if (c ~= "^#") {
+            c := LTrim(c, "#")
+            c := (c ~= ARGB) ? RegExReplace(c, "^([0-9A-Fa-f]{6})([0-9A-Fa-f]{2})$", "$2$1")
+               : (c ~= RGB) ? "0xFF" c
+               : default
          }
-
-         ; Assume number buffer.
-         else {
-            c := Round(c)                   ; Integers only.
-            if (c > 0 && c < 0x01000000)    ; Lift RGB to solid ARGB.
-               c += 0xFF000000              ; But do not convert zero to solid black.
-            if (c < 0 || c > 0xFFFFFFFF)    ; Catch integers outside of 0 - 0xFFFFFFFF.
-               c := default
-         }
-
-         return c
+         c := this.colormap(c, c)        ; Convert CSS color names to hexadecimal.
+         c := (c ~= xRGB) ? "0xFF" RegExReplace(c, xRGB, "$1")
+            : (c ~= ARGB) ? "0x" c
+            : (c ~= RGB) ? "0xFF" c : c
+         c := (c ~= xARGB) ? c : default ; Ensure hexadecimal format is valid ARGB.
       }
 
-      colormap(c, default := 0xFFFFFFFF) {
-         if (c = "random") ; 93% opacity + random RGB.
-            return "0xEE" SubStr(ComObjCreate("Scriptlet.TypeLib").GUID, 2, 6)
-
-         if (c = "random2") ; Solid opacity + random RGB.
-            return "0xFF" SubStr(ComObjCreate("Scriptlet.TypeLib").GUID, 2, 6)
-
-         if (c = "random3") ; Fully random opacity and RGB.
-            return SubStr(ComObjCreate("Scriptlet.TypeLib").GUID, 2, 8)
-
-         static colors1 :=
-         ( LTrim Join
-         {
-            "Clear"                 : "0x00000000",
-            "None"                  : "0x00000000",
-            "Off"                   : "0x00000000",
-            "Transparent"           : "0x00000000",
-            "AliceBlue"             : "0xFFF0F8FF",
-            "AntiqueWhite"          : "0xFFFAEBD7",
-            "Aqua"                  : "0xFF00FFFF",
-            "Aquamarine"            : "0xFF7FFFD4",
-            "Azure"                 : "0xFFF0FFFF",
-            "Beige"                 : "0xFFF5F5DC",
-            "Bisque"                : "0xFFFFE4C4",
-            "Black"                 : "0xFF000000",
-            "BlanchedAlmond"        : "0xFFFFEBCD",
-            "Blue"                  : "0xFF0000FF",
-            "BlueViolet"            : "0xFF8A2BE2",
-            "Brown"                 : "0xFFA52A2A",
-            "BurlyWood"             : "0xFFDEB887",
-            "CadetBlue"             : "0xFF5F9EA0",
-            "Chartreuse"            : "0xFF7FFF00",
-            "Chocolate"             : "0xFFD2691E",
-            "Coral"                 : "0xFFFF7F50",
-            "CornflowerBlue"        : "0xFF6495ED",
-            "Cornsilk"              : "0xFFFFF8DC",
-            "Crimson"               : "0xFFDC143C",
-            "Cyan"                  : "0xFF00FFFF",
-            "DarkBlue"              : "0xFF00008B",
-            "DarkCyan"              : "0xFF008B8B",
-            "DarkGoldenRod"         : "0xFFB8860B",
-            "DarkGray"              : "0xFFA9A9A9",
-            "DarkGrey"              : "0xFFA9A9A9",
-            "DarkGreen"             : "0xFF006400",
-            "DarkKhaki"             : "0xFFBDB76B",
-            "DarkMagenta"           : "0xFF8B008B",
-            "DarkOliveGreen"        : "0xFF556B2F",
-            "DarkOrange"            : "0xFFFF8C00",
-            "DarkOrchid"            : "0xFF9932CC",
-            "DarkRed"               : "0xFF8B0000",
-            "DarkSalmon"            : "0xFFE9967A",
-            "DarkSeaGreen"          : "0xFF8FBC8F",
-            "DarkSlateBlue"         : "0xFF483D8B",
-            "DarkSlateGray"         : "0xFF2F4F4F",
-            "DarkSlateGrey"         : "0xFF2F4F4F",
-            "DarkTurquoise"         : "0xFF00CED1",
-            "DarkViolet"            : "0xFF9400D3",
-            "DeepPink"              : "0xFFFF1493",
-            "DeepSkyBlue"           : "0xFF00BFFF",
-            "DimGray"               : "0xFF696969",
-            "DimGrey"               : "0xFF696969",
-            "DodgerBlue"            : "0xFF1E90FF",
-            "FireBrick"             : "0xFFB22222",
-            "FloralWhite"           : "0xFFFFFAF0",
-            "ForestGreen"           : "0xFF228B22",
-            "Fuchsia"               : "0xFFFF00FF",
-            "Gainsboro"             : "0xFFDCDCDC",
-            "GhostWhite"            : "0xFFF8F8FF",
-            "Gold"                  : "0xFFFFD700",
-            "GoldenRod"             : "0xFFDAA520",
-            "Gray"                  : "0xFF808080",
-            "Grey"                  : "0xFF808080",
-            "Green"                 : "0xFF008000",
-            "GreenYellow"           : "0xFFADFF2F",
-            "HoneyDew"              : "0xFFF0FFF0",
-            "HotPink"               : "0xFFFF69B4",
-            "IndianRed"             : "0xFFCD5C5C",
-            "Indigo"                : "0xFF4B0082",
-            "Ivory"                 : "0xFFFFFFF0",
-            "Khaki"                 : "0xFFF0E68C",
-            "Lavender"              : "0xFFE6E6FA",
-            "LavenderBlush"         : "0xFFFFF0F5",
-            "LawnGreen"             : "0xFF7CFC00",
-            "LemonChiffon"          : "0xFFFFFACD",
-            "LightBlue"             : "0xFFADD8E6",
-            "LightCoral"            : "0xFFF08080",
-            "LightCyan"             : "0xFFE0FFFF",
-            "LightGoldenRodYellow"  : "0xFFFAFAD2",
-            "LightGray"             : "0xFFD3D3D3",
-            "LightGrey"             : "0xFFD3D3D3",
-            "LightGreen"            : "0xFF90EE90",
-            "LightPink"             : "0xFFFFB6C1",
-            "LightSalmon"           : "0xFFFFA07A",
-            "LightSeaGreen"         : "0xFF20B2AA",
-            "LightSkyBlue"          : "0xFF87CEFA",
-            "LightSlateGray"        : "0xFF778899",
-            "LightSlateGrey"        : "0xFF778899",
-            "LightSteelBlue"        : "0xFFB0C4DE",
-            "LightYellow"           : "0xFFFFFFE0",
-            "Lime"                  : "0xFF00FF00",
-            "LimeGreen"             : "0xFF32CD32",
-            "Linen"                 : "0xFFFAF0E6"
-         }
-         )
-         static colors2 :=
-         ( LTrim Join
-         {
-            "Magenta"               : "0xFFFF00FF",
-            "Maroon"                : "0xFF800000",
-            "MediumAquaMarine"      : "0xFF66CDAA",
-            "MediumBlue"            : "0xFF0000CD",
-            "MediumOrchid"          : "0xFFBA55D3",
-            "MediumPurple"          : "0xFF9370DB",
-            "MediumSeaGreen"        : "0xFF3CB371",
-            "MediumSlateBlue"       : "0xFF7B68EE",
-            "MediumSpringGreen"     : "0xFF00FA9A",
-            "MediumTurquoise"       : "0xFF48D1CC",
-            "MediumVioletRed"       : "0xFFC71585",
-            "MidnightBlue"          : "0xFF191970",
-            "MintCream"             : "0xFFF5FFFA",
-            "MistyRose"             : "0xFFFFE4E1",
-            "Moccasin"              : "0xFFFFE4B5",
-            "NavajoWhite"           : "0xFFFFDEAD",
-            "Navy"                  : "0xFF000080",
-            "OldLace"               : "0xFFFDF5E6",
-            "Olive"                 : "0xFF808000",
-            "OliveDrab"             : "0xFF6B8E23",
-            "Orange"                : "0xFFFFA500",
-            "OrangeRed"             : "0xFFFF4500",
-            "Orchid"                : "0xFFDA70D6",
-            "PaleGoldenRod"         : "0xFFEEE8AA",
-            "PaleGreen"             : "0xFF98FB98",
-            "PaleTurquoise"         : "0xFFAFEEEE",
-            "PaleVioletRed"         : "0xFFDB7093",
-            "PapayaWhip"            : "0xFFFFEFD5",
-            "PeachPuff"             : "0xFFFFDAB9",
-            "Peru"                  : "0xFFCD853F",
-            "Pink"                  : "0xFFFFC0CB",
-            "Plum"                  : "0xFFDDA0DD",
-            "PowderBlue"            : "0xFFB0E0E6",
-            "Purple"                : "0xFF800080",
-            "RebeccaPurple"         : "0xFF663399",
-            "Red"                   : "0xFFFF0000",
-            "RosyBrown"             : "0xFFBC8F8F",
-            "RoyalBlue"             : "0xFF4169E1",
-            "SaddleBrown"           : "0xFF8B4513",
-            "Salmon"                : "0xFFFA8072",
-            "SandyBrown"            : "0xFFF4A460",
-            "SeaGreen"              : "0xFF2E8B57",
-            "SeaShell"              : "0xFFFFF5EE",
-            "Sienna"                : "0xFFA0522D",
-            "Silver"                : "0xFFC0C0C0",
-            "SkyBlue"               : "0xFF87CEEB",
-            "SlateBlue"             : "0xFF6A5ACD",
-            "SlateGray"             : "0xFF708090",
-            "SlateGrey"             : "0xFF708090",
-            "Snow"                  : "0xFFFFFAFA",
-            "SpringGreen"           : "0xFF00FF7F",
-            "SteelBlue"             : "0xFF4682B4",
-            "Tan"                   : "0xFFD2B48C",
-            "Teal"                  : "0xFF008080",
-            "Thistle"               : "0xFFD8BFD8",
-            "Tomato"                : "0xFFFF6347",
-            "Turquoise"             : "0xFF40E0D0",
-            "Violet"                : "0xFFEE82EE",
-            "Wheat"                 : "0xFFF5DEB3",
-            "White"                 : "0xFFFFFFFF",
-            "WhiteSmoke"            : "0xFFF5F5F5",
-            "Yellow"                : "0xFFFFFF00",
-            "YellowGreen"           : "0xFF9ACD32"
-         }
-         )
-         return colors1.HasKey(c) ? colors1[c] : colors2.HasKey(c) ? colors2[c] : default
+      ; Assume number buffer.
+      else {
+         c := Round(c)                   ; Integers only.
+         if (c > 0 && c < 0x01000000)    ; Lift RGB to solid ARGB.
+            c += 0xFF000000              ; But do not convert zero to solid black.
+         if (c < 0 || c > 0xFFFFFFFF)    ; Catch integers outside of 0 - 0xFFFFFFFF.
+            c := default
       }
 
-      dropShadow(d, vw, vh, width, height, font_size) {
-         static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
-         static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\\\/\s:#%_a-z\-\.\d]+|\([\\\/\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
-         static valid := "^\s*(-?((\d+(\.\d*)?)|(\.\d+)))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
-         vmin := Min(vw, vh)
+      return c
+   }
 
-         if IsObject(d) {
-            d[1] := (d.horizontal != "") ? d.horizontal : (d.h != "") ? d.h : d[1]
-            d[2] := (d.vertical   != "") ? d.vertical   : (d.v != "") ? d.h : d[2]
-            d[3] := (d.blur       != "") ? d.blur       : (d.b != "") ? d.h : d[3]
-            d[4] := (d.color      != "") ? d.color      : (d.c != "") ? d.h : d[4]
-            d[5] := (d.opacity    != "") ? d.opacity    : (d.o != "") ? d.h : d[5]
-            d[6] := (d.size       != "") ? d.size       : (d.s != "") ? d.h : d[6]
-         } else if (d != "") {
-            _ := RegExReplace(d, ":\s+", ":")
-            _ := RegExReplace(_, "\s+", " ")
-            _ := StrSplit(_, " ")
-            _[1] := ((___ := RegExReplace(d, q1    "(h(orizontal)?)"    q2, "${value}")) != d) ? ___ : _[1]
-            _[2] := ((___ := RegExReplace(d, q1    "(v(ertical)?)"      q2, "${value}")) != d) ? ___ : _[2]
-            _[3] := ((___ := RegExReplace(d, q1    "(b(lur)?)"          q2, "${value}")) != d) ? ___ : _[3]
-            _[4] := ((___ := RegExReplace(d, q1    "(c(olor)?)"         q2, "${value}")) != d) ? ___ : _[4]
-            _[5] := ((___ := RegExReplace(d, q1    "(o(pacity)?)"       q2, "${value}")) != d) ? ___ : _[5]
-            _[6] := ((___ := RegExReplace(d, q1    "(s(ize)?)"          q2, "${value}")) != d) ? ___ : _[6]
-            d := _
-         }
-         else return {"void":True, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0}
+   colormap(c, default := 0xFFFFFFFF) {
+      if (c = "random") ; 93% opacity + random RGB.
+         return "0xEE" SubStr(ComObjCreate("Scriptlet.TypeLib").GUID, 2, 6)
 
-         for i, x in d {
-            if (i = 4) ; Don't mess with color data.
-               continue
-            d[i] := (d[i] ~= valid) ? RegExReplace(d[i], "\s") : 0 ; Default for everything is 0.
-            d[i] := (d[i] ~= "i)(pt|px)$") ? SubStr(d[i], 1, -2) : d[i]
-            d[i] := (d[i] ~= "i)vw$") ? RegExReplace(d[i], "i)vw$") * vw : d[i]
-            d[i] := (d[i] ~= "i)vh$") ? RegExReplace(d[i], "i)vh$") * vh : d[i]
-            d[i] := (d[i] ~= "i)vmin$") ? RegExReplace(d[i], "i)vmin$") * vmin : d[i]
-         }
+      if (c = "random2") ; Solid opacity + random RGB.
+         return "0xFF" SubStr(ComObjCreate("Scriptlet.TypeLib").GUID, 2, 6)
 
-         d[1] := (d[1] ~= "%$") ? RTrim(d[1], "%") * 0.01 * width : d[1]
-         d[2] := (d[2] ~= "%$") ? RTrim(d[2], "%") * 0.01 * height : d[2]
-         d[3] := (d[3] ~= "%$") ? RTrim(d[3], "%") * 0.01 * font_size : d[3]
-         d[4] := this.color(d[4], 0xFFFF0000) ; Default color is red.
-         d[5] := (d[5] ~= "%$") ? RTrim(d[5], "%") / 100 : d[5]
-         d[5] := (d[5] <= 0 || d[5] > 1) ? 1 : d[5] ; Range Opacity is a float from 0-1.
-         d[6] := (d[6] ~= "%$") ? RTrim(d[6], "%") * 0.01 * font_size : d[6]
+      if (c = "random3") ; Fully random opacity and RGB.
+         return SubStr(ComObjCreate("Scriptlet.TypeLib").GUID, 2, 8)
+
+      static colors1 :=
+      ( LTrim Join
+      {
+         "Clear"                 : "0x00000000",
+         "None"                  : "0x00000000",
+         "Off"                   : "0x00000000",
+         "Transparent"           : "0x00000000",
+         "AliceBlue"             : "0xFFF0F8FF",
+         "AntiqueWhite"          : "0xFFFAEBD7",
+         "Aqua"                  : "0xFF00FFFF",
+         "Aquamarine"            : "0xFF7FFFD4",
+         "Azure"                 : "0xFFF0FFFF",
+         "Beige"                 : "0xFFF5F5DC",
+         "Bisque"                : "0xFFFFE4C4",
+         "Black"                 : "0xFF000000",
+         "BlanchedAlmond"        : "0xFFFFEBCD",
+         "Blue"                  : "0xFF0000FF",
+         "BlueViolet"            : "0xFF8A2BE2",
+         "Brown"                 : "0xFFA52A2A",
+         "BurlyWood"             : "0xFFDEB887",
+         "CadetBlue"             : "0xFF5F9EA0",
+         "Chartreuse"            : "0xFF7FFF00",
+         "Chocolate"             : "0xFFD2691E",
+         "Coral"                 : "0xFFFF7F50",
+         "CornflowerBlue"        : "0xFF6495ED",
+         "Cornsilk"              : "0xFFFFF8DC",
+         "Crimson"               : "0xFFDC143C",
+         "Cyan"                  : "0xFF00FFFF",
+         "DarkBlue"              : "0xFF00008B",
+         "DarkCyan"              : "0xFF008B8B",
+         "DarkGoldenRod"         : "0xFFB8860B",
+         "DarkGray"              : "0xFFA9A9A9",
+         "DarkGrey"              : "0xFFA9A9A9",
+         "DarkGreen"             : "0xFF006400",
+         "DarkKhaki"             : "0xFFBDB76B",
+         "DarkMagenta"           : "0xFF8B008B",
+         "DarkOliveGreen"        : "0xFF556B2F",
+         "DarkOrange"            : "0xFFFF8C00",
+         "DarkOrchid"            : "0xFF9932CC",
+         "DarkRed"               : "0xFF8B0000",
+         "DarkSalmon"            : "0xFFE9967A",
+         "DarkSeaGreen"          : "0xFF8FBC8F",
+         "DarkSlateBlue"         : "0xFF483D8B",
+         "DarkSlateGray"         : "0xFF2F4F4F",
+         "DarkSlateGrey"         : "0xFF2F4F4F",
+         "DarkTurquoise"         : "0xFF00CED1",
+         "DarkViolet"            : "0xFF9400D3",
+         "DeepPink"              : "0xFFFF1493",
+         "DeepSkyBlue"           : "0xFF00BFFF",
+         "DimGray"               : "0xFF696969",
+         "DimGrey"               : "0xFF696969",
+         "DodgerBlue"            : "0xFF1E90FF",
+         "FireBrick"             : "0xFFB22222",
+         "FloralWhite"           : "0xFFFFFAF0",
+         "ForestGreen"           : "0xFF228B22",
+         "Fuchsia"               : "0xFFFF00FF",
+         "Gainsboro"             : "0xFFDCDCDC",
+         "GhostWhite"            : "0xFFF8F8FF",
+         "Gold"                  : "0xFFFFD700",
+         "GoldenRod"             : "0xFFDAA520",
+         "Gray"                  : "0xFF808080",
+         "Grey"                  : "0xFF808080",
+         "Green"                 : "0xFF008000",
+         "GreenYellow"           : "0xFFADFF2F",
+         "HoneyDew"              : "0xFFF0FFF0",
+         "HotPink"               : "0xFFFF69B4",
+         "IndianRed"             : "0xFFCD5C5C",
+         "Indigo"                : "0xFF4B0082",
+         "Ivory"                 : "0xFFFFFFF0",
+         "Khaki"                 : "0xFFF0E68C",
+         "Lavender"              : "0xFFE6E6FA",
+         "LavenderBlush"         : "0xFFFFF0F5",
+         "LawnGreen"             : "0xFF7CFC00",
+         "LemonChiffon"          : "0xFFFFFACD",
+         "LightBlue"             : "0xFFADD8E6",
+         "LightCoral"            : "0xFFF08080",
+         "LightCyan"             : "0xFFE0FFFF",
+         "LightGoldenRodYellow"  : "0xFFFAFAD2",
+         "LightGray"             : "0xFFD3D3D3",
+         "LightGrey"             : "0xFFD3D3D3",
+         "LightGreen"            : "0xFF90EE90",
+         "LightPink"             : "0xFFFFB6C1",
+         "LightSalmon"           : "0xFFFFA07A",
+         "LightSeaGreen"         : "0xFF20B2AA",
+         "LightSkyBlue"          : "0xFF87CEFA",
+         "LightSlateGray"        : "0xFF778899",
+         "LightSlateGrey"        : "0xFF778899",
+         "LightSteelBlue"        : "0xFFB0C4DE",
+         "LightYellow"           : "0xFFFFFFE0",
+         "Lime"                  : "0xFF00FF00",
+         "LimeGreen"             : "0xFF32CD32",
+         "Linen"                 : "0xFFFAF0E6"
+      }
+      )
+      static colors2 :=
+      ( LTrim Join
+      {
+         "Magenta"               : "0xFFFF00FF",
+         "Maroon"                : "0xFF800000",
+         "MediumAquaMarine"      : "0xFF66CDAA",
+         "MediumBlue"            : "0xFF0000CD",
+         "MediumOrchid"          : "0xFFBA55D3",
+         "MediumPurple"          : "0xFF9370DB",
+         "MediumSeaGreen"        : "0xFF3CB371",
+         "MediumSlateBlue"       : "0xFF7B68EE",
+         "MediumSpringGreen"     : "0xFF00FA9A",
+         "MediumTurquoise"       : "0xFF48D1CC",
+         "MediumVioletRed"       : "0xFFC71585",
+         "MidnightBlue"          : "0xFF191970",
+         "MintCream"             : "0xFFF5FFFA",
+         "MistyRose"             : "0xFFFFE4E1",
+         "Moccasin"              : "0xFFFFE4B5",
+         "NavajoWhite"           : "0xFFFFDEAD",
+         "Navy"                  : "0xFF000080",
+         "OldLace"               : "0xFFFDF5E6",
+         "Olive"                 : "0xFF808000",
+         "OliveDrab"             : "0xFF6B8E23",
+         "Orange"                : "0xFFFFA500",
+         "OrangeRed"             : "0xFFFF4500",
+         "Orchid"                : "0xFFDA70D6",
+         "PaleGoldenRod"         : "0xFFEEE8AA",
+         "PaleGreen"             : "0xFF98FB98",
+         "PaleTurquoise"         : "0xFFAFEEEE",
+         "PaleVioletRed"         : "0xFFDB7093",
+         "PapayaWhip"            : "0xFFFFEFD5",
+         "PeachPuff"             : "0xFFFFDAB9",
+         "Peru"                  : "0xFFCD853F",
+         "Pink"                  : "0xFFFFC0CB",
+         "Plum"                  : "0xFFDDA0DD",
+         "PowderBlue"            : "0xFFB0E0E6",
+         "Purple"                : "0xFF800080",
+         "RebeccaPurple"         : "0xFF663399",
+         "Red"                   : "0xFFFF0000",
+         "RosyBrown"             : "0xFFBC8F8F",
+         "RoyalBlue"             : "0xFF4169E1",
+         "SaddleBrown"           : "0xFF8B4513",
+         "Salmon"                : "0xFFFA8072",
+         "SandyBrown"            : "0xFFF4A460",
+         "SeaGreen"              : "0xFF2E8B57",
+         "SeaShell"              : "0xFFFFF5EE",
+         "Sienna"                : "0xFFA0522D",
+         "Silver"                : "0xFFC0C0C0",
+         "SkyBlue"               : "0xFF87CEEB",
+         "SlateBlue"             : "0xFF6A5ACD",
+         "SlateGray"             : "0xFF708090",
+         "SlateGrey"             : "0xFF708090",
+         "Snow"                  : "0xFFFFFAFA",
+         "SpringGreen"           : "0xFF00FF7F",
+         "SteelBlue"             : "0xFF4682B4",
+         "Tan"                   : "0xFFD2B48C",
+         "Teal"                  : "0xFF008080",
+         "Thistle"               : "0xFFD8BFD8",
+         "Tomato"                : "0xFFFF6347",
+         "Turquoise"             : "0xFF40E0D0",
+         "Violet"                : "0xFFEE82EE",
+         "Wheat"                 : "0xFFF5DEB3",
+         "White"                 : "0xFFFFFFFF",
+         "WhiteSmoke"            : "0xFFF5F5F5",
+         "Yellow"                : "0xFFFFFF00",
+         "YellowGreen"           : "0xFF9ACD32"
+      }
+      )
+      return colors1.HasKey(c) ? colors1[c] : colors2.HasKey(c) ? colors2[c] : default
+   }
+
+   dropShadow(d, vw, vh, width, height, font_size) {
+      static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
+      static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\\\/\s:#%_a-z\-\.\d]+|\([\\\/\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
+      static valid := "^\s*(-?((\d+(\.\d*)?)|(\.\d+)))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
+      vmin := Min(vw, vh)
+
+      if IsObject(d) {
+         d[1] := (d.horizontal != "") ? d.horizontal : (d.h != "") ? d.h : d[1]
+         d[2] := (d.vertical   != "") ? d.vertical   : (d.v != "") ? d.h : d[2]
+         d[3] := (d.blur       != "") ? d.blur       : (d.b != "") ? d.h : d[3]
+         d[4] := (d.color      != "") ? d.color      : (d.c != "") ? d.h : d[4]
+         d[5] := (d.opacity    != "") ? d.opacity    : (d.o != "") ? d.h : d[5]
+         d[6] := (d.size       != "") ? d.size       : (d.s != "") ? d.h : d[6]
+      } else if (d != "") {
+         _ := RegExReplace(d, ":\s+", ":")
+         _ := RegExReplace(_, "\s+", " ")
+         _ := StrSplit(_, " ")
+         _.push("","","","","","")
+         _[1] := ((___ := RegExReplace(d, q1    "(h(orizontal)?)"    q2, "${value}")) != d) ? ___ : _[1]
+         _[2] := ((___ := RegExReplace(d, q1    "(v(ertical)?)"      q2, "${value}")) != d) ? ___ : _[2]
+         _[3] := ((___ := RegExReplace(d, q1    "(b(lur)?)"          q2, "${value}")) != d) ? ___ : _[3]
+         _[4] := ((___ := RegExReplace(d, q1    "(c(olor)?)"         q2, "${value}")) != d) ? ___ : _[4]
+         _[5] := ((___ := RegExReplace(d, q1    "(o(pacity)?)"       q2, "${value}")) != d) ? ___ : _[5]
+         _[6] := ((___ := RegExReplace(d, q1    "(s(ize)?)"          q2, "${value}")) != d) ? ___ : _[6]
+         d := _
+      }
+      else {
+         d := [0, 0, 0, 0, 0, 0]
+         d.void := True
          return d
       }
 
-      grayscale(sRGB) {
-         static rY := 0.212655
-         static gY := 0.715158
-         static bY := 0.072187
-
-         c1 := 255 & ( sRGB >> 16 )
-         c2 := 255 & ( sRGB >> 8 )
-         c3 := 255 & ( sRGB )
-
-         loop 3 {
-            c%A_Index% := c%A_Index% / 255
-            c%A_Index% := (c%A_Index% <= 0.04045) ? c%A_Index%/12.92 : ((c%A_Index%+0.055)/(1.055))**2.4
-         }
-
-         v := rY*c1 + gY*c2 + bY*c3
-         v := (v <= 0.0031308) ? v * 12.92 : 1.055*(v**(1.0/2.4))-0.055
-         return Round(v*255)
+      for i, x in d {
+         if (i = 4) ; Don't mess with color data.
+            continue
+         d[i] := (d[i] ~= valid) ? RegExReplace(d[i], "\s") : 0 ; Default for everything is 0.
+         d[i] := (d[i] ~= "i)(pt|px)$") ? SubStr(d[i], 1, -2) : d[i]
+         d[i] := (d[i] ~= "i)vw$") ? RegExReplace(d[i], "i)vw$") * vw : d[i]
+         d[i] := (d[i] ~= "i)vh$") ? RegExReplace(d[i], "i)vh$") * vh : d[i]
+         d[i] := (d[i] ~= "i)vmin$") ? RegExReplace(d[i], "i)vmin$") * vmin : d[i]
       }
 
-      margin_and_padding(m, vw, vh, default := "") {
-         static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
-         static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\\\/\s:#%_a-z\-\.\d]+|\([\\\/\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
-         static valid := "^\s*(-?((\d+(\.\d*)?)|(\.\d+)))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
-         vmin := Min(vw, vh)
+      d[1] := (d[1] ~= "%$") ? RTrim(d[1], "%") * 0.01 * width : d[1]
+      d[2] := (d[2] ~= "%$") ? RTrim(d[2], "%") * 0.01 * height : d[2]
+      d[3] := (d[3] ~= "%$") ? RTrim(d[3], "%") * 0.01 * font_size : d[3]
+      d[4] := this.color(d[4], 0xFFFF0000) ; Default color is red.
+      d[5] := (d[5] ~= "%$") ? RTrim(d[5], "%") / 100 : d[5]
+      d[5] := (d[5] <= 0 || d[5] > 1) ? 1 : d[5] ; Range Opacity is a float from 0-1.
+      d[6] := (d[6] ~= "%$") ? RTrim(d[6], "%") * 0.01 * font_size : d[6]
+      return d
+   }
 
-         if IsObject(m) {
-            m[1] := (m.top    != "") ? m.top    : (m.t != "") ? m.t : m[1]
-            m[2] := (m.right  != "") ? m.right  : (m.r != "") ? m.r : m[2]
-            m[3] := (m.bottom != "") ? m.bottom : (m.b != "") ? m.b : m[3]
-            m[4] := (m.left   != "") ? m.left   : (m.l != "") ? m.l : m[4]
-         } else if (m != "") {
-            _ := RegExReplace(m, ":\s+", ":")
-            _ := RegExReplace(_, "\s+", " ")
-            _ := StrSplit(_, " ")
-            _[1] := ((___ := RegExReplace(m, q1    "(t(op)?)"           q2, "${value}")) != m) ? ___ : _[1]
-            _[2] := ((___ := RegExReplace(m, q1    "(r(ight)?)"         q2, "${value}")) != m) ? ___ : _[2]
-            _[3] := ((___ := RegExReplace(m, q1    "(b(ottom)?)"        q2, "${value}")) != m) ? ___ : _[3]
-            _[4] := ((___ := RegExReplace(m, q1    "(l(eft)?)"          q2, "${value}")) != m) ? ___ : _[4]
-            m := _
-         } else if (default != "")
-            m := [default, default, default, default]
-         else return {"void":True, 1:0, 2:0, 3:0, 4:0}
+   grayscale(sRGB) {
+      static rY := 0.212655
+      static gY := 0.715158
+      static bY := 0.072187
 
-         ; Follow CSS guidelines for margin!
-         if (m[2] == "" && m[3] == "" && m[4] == "")
-            m[4] := m[3] := m[2] := m[1], exception := True
-         if (m[3] == "" && m[4] == "")
-            m[4] := m[2], m[3] := m[1]
-         if (m[4] == "")
-            m[4] := m[2]
+      c1 := 255 & ( sRGB >> 16 )
+      c2 := 255 & ( sRGB >> 8 )
+      c3 := 255 & ( sRGB )
 
-         for i, x in m {
-            m[i] := (m[i] ~= valid) ? RegExReplace(m[i], "\s") : default
-            m[i] := (m[i] ~= "i)(pt|px)$") ? SubStr(m[i], 1, -2) : m[i]
-            m[i] := (m[i] ~= "i)vw$") ? RegExReplace(m[i], "i)vw$") * vw : m[i]
-            m[i] := (m[i] ~= "i)vh$") ? RegExReplace(m[i], "i)vh$") * vh : m[i]
-            m[i] := (m[i] ~= "i)vmin$") ? RegExReplace(m[i], "i)vmin$") * vmin : m[i]
-         }
+      loop 3 {
+         c%A_Index% := c%A_Index% / 255
+         c%A_Index% := (c%A_Index% <= 0.04045) ? c%A_Index%/12.92 : ((c%A_Index%+0.055)/(1.055))**2.4
+      }
 
-         m[1] := (m[1] ~= "%$") ? RTrim(m[1], "%") * vh : m[1]
-         m[2] := (m[2] ~= "%$") ? RTrim(m[2], "%") * (exception ? vh : vw) : m[2]
-         m[3] := (m[3] ~= "%$") ? RTrim(m[3], "%") * vh : m[3]
-         m[4] := (m[4] ~= "%$") ? RTrim(m[4], "%") * (exception ? vh : vw) : m[4]
+      v := rY*c1 + gY*c2 + bY*c3
+      v := (v <= 0.0031308) ? v * 12.92 : 1.055*(v**(1.0/2.4))-0.055
+      return Round(v*255)
+   }
 
-         for i, x in m
-            m[i] := Round(m[i])
+   margin_and_padding(m, vw, vh, default := "") {
+      static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
+      static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\\\/\s:#%_a-z\-\.\d]+|\([\\\/\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
+      static valid := "^\s*(-?((\d+(\.\d*)?)|(\.\d+)))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
+      vmin := Min(vw, vh)
 
+      if IsObject(m) {
+         m[1] := (m.top    != "") ? m.top    : (m.t != "") ? m.t : m[1]
+         m[2] := (m.right  != "") ? m.right  : (m.r != "") ? m.r : m[2]
+         m[3] := (m.bottom != "") ? m.bottom : (m.b != "") ? m.b : m[3]
+         m[4] := (m.left   != "") ? m.left   : (m.l != "") ? m.l : m[4]
+      } else if (m != "") {
+         _ := RegExReplace(m, ":\s+", ":")
+         _ := RegExReplace(_, "\s+", " ")
+         _ := StrSplit(_, " ")
+         _.push("","","","")
+         _[1] := ((___ := RegExReplace(m, q1    "(t(op)?)"           q2, "${value}")) != m) ? ___ : _[1]
+         _[2] := ((___ := RegExReplace(m, q1    "(r(ight)?)"         q2, "${value}")) != m) ? ___ : _[2]
+         _[3] := ((___ := RegExReplace(m, q1    "(b(ottom)?)"        q2, "${value}")) != m) ? ___ : _[3]
+         _[4] := ((___ := RegExReplace(m, q1    "(l(eft)?)"          q2, "${value}")) != m) ? ___ : _[4]
+         m := _
+      } else if (default != "")
+         m := [default, default, default, default]
+      else {
+         m := [0, 0, 0, 0]
+         m.void := True
          return m
       }
 
-      outline(o, vw, vh, font_size, font_color) {
-         static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
-         static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\\\/\s:#%_a-z\-\.\d]+|\([\\\/\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
-         static valid_positive := "^\s*((\d+(\.\d*)?)|(\.\d+))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
-         vmin := Min(vw, vh)
+      ; Follow CSS guidelines for margin!
+      if (m[2] == "" && m[3] == "" && m[4] == "")
+         m[4] := m[3] := m[2] := m[1], exception := True
+      if (m[3] == "" && m[4] == "")
+         m[4] := m[2], m[3] := m[1]
+      if (m[4] == "")
+         m[4] := m[2]
 
-         if IsObject(o) {
-            o[1] := (o.stroke != "") ? o.stroke : (o.s != "") ? o.s : o[1]
-            o[2] := (o.color  != "") ? o.color  : (o.c != "") ? o.c : o[2]
-            o[3] := (o.glow   != "") ? o.glow   : (o.g != "") ? o.g : o[3]
-            o[4] := (o.tint   != "") ? o.tint   : (o.t != "") ? o.t : o[4]
-         } else if (o != "") {
-            _ := RegExReplace(o, ":\s+", ":")
-            _ := RegExReplace(_, "\s+", " ")
-            _ := StrSplit(_, " ")
-            _[1] := ((___ := RegExReplace(o, q1    "(s(troke)?)"        q2, "${value}")) != o) ? ___ : _[1]
-            _[2] := ((___ := RegExReplace(o, q1    "(c(olor)?)"         q2, "${value}")) != o) ? ___ : _[2]
-            _[3] := ((___ := RegExReplace(o, q1    "(g(low)?)"          q2, "${value}")) != o) ? ___ : _[3]
-            _[4] := ((___ := RegExReplace(o, q1    "(t(int)?)"          q2, "${value}")) != o) ? ___ : _[4]
-            o := _
-         }
-         else return {"void":True, 1:0, 2:0, 3:0, 4:0}
+      for i, x in m {
+         m[i] := (m[i] ~= valid) ? RegExReplace(m[i], "\s") : default
+         m[i] := (m[i] ~= "i)(pt|px)$") ? SubStr(m[i], 1, -2) : m[i]
+         m[i] := (m[i] ~= "i)vw$") ? RegExReplace(m[i], "i)vw$") * vw : m[i]
+         m[i] := (m[i] ~= "i)vh$") ? RegExReplace(m[i], "i)vh$") * vh : m[i]
+         m[i] := (m[i] ~= "i)vmin$") ? RegExReplace(m[i], "i)vmin$") * vmin : m[i]
+      }
 
-         for i, x in o {
-            if (i = 2) || (i = 4) ; Don't mess with color data.
-               continue
-            o[i] := (o[i] ~= valid_positive) ? RegExReplace(o[i], "\s") : 0 ; Default for everything is 0.
-            o[i] := (o[i] ~= "i)(pt|px)$") ? SubStr(o[i], 1, -2) : o[i]
-            o[i] := (o[i] ~= "i)vw$") ? RegExReplace(o[i], "i)vw$") * vw : o[i]
-            o[i] := (o[i] ~= "i)vh$") ? RegExReplace(o[i], "i)vh$") * vh : o[i]
-            o[i] := (o[i] ~= "i)vmin$") ? RegExReplace(o[i], "i)vmin$") * vmin : o[i]
-         }
+      m[1] := (m[1] ~= "%$") ? RTrim(m[1], "%") * vh : m[1]
+      m[2] := (m[2] ~= "%$") ? RTrim(m[2], "%") * (exception ? vh : vw) : m[2]
+      m[3] := (m[3] ~= "%$") ? RTrim(m[3], "%") * vh : m[3]
+      m[4] := (m[4] ~= "%$") ? RTrim(m[4], "%") * (exception ? vh : vw) : m[4]
 
-         o[1] := (o[1] ~= "%$") ? RTrim(o[1], "%") * 0.01 * font_size : o[1]
-         o[2] := this.color(o[2], font_color) ; Default color is the text font color.
-         o[3] := (o[3] ~= "%$") ? RTrim(o[3], "%") * 0.01 * font_size : o[3]
-         o[4] := this.color(o[4], o[2]) ; Default color is outline color.
+      for i, x in m
+         m[i] := Round(m[i])
+
+      return m
+   }
+
+   outline(o, vw, vh, font_size, font_color) {
+      static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
+      static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\\\/\s:#%_a-z\-\.\d]+|\([\\\/\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
+      static valid_positive := "^\s*((\d+(\.\d*)?)|(\.\d+))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
+      vmin := Min(vw, vh)
+
+      if IsObject(o) {
+         o[1] := (o.stroke != "") ? o.stroke : (o.s != "") ? o.s : o[1]
+         o[2] := (o.color  != "") ? o.color  : (o.c != "") ? o.c : o[2]
+         o[3] := (o.glow   != "") ? o.glow   : (o.g != "") ? o.g : o[3]
+         o[4] := (o.tint   != "") ? o.tint   : (o.t != "") ? o.t : o[4]
+      } else if (o != "") {
+         _ := RegExReplace(o, ":\s+", ":")
+         _ := RegExReplace(_, "\s+", " ")
+         _ := StrSplit(_, " ")
+         _.push("","","","")
+         _[1] := ((___ := RegExReplace(o, q1    "(s(troke)?)"        q2, "${value}")) != o) ? ___ : _[1]
+         _[2] := ((___ := RegExReplace(o, q1    "(c(olor)?)"         q2, "${value}")) != o) ? ___ : _[2]
+         _[3] := ((___ := RegExReplace(o, q1    "(g(low)?)"          q2, "${value}")) != o) ? ___ : _[3]
+         _[4] := ((___ := RegExReplace(o, q1    "(t(int)?)"          q2, "${value}")) != o) ? ___ : _[4]
+         o := _
+      }
+      else {
+         o := [0, 0, 0, 0]
+         o.void := True
          return o
       }
 
-      time(t) {
-         static times := "(?i)^\s*((\d+(\.\d*)?)|\.\d+)\s*(ms|mil(li(second)?)?|s(ec(ond)?)?|m(in(ute)?)?|h(our)?|d(ay)?)?s?\s*$"
-         t := (t ~= times) ? RegExReplace(t, "\s") : 0 ; Default time is zero.
-         t := ((___ := RegExReplace(t, "i)(\d+)(ms|mil(li(second)?)?)s?$", "$1")) != t) ? ___ *        1 : t
-         t := ((___ := RegExReplace(t, "i)(\d+)s(ec(ond)?)?s?$"          , "$1")) != t) ? ___ *     1000 : t
-         t := ((___ := RegExReplace(t, "i)(\d+)m(in(ute)?)?s?$"          , "$1")) != t) ? ___ *    60000 : t
-         t := ((___ := RegExReplace(t, "i)(\d+)h(our)?s?$"               , "$1")) != t) ? ___ *  3600000 : t
-         t := ((___ := RegExReplace(t, "i)(\d+)d(ay)?s?$"                , "$1")) != t) ? ___ * 86400000 : t
-         static MAX_INT := (A_PtrSize = 4) ? 2**31-1 : 2**63-1
-         return (t >= 0) ? t : MAX_INT ; Check sign for integer overflow.
+      for i, x in o {
+         if (i = 2) || (i = 4) ; Don't mess with color data.
+            continue
+         o[i] := (o[i] ~= valid_positive) ? RegExReplace(o[i], "\s") : 0 ; Default for everything is 0.
+         o[i] := (o[i] ~= "i)(pt|px)$") ? SubStr(o[i], 1, -2) : o[i]
+         o[i] := (o[i] ~= "i)vw$") ? RegExReplace(o[i], "i)vw$") * vw : o[i]
+         o[i] := (o[i] ~= "i)vh$") ? RegExReplace(o[i], "i)vh$") * vh : o[i]
+         o[i] := (o[i] ~= "i)vmin$") ? RegExReplace(o[i], "i)vmin$") * vmin : o[i]
       }
+
+      o[1] := (o[1] ~= "%$") ? RTrim(o[1], "%") * 0.01 * font_size : o[1]
+      o[2] := this.color(o[2], font_color) ; Default color is the text font color.
+      o[3] := (o[3] ~= "%$") ? RTrim(o[3], "%") * 0.01 * font_size : o[3]
+      o[4] := this.color(o[4], o[2]) ; Default color is outline color.
+      return o
    }
 
-   class filter {
+   time(t) {
+      static times := "(?i)^\s*((\d+(\.\d*)?)|\.\d+)\s*(ms|mil(li(second)?)?|s(ec(ond)?)?|m(in(ute)?)?|h(our)?|d(ay)?)?s?\s*$"
+      t := (t ~= times) ? RegExReplace(t, "\s") : 0 ; Default time is zero.
+      t := ((___ := RegExReplace(t, "i)(\d+)(ms|mil(li(second)?)?)s?$", "$1")) != t) ? ___ *        1 : t
+      t := ((___ := RegExReplace(t, "i)(\d+)s(ec(ond)?)?s?$"          , "$1")) != t) ? ___ *     1000 : t
+      t := ((___ := RegExReplace(t, "i)(\d+)m(in(ute)?)?s?$"          , "$1")) != t) ? ___ *    60000 : t
+      t := ((___ := RegExReplace(t, "i)(\d+)h(our)?s?$"               , "$1")) != t) ? ___ *  3600000 : t
+      t := ((___ := RegExReplace(t, "i)(\d+)d(ay)?s?$"                , "$1")) != t) ? ___ * 86400000 : t
+      static MAX_INT := (A_PtrSize = 4) ? 2**31-1 : 2**63-1
+      return (t >= 0) ? t : MAX_INT ; Check sign for integer overflow.
+   }
 
-      GaussianBlur(pBitmap, radius, opacity := 1) {
-         static code := (A_PtrSize = 4)
-            ? "
-            ( LTrim                                    ; 32-bit machine code
-            VYnlV1ZTg+xci0Uci30c2UUgx0WsAwAAAI1EAAGJRdiLRRAPr0UYicOJRdSLRRwP
-            r/sPr0UYiX2ki30UiUWoi0UQjVf/i30YSA+vRRgDRQgPr9ONPL0SAAAAiUWci0Uc
-            iX3Eg2XE8ECJVbCJRcCLRcSJZbToAAAAACnEi0XEiWXk6AAAAAApxItFxIllzOgA
-            AAAAKcSLRaiJZcjHRdwAAAAAx0W8AAAAAIlF0ItFvDtFFA+NcAEAAItV3DHAi12c
-            i3XQiVXgAdOLfQiLVdw7RRiNDDp9IQ+2FAGLTcyLfciJFIEPtgwDD69VwIkMh4tN
-            5IkUgUDr0THSO1UcfBKLXdwDXQzHRbgAAAAAK13Q6yAxwDtFGH0Ni33kD7YcAQEc
-            h0Dr7kIDTRjrz/9FuAN1GItF3CtF0AHwiceLRbg7RRx/LDHJO00YfeGLRQiLfcwB
-            8A+2BAgrBI+LfeQDBI+ZiQSPjTwz933YiAQPQevWi0UIK0Xci03AAfCJRbiLXRCJ
-            /itdHCt13AN14DnZfAgDdQwrdeDrSot1DDHbK3XcAf4DdeA7XRh9KItV4ItFuAHQ
-            A1UID7YEGA+2FBop0ItV5AMEmokEmpn3fdiIBB5D69OLRRhBAUXg66OLRRhDAUXg
-            O10QfTIxyTtNGH3ti33Ii0XgA0UID7YUCIsEjynQi1XkAwSKiQSKi1XgjTwWmfd9
-            2IgED0Hr0ItF1P9FvAFF3AFF0OmE/v//i0Wkx0XcAAAAAMdFvAAAAACJRdCLRbAD
-            RQyJRaCLRbw7RRAPjXABAACLTdwxwItdoIt10IlN4AHLi30Mi1XcO0UYjQw6fSEP
-            thQBi33MD7YMA4kUh4t9yA+vVcCJDIeLTeSJFIFA69Ex0jtVHHwSi13cA10Ix0W4
-            AAAAACtd0OsgMcA7RRh9DYt95A+2HAEBHIdA6+5CA03U68//RbgDddSLRdwrRdAB
-            8InHi0W4O0UcfywxyTtNGH3hi0UMi33MAfAPtgQIKwSPi33kAwSPmYkEj408M/d9
-            2IgED0Hr1otFDCtF3ItNwAHwiUW4i10Uif4rXRwrddwDdeA52XwIA3UIK3Xg60qL
-            dQgx2yt13AH+A3XgO10YfSiLVeCLRbgB0ANVDA+2BBgPthQaKdCLVeQDBJqJBJqZ
-            933YiAQeQ+vTi0XUQQFF4Ouji0XUQwFF4DtdFH0yMck7TRh97Yt9yItF4ANFDA+2
-            FAiLBI+LfeQp0ItV4AMEj4kEj408Fpn3fdiIBA9B69CLRRj/RbwBRdwBRdDphP7/
-            //9NrItltA+Fofz//9no3+l2PzHJMds7XRR9OotFGIt9CA+vwY1EBwMx/zt9EH0c
-            D7Yw2cBHVtoMJFrZXeTzDyx15InyiBADRRjr30MDTRDrxd3Y6wLd2I1l9DHAW15f
-            XcM=
-            )" : "
-            ( LTrim                                    ; 64-bit machine code
-            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
-            )"
+   GaussianBlur(pBitmap, radius, opacity := 1) {
+      static code := (A_PtrSize = 4)
+         ? "
+         ( LTrim                                    ; 32-bit machine code
+         VYnlV1ZTg+xci0Uci30c2UUgx0WsAwAAAI1EAAGJRdiLRRAPr0UYicOJRdSLRRwP
+         r/sPr0UYiX2ki30UiUWoi0UQjVf/i30YSA+vRRgDRQgPr9ONPL0SAAAAiUWci0Uc
+         iX3Eg2XE8ECJVbCJRcCLRcSJZbToAAAAACnEi0XEiWXk6AAAAAApxItFxIllzOgA
+         AAAAKcSLRaiJZcjHRdwAAAAAx0W8AAAAAIlF0ItFvDtFFA+NcAEAAItV3DHAi12c
+         i3XQiVXgAdOLfQiLVdw7RRiNDDp9IQ+2FAGLTcyLfciJFIEPtgwDD69VwIkMh4tN
+         5IkUgUDr0THSO1UcfBKLXdwDXQzHRbgAAAAAK13Q6yAxwDtFGH0Ni33kD7YcAQEc
+         h0Dr7kIDTRjrz/9FuAN1GItF3CtF0AHwiceLRbg7RRx/LDHJO00YfeGLRQiLfcwB
+         8A+2BAgrBI+LfeQDBI+ZiQSPjTwz933YiAQPQevWi0UIK0Xci03AAfCJRbiLXRCJ
+         /itdHCt13AN14DnZfAgDdQwrdeDrSot1DDHbK3XcAf4DdeA7XRh9KItV4ItFuAHQ
+         A1UID7YEGA+2FBop0ItV5AMEmokEmpn3fdiIBB5D69OLRRhBAUXg66OLRRhDAUXg
+         O10QfTIxyTtNGH3ti33Ii0XgA0UID7YUCIsEjynQi1XkAwSKiQSKi1XgjTwWmfd9
+         2IgED0Hr0ItF1P9FvAFF3AFF0OmE/v//i0Wkx0XcAAAAAMdFvAAAAACJRdCLRbAD
+         RQyJRaCLRbw7RRAPjXABAACLTdwxwItdoIt10IlN4AHLi30Mi1XcO0UYjQw6fSEP
+         thQBi33MD7YMA4kUh4t9yA+vVcCJDIeLTeSJFIFA69Ex0jtVHHwSi13cA10Ix0W4
+         AAAAACtd0OsgMcA7RRh9DYt95A+2HAEBHIdA6+5CA03U68//RbgDddSLRdwrRdAB
+         8InHi0W4O0UcfywxyTtNGH3hi0UMi33MAfAPtgQIKwSPi33kAwSPmYkEj408M/d9
+         2IgED0Hr1otFDCtF3ItNwAHwiUW4i10Uif4rXRwrddwDdeA52XwIA3UIK3Xg60qL
+         dQgx2yt13AH+A3XgO10YfSiLVeCLRbgB0ANVDA+2BBgPthQaKdCLVeQDBJqJBJqZ
+         933YiAQeQ+vTi0XUQQFF4Ouji0XUQwFF4DtdFH0yMck7TRh97Yt9yItF4ANFDA+2
+         FAiLBI+LfeQp0ItV4AMEj4kEj408Fpn3fdiIBA9B69CLRRj/RbwBRdwBRdDphP7/
+         //9NrItltA+Fofz//9no3+l2PzHJMds7XRR9OotFGIt9CA+vwY1EBwMx/zt9EH0c
+         D7Yw2cBHVtoMJFrZXeTzDyx15InyiBADRRjr30MDTRDrxd3Y6wLd2I1l9DHAW15f
+         XcM=
+         )" : "
+         ( LTrim                                    ; 64-bit machine code
+         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
+         )"
 
-         ; Get width and height.
-         DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
-         DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+      ; Get width and height.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
-         ; Create a buffer of raw 32-bit ARGB pixel data.
-         VarSetCapacity(Rect, 16, 0)          ; sizeof(Rect) = 16
-            NumPut(  width, Rect,  8, "uint") ; Width
-            NumPut( height, Rect, 12, "uint") ; Height
-         VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0) ; sizeof(BitmapData) = 24, 32
-         DllCall("gdiplus\GdipBitmapLockBits", "ptr", pBitmap, "ptr", &Rect, "uint", 3, "int", 0x26200A, "ptr", &BitmapData)
+      ; Create a buffer of raw 32-bit ARGB pixel data.
+      VarSetCapacity(Rect, 16, 0)          ; sizeof(Rect) = 16
+         NumPut(  width, Rect,  8, "uint") ; Width
+         NumPut( height, Rect, 12, "uint") ; Height
+      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0) ; sizeof(BitmapData) = 24, 32
+      DllCall("gdiplus\GdipBitmapLockBits", "ptr", pBitmap, "ptr", &Rect, "uint", 3, "int", 0x26200A, "ptr", &BitmapData)
 
-         ; Get the Scan0 of the pixel data. Create a working buffer of the exact same size.
-         stride := NumGet(BitmapData, 8, "int")
-         Scan01 := NumGet(BitmapData, 16, "ptr")
-         Scan02 := DllCall("GlobalAlloc", "uint", 0x40, "uptr", stride * height, "ptr")
+      ; Get the Scan0 of the pixel data. Create a working buffer of the exact same size.
+      stride := NumGet(BitmapData, 8, "int")
+      Scan01 := NumGet(BitmapData, 16, "ptr")
+      Scan02 := DllCall("GlobalAlloc", "uint", 0x40, "uptr", stride * height, "ptr")
 
-         ; Call machine code function.
-         DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", 0, "uint*", size:=0, "ptr", 0, "ptr", 0)
-         p := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
-         DllCall("VirtualProtect", "ptr", p, "ptr", size, "uint", 0x40, "uint*", op) ; Allow execution from memory.
-         DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", p, "uint*", size, "ptr", 0, "ptr", 0)
-         e := DllCall(p, "ptr", Scan01, "ptr", Scan02, "uint", width, "uint", height, "uint", 4, "uint", radius, "float", opacity)
-         DllCall("GlobalFree", "ptr", p)
+      ; Call machine code function.
+      DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", 0, "uint*", size:=0, "ptr", 0, "ptr", 0)
+      p := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
+      DllCall("VirtualProtect", "ptr", p, "ptr", size, "uint", 0x40, "uint*", op) ; Allow execution from memory.
+      DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", p, "uint*", size, "ptr", 0, "ptr", 0)
+      e := DllCall(p, "ptr", Scan01, "ptr", Scan02, "uint", width, "uint", height, "uint", 4, "uint", radius, "float", opacity)
+      DllCall("GlobalFree", "ptr", p)
 
-         ; Free resources.
-         DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
-         DllCall("GlobalFree", "ptr", Scan02)
+      ; Free resources.
+      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+      DllCall("GlobalFree", "ptr", Scan02)
 
-         return e
-      }
+      return e
+   }
 
-      MCode(mcode) {
-         static e := {1:4, 2:1}, c := (A_PtrSize=8) ? "x64" : "x86"
-         if (!regexmatch(mcode, "^([0-9]+),(" c ":|.*?," c ":)([^,]+)", m))
-            return
-         if (!DllCall("crypt32\CryptStringToBinary", "str", m3, "uint", 0, "uint", e[m1], "ptr", 0, "uint*", s, "ptr", 0, "ptr", 0))
-            return
-         p := DllCall("GlobalAlloc", "uint", 0, "ptr", s, "ptr")
-         if (c="x64")
-            DllCall("VirtualProtect", "ptr", p, "ptr", s, "uint", 0x40, "uint*", op)
-         if (DllCall("crypt32\CryptStringToBinary", "str", m3, "uint", 0, "uint", e[m1], "ptr", p, "uint*", s, "ptr", 0, "ptr", 0))
-            return p
-         DllCall("GlobalFree", "ptr", p)
-      }
+   MCode(mcode) {
+      static e := {1:4, 2:1}, c := (A_PtrSize=8) ? "x64" : "x86"
+      if (!regexmatch(mcode, "^([0-9]+),(" c ":|.*?," c ":)([^,]+)", m))
+         return
+      if (!DllCall("crypt32\CryptStringToBinary", "str", m3, "uint", 0, "uint", e[m1], "ptr", 0, "uint*", s, "ptr", 0, "ptr", 0))
+         return
+      p := DllCall("GlobalAlloc", "uint", 0, "ptr", s, "ptr")
+      if (c="x64")
+         DllCall("VirtualProtect", "ptr", p, "ptr", s, "uint", 0x40, "uint*", op)
+      if (DllCall("crypt32\CryptStringToBinary", "str", m3, "uint", 0, "uint", e[m1], "ptr", p, "uint*", s, "ptr", 0, "ptr", 0))
+         return p
+      DllCall("GlobalFree", "ptr", p)
    }
 
    ; Source: ImagePut 1.6.0 - WindowClass()
@@ -1652,12 +1669,13 @@ class TextRender {
          ; Process windows messages by invoking the associated callback.
          for message, event in dict
             if (uMsg = message)
-               if callback := this.events[event]
+               try if callback := this.events[event]
                   return %callback%(this) ; Callbacks have a reference to "this".
 
          ; Default processing of window messages.
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
       }
+
 
    OnEvent(event, callback := "") {
       this.events[event] := callback
@@ -1750,7 +1768,7 @@ class TextRender {
          NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-      gfx := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", gfx:=0, "int") ? False : gfx
+      gfx := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", gfx:=0, "int") ? False : gfx
       DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", gfx, "float", -this.BitmapLeft, "float", -this.BitmapTop, "int", 0)
 
       this.hdc := hdc
@@ -1938,7 +1956,7 @@ class TextRender {
          NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-      gfx := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", gfx:=0, "int") ? False : gfx
+      gfx := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", gfx:=0, "int") ? False : gfx
 
       ; Set the origin to this.x and this.y
       DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", gfx, "float", -this.x, "float", -this.y, "int", 0)
@@ -1992,7 +2010,7 @@ class TextRender {
       return filepath
    }
 
-   ; Source: ImagePut 1.5.1 - put_file()
+   ; Source: ImagePut 1.7 - put_file()
    SaveImageToFile(pBitmap, filepath := "", quality := "") {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
       extension := "png"
@@ -2000,11 +2018,10 @@ class TextRender {
       ; Save default extension.
       default := extension
 
-      ; Convert forward style slashes into Windows style backslashes.
+      ; Split the filepath, convert forward slashes, strip invalid chars.
       filepath := RegExReplace(filepath, "/", "\")
-
-      ; Split the filepath.
-      SplitPath % Trim(filepath),, directory, extension, filename
+      filepath := RegExReplace(filepath, "[*?\x22<>|\x00-\x1F]")
+      SplitPath % filepath,, directory, extension, filename
 
       ; Check if the entire filepath is a directory.
       if InStr(FileExist(filepath), "D")   ; If the filepath refers to a directory,
@@ -2022,7 +2039,7 @@ class TextRender {
          FileCreateDir % directory
 
       ; Default directory is a dot.
-      directory := (directory != "") ? directory : "."
+      (directory == "") && directory := "."
 
       ; Check if the filename is actually the extension.
       if (extension == "" && filename ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
@@ -2042,14 +2059,14 @@ class TextRender {
       if (filename == "") {
          FormatTime, filename,, % "yyyy-MM-dd HH?mm?ss"
          filepath := directory "\" filename "." extension
-         while FileExist(filepath) ; Check for collisions.
+         while FileExist(filepath)
             filepath := directory "\" filename " (" A_Index ")." extension
       }
 
       ; Create a numeric sequence of files...
       else if (filename == "0" or filename == "1") {
          filepath := directory "\" filename "." extension
-         while FileExist(filepath) ; Check for collisions.
+         while FileExist(filepath)
             filepath := directory "\" A_Index "." extension
       }
 
@@ -2099,7 +2116,7 @@ class TextRender {
       return filepath
    }
 
-   ; Source: ImagePut 1.5.1 - from_screenshot()
+   ; Source: ImagePut 1.7.0 - from_screenshot()
    GetImageFromScreen(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
@@ -2483,7 +2500,7 @@ class ImageRender extends TextRender {
       y  := Round(y)                   ; The float values need to be added up and then rounded!
 
       ; Get margin.
-      m  := this.parse.margin_and_padding(m, vw, vh)
+      m  := this.margin_and_padding(m, vw, vh)
 
       ; Calculate border using margin.
       _w := w + m[2] + m[4]
@@ -2506,7 +2523,7 @@ class ImageRender extends TextRender {
 
          ; Draw background if color or margin is set.
          if (c != "" || !m.void) {
-            c := this.parse.color(c, 0xDD212121) ; Default color is transparent gray.
+            c := this.color(c, 0xDD212121) ; Default color is transparent gray.
             if (c & 0xFF000000) {
                DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", 0) ; SmoothingModeNoAntiAlias
                DllCall("gdiplus\GdipCreateSolidFill", "uint", c, "ptr*", pBrush:=0)
@@ -2570,8 +2587,8 @@ class ImageRender extends TextRender {
             if (k != "") {
                static colorkey
                if !(colorkey)
-                  colorkey := this.filter.MCode("2,x86:VjHSU4tMJBQxwA+vTCQQi3QkDItcJBiFyXUO6yKNdgCDwAE5yInCdBaNFJY5GnXwg8ABOcjHAgAAAACJwnXquAEAAABbXsM=,x64:QQ+v0IXSdCeD6gFIjUSRBOsJSIPBBEg5wXQURDkJdfLHAQAAAABIg8EESDnBdey4AQAAAMM=")
-               k := this.parse.color(k, NumGet(pBits+0, "uint")) ; Default key is top-left pixel.
+                  colorkey := this.MCode("2,x86:VjHSU4tMJBQxwA+vTCQQi3QkDItcJBiFyXUO6yKNdgCDwAE5yInCdBaNFJY5GnXwg8ABOcjHAgAAAACJwnXquAEAAABbXsM=,x64:QQ+v0IXSdCeD6gFIjUSRBOsJSIPBBEg5wXQURDkJdfLHAQAAAABIg8EESDnBdey4AQAAAMM=")
+               k := this.color(k, NumGet(pBits+0, "uint")) ; Default key is top-left pixel.
                DllCall(colorkey, "ptr", pBits, "uint", width, "uint", height, "uint", k)
             }
 
@@ -2613,7 +2630,7 @@ class ImageRender extends TextRender {
             ; Make a color transparent if the color key option is specified.
             if (k != "") {
                DllCall("gdiplus\GdipBitmapGetPixel", "ptr", pBitmap, "int", 0, "int", 0, "uint*", k_default)
-               k := this.parse.color(k, k_default) ; Default key is top-left pixel.
+               k := this.color(k, k_default) ; Default key is top-left pixel.
                DllCall("gdiplus\GdipSetImageAttributesColorKeys", "ptr", ImageAttr, "int", 0, "int", 1, "uint", k, "uint", k)
             }
 
@@ -2657,7 +2674,7 @@ class ImageRender extends TextRender {
       DllCall("gdiplus\GdipRestoreGraphics", "ptr", gfx, "ptr", pState)
 
       ; Define bounds.
-      t_bound := this.parse.time(t)
+      t_bound := this.time(t)
       x_bound := _x
       y_bound := _y
       w_bound := _w

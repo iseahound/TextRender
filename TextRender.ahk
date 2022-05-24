@@ -560,12 +560,18 @@ class TextRender {
       n  := (n) ? 0x4000 | 0x1000 : 0x4000 ; Defaults to text wrapping.
 
       ; Define text justification. Default text justification to center.
-      j  := (j ~= "i)(near|left)") ? 0 : (j ~= "i)cent(er|re)") ? 1 : (j ~= "i)(far|right)") ? 2 : j
-      j  := (j ~= "^[1-3]$") ? j-1 : 1
+      j := (j ~= "i)(near|left)") ? 0
+         : (j ~= "i)cent(er|re)") ? 1
+         : (j ~= "i)(far|right)") ? 2
+         : (j ~= "^[1-3]$") ? j-1
+         : 1
 
       ; Define vertical alignment. Default vertical alignment to top.
-      v  := (v ~= "i)(near|top)") ? 0 : (v ~= "i)cent(er|re)") ? 1 : (v ~= "i)(far|bottom)") ? 2 : j
-      v  := (v ~= "^[1-3]$") ? v-1 : 0
+      v := (v ~= "i)(near|top)") ? 0
+         : (v ~= "i)cent(er|re)") ? 1
+         : (v ~= "i)(far|bottom)") ? 2
+         : (v ~= "^[1-3]$") ? v-1
+         : 0
 
       ; Later when text x and w are finalized and it is found that x + width exceeds the screen,
       ; then the _redrawBecauseOfCondensedFont flag is set to true.

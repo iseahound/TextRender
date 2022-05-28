@@ -406,7 +406,7 @@ class TextRender {
    CanvasChanged() {
       this.UpdateStatus()
       try if callback := this.events["CanvasChange"]
-         return callback(this) ; Callbacks have a reference to "this".
+         return (callback.MaxParams = 0) ? callback() : callback(this) ; Callbacks have a reference to "this".
    }
 
    get(name, p*) {
@@ -1699,7 +1699,7 @@ class TextRender {
          try for message, event in dict.OwnProps()
             if (uMsg = message)
                try if callback := this.events[event]
-                  return callback(this) ; Callbacks have a reference to "this".
+                  return (callback.MaxParams = 0) ? callback() : callback(this) ; Callbacks have a reference to "this".
 
          ; Default processing of window messages.
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")

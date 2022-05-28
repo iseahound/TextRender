@@ -1696,7 +1696,7 @@ class TextRender {
 
 
          ; Process windows messages by invoking the associated callback.
-         for message, event in dict.OwnProps()
+         try for message, event in dict.OwnProps()
             if (uMsg = message)
                try if callback := this.events[event]
                   return callback(this) ; Callbacks have a reference to "this".

@@ -47,6 +47,8 @@ class TextRender {
       this.BitmapWidth := 0, this.BitmapHeight := 0
       this.x := ""
       this.status := ""
+      this.style1 := ""
+      this.style2 := ""
 
       return this
    }

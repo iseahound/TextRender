@@ -14,7 +14,7 @@ class TextRender {
    static call(text:="", background_style:="", text_style:="") {
       if (text == "" && background_style == "" && text_style == "")
          return super()
-      return TextRender.__New().Render(text, background_style, text_style)
+      return super().Render(text, background_style, text_style)
    }
 
    static windows := Map()
@@ -1605,7 +1605,7 @@ class TextRender {
       DllCall("GlobalFree", "ptr", p)
    }
 
-   ; Source: ImagePut 1.6.0 - WindowClass()
+   ; Source: ImagePut 1.7.0 - WindowClass()
    WindowClass() {
       ; The window class shares the name of this class.
       cls := this.__class
@@ -1643,14 +1643,14 @@ class TextRender {
       ; Return the class name as a string.
       return cls
 
-
+      ; Define window behavior.
       WindowProc(hwnd, uMsg, wParam, lParam) {
-         ; Because the first parameter of an object is "this",
-         ; the callback function will overwrite that parameter as hwnd.
-         ; hwnd := this
 
-         ; A dictionary of "this" objects is stored as hwnd:this.
-         ; this := TextRender.windows[hwnd]
+         ; Retrieve "this" from a dictionary stored as hwnd:this.
+         try this := TextRender.windows[hwnd]
+         catch
+            return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
+
 
          ; WM_DESTROY calls FreeMemory().
          if (uMsg = 0x2)
@@ -1718,23 +1718,27 @@ class TextRender {
 
    EventShowCoordinates() {
       ; Shows a bubble displaying the current window coordinates.
-      if !this.friend1 {
-         this.friend1 := TextRender.__New(,,, this.hwnd)
+      if not ObjHasOwnProp(this, "friend1") {
+         this.friend1 := {base: TextRender.prototype}.__New(,,, this.hwnd)
          this.friend1.OnEvent("MiddleMouseDown", "")
       }
+
       CoordMode "Mouse"
       MouseGetPos &_x, &_y
       WinGetPos &x, &y, &w, &h, "ahk_id " this.hwnd
       this.friend1.Render(Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
-         , "t:7000 r:0.5vmin x" _x+20 " y" _y+20
-         , "s:1.5vmin f:(Consolas) o:(0.5) m:0.5vmin j:right")
+         , {t: 7000, r: "0.5vmin", x: _x+20, y: _y+20})
+         ;, {f: "Consolas"} ) --BROKEN
+      ;this.friend1.Render(Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
+      ;   , "t:7000 r:0.5vmin x" _x+20 " y" _y+20
+      ;   , "s:1.5vmin f:(Consolas) o:(0.5) m:0.5vmin j:right")
       WinSetAlwaysOnTop(1, "ahk_id" this.friend1.hwnd)
    }
 
    EventCopyData() {
       ; Copies the rendered text to clipboard.
-      if !this.friend2 {
-         this.friend2 := TextRender.__New(,,, this.hwnd)
+      if not ObjHasOwnProp(this, "friend2")  {
+         this.friend2 := {base: TextRender.prototype}.__New(,,, this.hwnd)
          this.friend2.OnEvent("MiddleMouseDown", "")
          this.friend2.OnEvent("RightMouseDown", "")
       }
@@ -2301,7 +2305,7 @@ TextRenderDesktop(text:="", background_style:="", text_style:="") {
    DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0xD, "ptr", 1)
 
    hwndParent := WinExist("ahk_class Progman")
-   return (TextRender(, WS_CHILD, WS_EX_LAYERED, hwndParent)).Render(text, background_style, text_style)
+   return {base: TextRender.prototype}.__New("", WS_CHILD, WS_EX_LAYERED, hwndParent).Render(text, background_style, text_style)
 }
 
 TextRenderWallpaper(text:="", background_style:="", text_style:="") {
@@ -2327,7 +2331,7 @@ TextRenderWallpaper(text:="", background_style:="", text_style:="") {
    if !(WorkerW := DllCall("FindWindowEx", "ptr", 0, "ptr", hwnd, "str", "WorkerW", "ptr", 0, "ptr"))
       throw Error("Could not locate hidden window behind desktop icons.")
 
-   return (TextRender(, WS_CHILD, WS_EX_LAYERED, WorkerW)).Render(text, background_style, text_style)
+   return {base: TextRender.prototype}.__New("", WS_CHILD, WS_EX_LAYERED, WorkerW).Render(text, background_style, text_style)
 }
 
 

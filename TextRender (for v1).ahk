@@ -1605,7 +1605,7 @@ class TextRender {
       DllCall("GlobalFree", "ptr", p)
    }
 
-   ; Source: ImagePut 1.6.0 - WindowClass()
+   ; Source: ImagePut 1.7.0 - WindowClass()
    WindowClass() {
       ; The window class shares the name of this class.
       cls := this.__class
@@ -1643,14 +1643,14 @@ class TextRender {
       ; Return the class name as a string.
       return cls
    }
-
+      ; Define window behavior.
       WindowProc(uMsg, wParam, lParam) {
-         ; Because the first parameter of an object is "this",
-         ; the callback function will overwrite that parameter as hwnd.
          hwnd := this
+         ; Retrieve "this" from a dictionary stored as hwnd:this.
+         if !(this := TextRender.windows[hwnd])
 
-         ; A dictionary of "this" objects is stored as hwnd:this.
-         this := TextRender.windows[hwnd]
+            return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
+
 
          ; WM_DESTROY calls FreeMemory().
          if (uMsg = 0x2)

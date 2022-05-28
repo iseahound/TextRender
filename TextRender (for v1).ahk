@@ -407,6 +407,10 @@ class TextRender {
          return %callback%(this) ; Callbacks have a reference to "this".
    }
 
+   get(name, p*) {
+      return ObjHasKey(this, name) ? this.name : ""
+   }
+
    DrawOnGraphics(gfx, text := "", style1 := "", style2 := "", CanvasWidth := "", CanvasHeight := "") {
       ; Get default width and height from undocumented graphics pointer offset.
       (CanvasWidth == "") && CanvasWidth := NumGet(gfx + 20 + A_PtrSize, "uint")
@@ -418,6 +422,7 @@ class TextRender {
 
       ; Extract styles to variables.
       if IsObject(style1) {
+         style1.base := {__get: this.get} ; Returns the empty string for unknown properties.
          _t  := (style1.time != "")     ? style1.time     : style1.t
          _a  := (style1.anchor != "")   ? style1.anchor   : style1.a
          _x  := (style1.left != "")     ? style1.left     : style1.x
@@ -443,6 +448,7 @@ class TextRender {
       }
 
       if IsObject(style2) {
+         style2.base := {__get: this.get} ; Returns the empty string for unknown properties.
          t  := (style2.time != "")        ? style2.time        : style2.t
          a  := (style2.anchor != "")      ? style2.anchor      : style2.a
          x  := (style2.left != "")        ? style2.left        : style2.x

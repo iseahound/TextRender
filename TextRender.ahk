@@ -1645,6 +1645,7 @@ class TextRender {
 
       ; Define window behavior.
       WindowProc(hwnd, uMsg, wParam, lParam) {
+         Critical ; Thread must never be interrupted.
 
          ; Retrieve "this" from a dictionary stored as hwnd:this.
          try this := TextRender.windows[hwnd]

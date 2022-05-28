@@ -1645,6 +1645,7 @@ class TextRender {
    }
       ; Define window behavior.
       WindowProc(uMsg, wParam, lParam) {
+         Critical ; Thread must never be interrupted.
          hwnd := this
          ; Retrieve "this" from a dictionary stored as hwnd:this.
          if !(this := TextRender.windows[hwnd])

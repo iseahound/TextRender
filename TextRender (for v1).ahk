@@ -100,10 +100,26 @@ class TextRender {
    }
 
    ClickThrough() {
-      styleEx := DllCall("GetWindowLong", "ptr", this.hwnd, "int", -20, "int")
-      (styleEx & 0x20) == 0x20
-         ? DllCall("SetWindowLong", "ptr", this.hwnd, "int", -20, "int", styleEx ^ 0x20)
-         : DllCall("SetWindowLong", "ptr", this.hwnd, "int", -20, "int", styleEx | 0x20)
+      return this.ToggleExStyle(0x20)
+   }
+
+   NoActivate() {
+      return this.ToggleExStyle(0x8000000)
+   }
+
+   ToggleStyle(long) {
+      return this.ToggleWindowLong(-16, long)
+   }
+
+   ToggleExStyle(long) {
+      return this.ToggleWindowLong(-20, long)
+   }
+
+   ToggleWindowLong(index, long) {
+      value := DllCall("GetWindowLong", "ptr", this.hwnd, "int", index, "int")
+      (value & long) == long
+         ? DllCall("SetWindowLong", "ptr", this.hwnd, "int", index, "int", value ^ long)
+         : DllCall("SetWindowLong", "ptr", this.hwnd, "int", index, "int", value | long)
       return this
    }
 

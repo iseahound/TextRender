@@ -2245,6 +2245,8 @@ class TextRender {
       w  := this.WindowWidth  := this.WindowRight - this.WindowLeft
       h  := this.WindowHeight := this.WindowBottom - this.WindowTop
 
+      ; Changing x, y, w, h to be stationary does not provide a speed boost.
+      ; Nor does making the window opaque.
       return DllCall("UpdateLayeredWindow"
                ,    "ptr", this.hwnd                ; hWnd
                ,    "ptr", 0                        ; hdcDst

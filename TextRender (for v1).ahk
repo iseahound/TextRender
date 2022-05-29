@@ -65,10 +65,11 @@ class TextRender {
    }
 
    Default() {
-      ; Removes all events except for left-click to drag.
+      ; Left Click to drag. Right click to close.
       return this
          .OnEvent("MiddleMouseDown")
          .OnEvent("RightMouseDown")
+         .OnEvent("RightMouseUp", this.DestroyWindow)
    }
 
    None() {
@@ -1340,6 +1341,7 @@ class TextRender {
       vmin := Min(vw, vh)
 
       if IsObject(d) {
+         d.base := {__get: this.get} ; Returns the empty string for unknown properties.
          d[1] := (d.horizontal != "") ? d.horizontal : (d.h != "") ? d.h : d[1]
          d[2] := (d.vertical   != "") ? d.vertical   : (d.v != "") ? d.h : d[2]
          d[3] := (d.blur       != "") ? d.blur       : (d.b != "") ? d.h : d[3]
@@ -1411,6 +1413,7 @@ class TextRender {
       vmin := Min(vw, vh)
 
       if IsObject(m) {
+         m.base := {__get: this.get} ; Returns the empty string for unknown properties.
          m[1] := (m.top    != "") ? m.top    : (m.t != "") ? m.t : m[1]
          m[2] := (m.right  != "") ? m.right  : (m.r != "") ? m.r : m[2]
          m[3] := (m.bottom != "") ? m.bottom : (m.b != "") ? m.b : m[3]
@@ -1467,6 +1470,7 @@ class TextRender {
       vmin := Min(vw, vh)
 
       if IsObject(o) {
+         o.base := {__get: this.get} ; Returns the empty string for unknown properties.
          o[1] := (o.stroke != "") ? o.stroke : (o.s != "") ? o.s : o[1]
          o[2] := (o.color  != "") ? o.color  : (o.c != "") ? o.c : o[2]
          o[3] := (o.glow   != "") ? o.glow   : (o.g != "") ? o.g : o[3]
@@ -1728,6 +1732,10 @@ class TextRender {
       return this
    }
 
+   EventDestroyWindow() {
+      this.DestroyWindow()
+   }
+
    EventMoveWindow() {
       ; Allows the user to drag to reposition the window.
       DllCall("DefWindowProc", "ptr", this.hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
@@ -1735,15 +1743,20 @@ class TextRender {
 
    EventShowCoordinates() {
       ; Shows a bubble displaying the current window coordinates.
-      if !this.friend1 {
+      if not ObjHasKey(this, "friend1") {
          this.friend1 := new TextRender(,,, this.hwnd)
-         this.friend1.OnEvent("MiddleMouseDown", "")
+         this.friend1.OnEvent("MiddleMouseDown")
       }
-      CoordMode Mouse
-      MouseGetPos _x, _y
+
+      ; Get position in screen coordinates.
+      DllCall("GetCursorPos", "ptr", &point := VarSetCapacity(point, 8))
+         , _x := NumGet(point, 0, "int")
+         , _y := NumGet(point, 4, "int")
       WinGetPos x, y, w, h, % "ahk_id " this.hwnd
-      this.friend1.Render(Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
-         , "t:7000 r:0.5vmin x" _x+20 " y" _y+20
+      coordinates := Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
+
+      this.friend1.Render(coordinates
+         , {t: 7000, r: "0.5vmin", x: _x+20, y: _y+20}
          , "s:1.5vmin f:(Consolas) o:(0.5) m:0.5vmin j:right")
       WinSet AlwaysOnTop, On, % "ahk_id" this.friend1.hwnd
    }

@@ -65,10 +65,11 @@ class TextRender {
    }
 
    Default() {
-      ; Removes all events except for left-click to drag.
+      ; Left Click to drag. Right click to close.
       return this
          .OnEvent("MiddleMouseDown")
          .OnEvent("RightMouseDown")
+         .OnEvent("RightMouseUp", this.DestroyWindow)
    }
 
    None() {
@@ -426,7 +427,9 @@ class TextRender {
    }
 
    get(name, p*) {
-      return ObjHasOwnProp(this, name) ? this.name : ""
+      return Type(this) ~= "^(?i:Map|Array)$"
+         ? (this.Has(name) ? this[name] : "")
+         : (ObjHasOwnProp(this, name) ? this.name : "")
    }
 
    DrawOnGraphics(gfx, text := "", style1 := "", style2 := "", CanvasWidth := "", CanvasHeight := "") {
@@ -440,7 +443,7 @@ class TextRender {
 
       ; Extract styles to variables.
       if IsObject(style1) {
-         style1.base := {__get: this.get} ; Returns the empty string for unknown properties.
+         style1.base.__get := this.get ; Returns the empty string for unknown properties.
          _t  := (style1.time != "")     ? style1.time     : style1.t
          _a  := (style1.anchor != "")   ? style1.anchor   : style1.a
          _x  := (style1.left != "")     ? style1.left     : style1.x
@@ -872,7 +875,7 @@ class TextRender {
             DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", DropShadow, "ptr*", &DropShadowG:=0)
             DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", 0) ; SmoothingModeNoAntiAlias
             DllCall("gdiplus\GdipSetTextRenderingHint", "ptr", DropShadowG, "int", 1) ; TextRenderingHintSingleBitPerPixelGridFit
-            DllCall("gdiplus\GdipGraphicsClear", "ptr", gfx, "uint", d[4] & 0xFFFFFF)
+            ;DllCall("gdiplus\GdipGraphicsClear", "ptr", gfx, "uint", d[4] & 0xFFFFFF)
             RectF := Buffer(16, 0)                ; sizeof(RectF) = 16
                NumPut("float", d[1]+x, RectF,  0) ; Left
                NumPut("float", d[2]+y, RectF,  4) ; Top
@@ -972,7 +975,7 @@ class TextRender {
                   ,    "ptr", hFamily
                   ,    "int", style
                   ,  "float", s
-                  ,    "ptr", &RectF
+                  ,    "ptr", RectF
                   ,    "ptr", hFormat)
 
          ; Create a glow effect around the edges.
@@ -1340,12 +1343,15 @@ class TextRender {
       vmin := Min(vw, vh)
 
       if IsObject(d) {
-         d[1] := (d.horizontal != "") ? d.horizontal : (d.h != "") ? d.h : d[1]
-         d[2] := (d.vertical   != "") ? d.vertical   : (d.v != "") ? d.h : d[2]
-         d[3] := (d.blur       != "") ? d.blur       : (d.b != "") ? d.h : d[3]
-         d[4] := (d.color      != "") ? d.color      : (d.c != "") ? d.h : d[4]
-         d[5] := (d.opacity    != "") ? d.opacity    : (d.o != "") ? d.h : d[5]
-         d[6] := (d.size       != "") ? d.size       : (d.s != "") ? d.h : d[6]
+         d.base.__get := this.get ; Returns the empty string for unknown properties.
+         _ := ["", "", "", "", "", ""]
+         _[1] := (d.horizontal != "") ? d.horizontal : (d.h != "") ? d.h : _[1]
+         _[2] := (d.vertical   != "") ? d.vertical   : (d.v != "") ? d.h : _[2]
+         _[3] := (d.blur       != "") ? d.blur       : (d.b != "") ? d.h : _[3]
+         _[4] := (d.color      != "") ? d.color      : (d.c != "") ? d.h : _[4]
+         _[5] := (d.opacity    != "") ? d.opacity    : (d.o != "") ? d.h : _[5]
+         _[6] := (d.size       != "") ? d.size       : (d.s != "") ? d.h : _[6]
+         d := _
       } else if (d != "") {
          _ := RegExReplace(d, ":\s+", ":")
          _ := RegExReplace(_, "\s+", " ")
@@ -1411,10 +1417,13 @@ class TextRender {
       vmin := Min(vw, vh)
 
       if IsObject(m) {
-         m[1] := (m.top    != "") ? m.top    : (m.t != "") ? m.t : m[1]
-         m[2] := (m.right  != "") ? m.right  : (m.r != "") ? m.r : m[2]
-         m[3] := (m.bottom != "") ? m.bottom : (m.b != "") ? m.b : m[3]
-         m[4] := (m.left   != "") ? m.left   : (m.l != "") ? m.l : m[4]
+         m.base.__get := this.get ; Returns the empty string for unknown properties.
+         _ := ["","","",""]
+         _[1] := (m.top    != "") ? m.top    : (m.t != "") ? m.t : _[1]
+         _[2] := (m.right  != "") ? m.right  : (m.r != "") ? m.r : _[2]
+         _[3] := (m.bottom != "") ? m.bottom : (m.b != "") ? m.b : _[3]
+         _[4] := (m.left   != "") ? m.left   : (m.l != "") ? m.l : _[4]
+         m := _
       } else if (m != "") {
          _ := RegExReplace(m, ":\s+", ":")
          _ := RegExReplace(_, "\s+", " ")
@@ -1467,10 +1476,13 @@ class TextRender {
       vmin := Min(vw, vh)
 
       if IsObject(o) {
-         o[1] := (o.stroke != "") ? o.stroke : (o.s != "") ? o.s : o[1]
-         o[2] := (o.color  != "") ? o.color  : (o.c != "") ? o.c : o[2]
-         o[3] := (o.glow   != "") ? o.glow   : (o.g != "") ? o.g : o[3]
-         o[4] := (o.tint   != "") ? o.tint   : (o.t != "") ? o.t : o[4]
+         o.base.__get := this.get  ; Returns the empty string for unknown properties.
+         _ := ["", "", "", ""]
+         _[1] := (o.stroke != "") ? o.stroke : (o.s != "") ? o.s : _[1]
+         _[2] := (o.color  != "") ? o.color  : (o.c != "") ? o.c : _[2]
+         _[3] := (o.glow   != "") ? o.glow   : (o.g != "") ? o.g : _[3]
+         _[4] := (o.tint   != "") ? o.tint   : (o.t != "") ? o.t : _[4]
+         o := _
       } else if (o != "") {
          _ := RegExReplace(o, ":\s+", ":")
          _ := RegExReplace(_, "\s+", " ")
@@ -1595,7 +1607,7 @@ class TextRender {
       ; Call machine code function.
       DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", 0, "uint*", &size:=0, "ptr", 0, "ptr", 0)
       p := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
-      DllCall("VirtualProtect", "ptr", p, "ptr", size, "uint", 0x40, "uint*", &op) ; Allow execution from memory.
+      DllCall("VirtualProtect", "ptr", p, "ptr", size, "uint", 0x40, "uint*", &op:=0) ; Allow execution from memory.
       DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", p, "uint*", &size, "ptr", 0, "ptr", 0)
       e := DllCall(p, "ptr", Scan01, "ptr", Scan02, "uint", width, "uint", height, "uint", 4, "uint", radius, "float", opacity)
       DllCall("GlobalFree", "ptr", p)
@@ -1728,6 +1740,10 @@ class TextRender {
       return this
    }
 
+   EventDestroyWindow() {
+      this.DestroyWindow()
+   }
+
    EventMoveWindow() {
       ; Allows the user to drag to reposition the window.
       DllCall("DefWindowProc", "ptr", this.hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
@@ -1737,18 +1753,19 @@ class TextRender {
       ; Shows a bubble displaying the current window coordinates.
       if not ObjHasOwnProp(this, "friend1") {
          this.friend1 := {base: TextRender.prototype}.__New(,,, this.hwnd)
-         this.friend1.OnEvent("MiddleMouseDown", "")
+         this.friend1.OnEvent("MiddleMouseDown")
       }
 
-      CoordMode "Mouse"
-      MouseGetPos &_x, &_y
+      ; Get position in screen coordinates.
+      DllCall("GetCursorPos", "ptr", point := Buffer(8))
+         , _x := NumGet(point, 0, "int")
+         , _y := NumGet(point, 4, "int")
       WinGetPos &x, &y, &w, &h, "ahk_id " this.hwnd
-      this.friend1.Render(Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
-         , {t: 7000, r: "0.5vmin", x: _x+20, y: _y+20})
-         ;, {f: "Consolas"} ) --BROKEN
-      ;this.friend1.Render(Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
-      ;   , "t:7000 r:0.5vmin x" _x+20 " y" _y+20
-      ;   , "s:1.5vmin f:(Consolas) o:(0.5) m:0.5vmin j:right")
+      coordinates := Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
+
+      this.friend1.Render(coordinates
+         , {t: 7000, r: "0.5vmin", x: _x+20, y: _y+20}
+         , "s:1.5vmin f:(Consolas)  j:right") ;  o:(0.5) m:0.5vmin
       WinSetAlwaysOnTop(1, "ahk_id" this.friend1.hwnd)
    }
 

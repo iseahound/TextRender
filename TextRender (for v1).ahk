@@ -24,7 +24,8 @@ class TextRender {
 
       ; Create and show the window with DPI awareness PER_MONITOR_AWARE.
       dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-      this.hwnd := this.CreateWindow(title, style, styleEx, parent)
+      if !(this.hwnd := this.CreateWindow(title, style, styleEx, parent))
+         throw Exception("Max threads reached. Set #MaxThreads to a higher limit.")
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
       DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 

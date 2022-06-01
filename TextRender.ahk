@@ -428,9 +428,16 @@ class TextRender {
    }
 
    get(name, p*) {
-      return Type(this) ~= "^(?i:Map|Array)$"
-         ? (this.Has(name) ? this[name] : "")
-         : (ObjHasOwnProp(this, name) ? this.name : "")
+      switch(Type(this)) {
+         case "Array", "Map":
+            try ___ := Integer(name)
+            catch
+               ___ := name
+            finally name := ___
+            return this.Has(name) ? this[name] : ""
+         default:
+            return ObjHasOwnProp(this, name) ? this.name : ""
+      }
    }
 
    DrawOnGraphics(gfx, text := "", style1 := "", style2 := "", CanvasWidth := "", CanvasHeight := "") {
@@ -796,14 +803,14 @@ class TextRender {
       _m := this.margin_and_padding(_m, vw, vh, (m.void && _w > 0 && _h > 0) ? "1vmin" : "")
 
       ; Modify _x, _y, _w, _h with margin and padding, increasing the size of the background.
-      _w += _m[2] + _m[4] + m[2] + m[4]
-      _h += _m[1] + _m[3] + m[1] + m[3]
-      _x -= _m[4]
-      _y -= _m[1]
+      _w += _m.2 + _m.4 + m.2 + m.4
+      _h += _m.1 + _m.3 + m.1 + m.3
+      _x -= _m.4
+      _y -= _m.1
 
       ; If margin/padding are defined in the text parameter, shift the position of the text.
-      x  += m[4]
-      y  += m[1]
+      x  += m.4
+      y  += m.1
 
       ; Re-run: Condense Text using a Condensed Font if simulated text width exceeds screen width.
       if (z) {
@@ -866,7 +873,7 @@ class TextRender {
 
       ; Draw 2 - DropShadow
       if (!d.void) {
-         offset2 := d[3] + d[6] + Ceil(0.5*o[1])
+         offset2 := d.3 + d.6 + Ceil(0.5*o.1)
 
          ; If blur is present, a second canvas must be seperately processed to apply the Gaussian Blur effect.
          if (True) {
@@ -876,29 +883,29 @@ class TextRender {
             DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", DropShadow, "ptr*", &DropShadowG:=0)
             DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", 0) ; SmoothingModeNoAntiAlias
             DllCall("gdiplus\GdipSetTextRenderingHint", "ptr", DropShadowG, "int", 1) ; TextRenderingHintSingleBitPerPixelGridFit
-            ;DllCall("gdiplus\GdipGraphicsClear", "ptr", gfx, "uint", d[4] & 0xFFFFFF)
+            ;DllCall("gdiplus\GdipGraphicsClear", "ptr", gfx, "uint", d.4 & 0xFFFFFF)
             RectF := Buffer(16, 0)                ; sizeof(RectF) = 16
-               NumPut("float", d[1]+x, RectF,  0) ; Left
-               NumPut("float", d[2]+y, RectF,  4) ; Top
+               NumPut("float", d.1+x, RectF,  0) ; Left
+               NumPut("float", d.2+y, RectF,  4) ; Top
                NumPut("float",      w, RectF,  8) ; Width
                NumPut("float",      h, RectF, 12) ; Height
 
             ;CreateRectF(RC, offset2, offset2, w + 2*offset2, h + 2*offset2)
          } else {
-            ;CreateRectF(RC, x + d[1], y + d[2], w, h)
+            ;CreateRectF(RC, x + d.1, y + d.2, w, h)
             RectF := Buffer(16, 0)                ; sizeof(RectF) = 16
-               NumPut("float", d[1]+x, RectF,  0) ; Left
-               NumPut("float", d[2]+y, RectF,  4) ; Top
+               NumPut("float", d.1+x, RectF,  0) ; Left
+               NumPut("float", d.2+y, RectF,  4) ; Top
                NumPut("float",      w, RectF,  8) ; Width
                NumPut("float",      h, RectF, 12) ; Height
             DropShadowG := gfx
          }
 
          ; Use Gdip_DrawString if and only if there is a horizontal/vertical offset.
-         if (o.void && d[6] == 0)
+         if (o.void && d.6 == 0)
          {
             ; Use shadow solid brush.
-            DllCall("gdiplus\GdipCreateSolidFill", "uint", d[4], "ptr*", &pBrush:=0)
+            DllCall("gdiplus\GdipCreateSolidFill", "uint", d.4, "ptr*", &pBrush:=0)
             DllCall("gdiplus\GdipDrawString"
                      ,    "ptr", DropShadowG
                      ,   "wstr", text
@@ -922,13 +929,13 @@ class TextRender {
                      ,  "float", s
                      ,    "ptr", RectF
                      ,    "ptr", hFormat)
-            DllCall("gdiplus\GdipCreatePen1", "uint", d[4], "float", 2*d[6] + o[1], "int", 2, "ptr*", &pPen:=0)
+            DllCall("gdiplus\GdipCreatePen1", "uint", d.4, "float", 2*d.6 + o.1, "int", 2, "ptr*", &pPen:=0)
             DllCall("gdiplus\GdipSetPenLineJoin", "ptr", pPen, "uint", 2) ; LineJoinTypeRound
             DllCall("gdiplus\GdipDrawPath", "ptr", DropShadowG, "ptr", pPen, "ptr", pPath)
             DllCall("gdiplus\GdipDeletePen", "ptr", pPen)
 
             ; Fill in the outline. Turn off antialiasing and alpha blending so the gaps are 100% filled.
-            DllCall("gdiplus\GdipCreateSolidFill", "uint", d[4], "ptr*", &pBrush:=0)
+            DllCall("gdiplus\GdipCreateSolidFill", "uint", d.4, "ptr*", &pBrush:=0)
             DllCall("gdiplus\GdipSetCompositingMode", "ptr", DropShadowG, "int", 1) ; CompositingModeSourceCopy
             DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", 0) ; SmoothingModeNoAntiAlias
             DllCall("gdiplus\GdipFillPath", "ptr", DropShadowG, "ptr", pBrush, "ptr", pPath) ; DRAWING!
@@ -940,10 +947,10 @@ class TextRender {
 
          if (True) {
             DllCall("gdiplus\GdipDeleteGraphics", "ptr", DropShadowG)
-            this.GaussianBlur(DropShadow, d[3], d[5])
+            this.GaussianBlur(DropShadow, d.3, d.5)
             DllCall("gdiplus\GdipSetInterpolationMode", "ptr", gfx, "int", 5) ; NearestNeighbor
             DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", 0) ; SmoothingModeNoAntiAlias
-            ;Gdip_DrawImage(gfx, DropShadow, x + d[1] - offset2, y + d[2] - offset2, w + 2*offset2, h + 2*offset2) ; DRAWING!
+            ;Gdip_DrawImage(gfx, DropShadow, x + d.1 - offset2, y + d.2 - offset2, w + 2*offset2, h + 2*offset2) ; DRAWING!
             ;Gdip_DrawImage(gfx, DropShadow, 0, 0, A_Screenwidth, A_ScreenHeight) ; DRAWING!
             DllCall("gdiplus\GdipDrawImageRectRectI" ; DRAWING!
                      ,    "ptr", gfx
@@ -980,15 +987,15 @@ class TextRender {
                   ,    "ptr", hFormat)
 
          ; Create a glow effect around the edges.
-         if (o[3]) {
+         if (o.3) {
             DllCall("gdiplus\GdipSetClipPath", "ptr", gfx, "ptr", pPath, "int", 3) ; Exclude original text region from being drawn on.
-            ARGB := Format("0x{:02X}",((o[4] & 0xFF000000) >> 24)/o[3]) . Format("{:06X}",(o[4] & 0x00FFFFFF))
+            ARGB := Format("0x{:02X}",((o.4 & 0xFF000000) >> 24)/o.3) . Format("{:06X}",(o.4 & 0x00FFFFFF))
             DllCall("gdiplus\GdipCreatePen1", "uint", ARGB, "float", 1, "int", 2, "ptr*", &pPenGlow:=0) ; UnitTypePixel = 2
             DllCall("gdiplus\GdipSetPenLineJoin", "ptr", pPenGlow, "uint", 2) ; LineJoinTypeRound
 
-            loop o[3]
+            loop o.3
             {
-               DllCall("gdiplus\GdipSetPenWidth", "ptr", pPenGlow, "float", o[1] + 2*A_Index)
+               DllCall("gdiplus\GdipSetPenWidth", "ptr", pPenGlow, "float", o.1 + 2*A_Index)
                DllCall("gdiplus\GdipDrawPath", "ptr", gfx, "ptr", pPenGlow, "ptr", pPath) ; DRAWING!
             }
             DllCall("gdiplus\GdipDeletePen", "ptr", pPenGlow)
@@ -996,8 +1003,8 @@ class TextRender {
          }
 
          ; Draw outline text.
-         if (o[1]) {
-            DllCall("gdiplus\GdipCreatePen1", "uint", o[2], "float", o[1], "int", 2, "ptr*", &pPen:=0) ; UnitTypePixel = 2
+         if (o.1) {
+            DllCall("gdiplus\GdipCreatePen1", "uint", o.2, "float", o.1, "int", 2, "ptr*", &pPen:=0) ; UnitTypePixel = 2
             DllCall("gdiplus\GdipSetPenLineJoin", "ptr", pPen, "uint", 2) ; LineJoinTypeRound
             DllCall("gdiplus\GdipDrawPath", "ptr", gfx, "ptr", pPen, "ptr", pPath) ; DRAWING!
             DllCall("gdiplus\GdipDeletePen", "ptr", pPen)
@@ -1086,18 +1093,18 @@ class TextRender {
       y2_bound := (_c & 0xFF000000) ? Max(_y+_h, y+h) : y+h
 
       ; outline boundary.
-      o_bound  := Ceil(0.5 * o[1] + o[3])
+      o_bound  := Ceil(0.5 * o.1 + o.3)
       x_bound  := Min(x - o_bound, x_bound)
       y_bound  := Min(y - o_bound, y_bound)
       x2_bound := Max(x + w + o_bound, x2_bound)
       y2_bound := Max(y + h + o_bound, y2_bound)
 
       ; dropShadow boundary.
-      d_bound  := Ceil(0.5 * o[1] + d[3] + d[6])
-      x_bound  := Min(x + d[1] - d_bound, x_bound)
-      y_bound  := Min(y + d[2] - d_bound, y_bound)
-      x2_bound := Max(x + w + d[1] + d_bound, x2_bound)
-      y2_bound := Max(y + h + d[2] + d_bound, y2_bound)
+      d_bound  := Ceil(0.5 * o.1 + d.3 + d.6)
+      x_bound  := Min(x + d.1 - d_bound, x_bound)
+      y_bound  := Min(y + d.2 - d_bound, y_bound)
+      x2_bound := Max(x + w + d.1 + d_bound, x2_bound)
+      y2_bound := Max(y + h + d.2 + d_bound, y2_bound)
 
       return {t: t_bound
             , x: x_bound
@@ -1345,50 +1352,48 @@ class TextRender {
 
       if IsObject(d) {
          d.base.__get := this.get ; Returns the empty string for unknown properties.
-         _ := ["", "", "", "", "", ""]
-         _[1] := (d.horizontal != "") ? d.horizontal : (d.h != "") ? d.h : _[1]
-         _[2] := (d.vertical   != "") ? d.vertical   : (d.v != "") ? d.h : _[2]
-         _[3] := (d.blur       != "") ? d.blur       : (d.b != "") ? d.h : _[3]
-         _[4] := (d.color      != "") ? d.color      : (d.c != "") ? d.h : _[4]
-         _[5] := (d.opacity    != "") ? d.opacity    : (d.o != "") ? d.h : _[5]
-         _[6] := (d.size       != "") ? d.size       : (d.s != "") ? d.h : _[6]
-         d := _
+         d.1 := (d.horizontal != "") ? d.horizontal : (d.h != "") ? d.h : d.1
+         d.2 := (d.vertical   != "") ? d.vertical   : (d.v != "") ? d.h : d.2
+         d.3 := (d.blur       != "") ? d.blur       : (d.b != "") ? d.h : d.3
+         d.4 := (d.color      != "") ? d.color      : (d.c != "") ? d.h : d.4
+         d.5 := (d.opacity    != "") ? d.opacity    : (d.o != "") ? d.h : d.5
+         d.6 := (d.size       != "") ? d.size       : (d.s != "") ? d.h : d.6
       } else if (d != "") {
          _ := RegExReplace(d, ":\s+", ":")
          _ := RegExReplace(_, "\s+", " ")
          _ := StrSplit(_, " ")
-         _.push("","","","","","")
-         _[1] := ((___ := RegExReplace(d, q1    "(h(orizontal)?)"    q2, "${value}")) != d) ? ___ : _[1]
-         _[2] := ((___ := RegExReplace(d, q1    "(v(ertical)?)"      q2, "${value}")) != d) ? ___ : _[2]
-         _[3] := ((___ := RegExReplace(d, q1    "(b(lur)?)"          q2, "${value}")) != d) ? ___ : _[3]
-         _[4] := ((___ := RegExReplace(d, q1    "(c(olor)?)"         q2, "${value}")) != d) ? ___ : _[4]
-         _[5] := ((___ := RegExReplace(d, q1    "(o(pacity)?)"       q2, "${value}")) != d) ? ___ : _[5]
-         _[6] := ((___ := RegExReplace(d, q1    "(s(ize)?)"          q2, "${value}")) != d) ? ___ : _[6]
+         _.base.__get := this.get ; Returns the empty string for unknown properties.
+         _.1 := ((___ := RegExReplace(d, q1    "(h(orizontal)?)"    q2, "${value}")) != d) ? ___ : _.1
+         _.2 := ((___ := RegExReplace(d, q1    "(v(ertical)?)"      q2, "${value}")) != d) ? ___ : _.2
+         _.3 := ((___ := RegExReplace(d, q1    "(b(lur)?)"          q2, "${value}")) != d) ? ___ : _.3
+         _.4 := ((___ := RegExReplace(d, q1    "(c(olor)?)"         q2, "${value}")) != d) ? ___ : _.4
+         _.5 := ((___ := RegExReplace(d, q1    "(o(pacity)?)"       q2, "${value}")) != d) ? ___ : _.5
+         _.6 := ((___ := RegExReplace(d, q1    "(s(ize)?)"          q2, "${value}")) != d) ? ___ : _.6
          d := _
       }
       else {
-         d := [0, 0, 0, 0, 0, 0]
-         d.void := True
-         return d
+         return {void:True, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0}
       }
 
-      for i, x in d {
+      loop 6 {
+         i := A_Index
          if (i = 4) ; Don't mess with color data.
             continue
-         d[i] := (d[i] ~= valid) ? RegExReplace(d[i], "\s") : 0 ; Default for everything is 0.
-         d[i] := (d[i] ~= "i)(pt|px)$") ? SubStr(d[i], 1, -2) : d[i]
-         d[i] := (d[i] ~= "i)vw$") ? RegExReplace(d[i], "i)vw$") * vw : d[i]
-         d[i] := (d[i] ~= "i)vh$") ? RegExReplace(d[i], "i)vh$") * vh : d[i]
-         d[i] := (d[i] ~= "i)vmin$") ? RegExReplace(d[i], "i)vmin$") * vmin : d[i]
+         d.%i% := (d.%i% ~= valid) ? RegExReplace(d.%i%, "\s") : 0 ; Default for everything is 0.
+         d.%i% := (d.%i% ~= "i)(pt|px)$") ? SubStr(d.%i%, 1, -2) : d.%i%
+         d.%i% := (d.%i% ~= "i)vw$") ? RegExReplace(d.%i%, "i)vw$") * vw : d.%i%
+         d.%i% := (d.%i% ~= "i)vh$") ? RegExReplace(d.%i%, "i)vh$") * vh : d.%i%
+         d.%i% := (d.%i% ~= "i)vmin$") ? RegExReplace(d.%i%, "i)vmin$") * vmin : d.%i%
       }
 
-      d[1] := (d[1] ~= "%$") ? RTrim(d[1], "%") * 0.01 * width : d[1]
-      d[2] := (d[2] ~= "%$") ? RTrim(d[2], "%") * 0.01 * height : d[2]
-      d[3] := (d[3] ~= "%$") ? RTrim(d[3], "%") * 0.01 * font_size : d[3]
-      d[4] := this.color(d[4], 0xFFFF0000) ; Default color is red.
-      d[5] := (d[5] ~= "%$") ? RTrim(d[5], "%") / 100 : d[5]
-      d[5] := (d[5] <= 0 || d[5] > 1) ? 1 : d[5] ; Range Opacity is a float from 0-1.
-      d[6] := (d[6] ~= "%$") ? RTrim(d[6], "%") * 0.01 * font_size : d[6]
+      d.1 := (d.1 ~= "%$") ? RTrim(d.1, "%") * 0.01 * width : d.1
+      d.2 := (d.2 ~= "%$") ? RTrim(d.2, "%") * 0.01 * height : d.2
+      d.3 := (d.3 ~= "%$") ? RTrim(d.3, "%") * 0.01 * font_size : d.3
+      d.4 := this.color(d.4, 0xFFFF0000) ; Default color is red.
+      d.5 := (d.5 ~= "%$") ? RTrim(d.5, "%") / 100 : d.5
+      d.5 := (d.5 <= 0 || d.5 > 1) ? 1 : d.5 ; Range Opacity is a float from 0-1.
+      d.6 := (d.6 ~= "%$") ? RTrim(d.6, "%") * 0.01 * font_size : d.6
+
       return d
    }
 
@@ -1419,53 +1424,54 @@ class TextRender {
 
       if IsObject(m) {
          m.base.__get := this.get ; Returns the empty string for unknown properties.
-         _ := ["","","",""]
-         _[1] := (m.top    != "") ? m.top    : (m.t != "") ? m.t : _[1]
-         _[2] := (m.right  != "") ? m.right  : (m.r != "") ? m.r : _[2]
-         _[3] := (m.bottom != "") ? m.bottom : (m.b != "") ? m.b : _[3]
-         _[4] := (m.left   != "") ? m.left   : (m.l != "") ? m.l : _[4]
-         m := _
+         m.1 := (m.top    != "") ? m.top    : (m.t != "") ? m.t : m.1
+         m.2 := (m.right  != "") ? m.right  : (m.r != "") ? m.r : m.2
+         m.3 := (m.bottom != "") ? m.bottom : (m.b != "") ? m.b : m.3
+         m.4 := (m.left   != "") ? m.left   : (m.l != "") ? m.l : m.4
       } else if (m != "") {
          _ := RegExReplace(m, ":\s+", ":")
          _ := RegExReplace(_, "\s+", " ")
          _ := StrSplit(_, " ")
-         _.push("","","","")
-         _[1] := ((___ := RegExReplace(m, q1    "(t(op)?)"           q2, "${value}")) != m) ? ___ : _[1]
-         _[2] := ((___ := RegExReplace(m, q1    "(r(ight)?)"         q2, "${value}")) != m) ? ___ : _[2]
-         _[3] := ((___ := RegExReplace(m, q1    "(b(ottom)?)"        q2, "${value}")) != m) ? ___ : _[3]
-         _[4] := ((___ := RegExReplace(m, q1    "(l(eft)?)"          q2, "${value}")) != m) ? ___ : _[4]
+         _.base.__get := this.get ; Returns the empty string for unknown properties.
+         _.1 := ((___ := RegExReplace(m, q1    "(t(op)?)"           q2, "${value}")) != m) ? ___ : _.1
+         _.2 := ((___ := RegExReplace(m, q1    "(r(ight)?)"         q2, "${value}")) != m) ? ___ : _.2
+         _.3 := ((___ := RegExReplace(m, q1    "(b(ottom)?)"        q2, "${value}")) != m) ? ___ : _.3
+         _.4 := ((___ := RegExReplace(m, q1    "(l(eft)?)"          q2, "${value}")) != m) ? ___ : _.4
          m := _
-      } else if (default != "")
+      } else if (default != "") {
          m := [default, default, default, default]
-      else {
-         m := [0, 0, 0, 0]
-         m.void := True
-         return m
+         m.base.__get := this.get ; Returns the empty string for unknown properties.
+      } else {
+         return {void:True, 1:0, 2:0, 3:0, 4:0}
       }
 
       ; Follow CSS guidelines for margin!
-      if (m[2] == "" && m[3] == "" && m[4] == "")
-         m[4] := m[3] := m[2] := m[1], exception := True
-      if (m[3] == "" && m[4] == "")
-         m[4] := m[2], m[3] := m[1]
-      if (m[4] == "")
-         m[4] := m[2]
+      exception := False
+      if (m.2 == "" && m.3 == "" && m.4 == "")
+         m.4 := m.3 := m.2 := m.1, exception := True
+      if (m.3 == "" && m.4 == "")
+         m.4 := m.2, m.3 := m.1
+      if (m.4 == "")
+         m.4 := m.2
 
-      for i, x in m {
-         m[i] := (m[i] ~= valid) ? RegExReplace(m[i], "\s") : default
-         m[i] := (m[i] ~= "i)(pt|px)$") ? SubStr(m[i], 1, -2) : m[i]
-         m[i] := (m[i] ~= "i)vw$") ? RegExReplace(m[i], "i)vw$") * vw : m[i]
-         m[i] := (m[i] ~= "i)vh$") ? RegExReplace(m[i], "i)vh$") * vh : m[i]
-         m[i] := (m[i] ~= "i)vmin$") ? RegExReplace(m[i], "i)vmin$") * vmin : m[i]
+      loop 4 {
+         i := A_Index
+         m.%i% := (m.%i% ~= valid) ? RegExReplace(m.%i%, "\s") : default
+         m.%i% := (m.%i% ~= "i)(pt|px)$") ? SubStr(m.%i%, 1, -2) : m.%i%
+         m.%i% := (m.%i% ~= "i)vw$") ? RegExReplace(m.%i%, "i)vw$") * vw : m.%i%
+         m.%i% := (m.%i% ~= "i)vh$") ? RegExReplace(m.%i%, "i)vh$") * vh : m.%i%
+         m.%i% := (m.%i% ~= "i)vmin$") ? RegExReplace(m.%i%, "i)vmin$") * vmin : m.%i%
       }
 
-      m[1] := (m[1] ~= "%$") ? RTrim(m[1], "%") * vh : m[1]
-      m[2] := (m[2] ~= "%$") ? RTrim(m[2], "%") * (exception ? vh : vw) : m[2]
-      m[3] := (m[3] ~= "%$") ? RTrim(m[3], "%") * vh : m[3]
-      m[4] := (m[4] ~= "%$") ? RTrim(m[4], "%") * (exception ? vh : vw) : m[4]
+      m.1 := (m.1 ~= "%$") ? RTrim(m.1, "%") * vh : m.1
+      m.2 := (m.2 ~= "%$") ? RTrim(m.2, "%") * (exception ? vh : vw) : m.2
+      m.3 := (m.3 ~= "%$") ? RTrim(m.3, "%") * vh : m.3
+      m.4 := (m.4 ~= "%$") ? RTrim(m.4, "%") * (exception ? vh : vw) : m.4
 
-      for i, x in m
-         m[i] := Round(m[i])
+      ; Convert Float to Integer
+      loop 4
+         if i := A_Index
+            m.%i% := Round(m.%i%)
 
       return m
    }
@@ -1478,43 +1484,41 @@ class TextRender {
 
       if IsObject(o) {
          o.base.__get := this.get  ; Returns the empty string for unknown properties.
-         _ := ["", "", "", ""]
-         _[1] := (o.stroke != "") ? o.stroke : (o.s != "") ? o.s : _[1]
-         _[2] := (o.color  != "") ? o.color  : (o.c != "") ? o.c : _[2]
-         _[3] := (o.glow   != "") ? o.glow   : (o.g != "") ? o.g : _[3]
-         _[4] := (o.tint   != "") ? o.tint   : (o.t != "") ? o.t : _[4]
-         o := _
+         o.1 := (o.stroke != "") ? o.stroke : (o.s != "") ? o.s : o.1
+         o.2 := (o.color  != "") ? o.color  : (o.c != "") ? o.c : o.2
+         o.3 := (o.glow   != "") ? o.glow   : (o.g != "") ? o.g : o.3
+         o.4 := (o.tint   != "") ? o.tint   : (o.t != "") ? o.t : o.4
       } else if (o != "") {
          _ := RegExReplace(o, ":\s+", ":")
          _ := RegExReplace(_, "\s+", " ")
          _ := StrSplit(_, " ")
-         _.push("","","","")
-         _[1] := ((___ := RegExReplace(o, q1    "(s(troke)?)"        q2, "${value}")) != o) ? ___ : _[1]
-         _[2] := ((___ := RegExReplace(o, q1    "(c(olor)?)"         q2, "${value}")) != o) ? ___ : _[2]
-         _[3] := ((___ := RegExReplace(o, q1    "(g(low)?)"          q2, "${value}")) != o) ? ___ : _[3]
-         _[4] := ((___ := RegExReplace(o, q1    "(t(int)?)"          q2, "${value}")) != o) ? ___ : _[4]
+         _.base.__get := this.get ; Returns the empty string for unknown properties.
+         _.1 := ((___ := RegExReplace(o, q1    "(s(troke)?)"        q2, "${value}")) != o) ? ___ : _.1
+         _.2 := ((___ := RegExReplace(o, q1    "(c(olor)?)"         q2, "${value}")) != o) ? ___ : _.2
+         _.3 := ((___ := RegExReplace(o, q1    "(g(low)?)"          q2, "${value}")) != o) ? ___ : _.3
+         _.4 := ((___ := RegExReplace(o, q1    "(t(int)?)"          q2, "${value}")) != o) ? ___ : _.4
          o := _
       }
       else {
-         o := [0, 0, 0, 0]
-         o.void := True
-         return o
+         return {void:True, 1:0, 2:0, 3:0, 4:0}
       }
 
-      for i, x in o {
+      loop 4 {
+         i := A_Index
          if (i = 2) || (i = 4) ; Don't mess with color data.
             continue
-         o[i] := (o[i] ~= valid_positive) ? RegExReplace(o[i], "\s") : 0 ; Default for everything is 0.
-         o[i] := (o[i] ~= "i)(pt|px)$") ? SubStr(o[i], 1, -2) : o[i]
-         o[i] := (o[i] ~= "i)vw$") ? RegExReplace(o[i], "i)vw$") * vw : o[i]
-         o[i] := (o[i] ~= "i)vh$") ? RegExReplace(o[i], "i)vh$") * vh : o[i]
-         o[i] := (o[i] ~= "i)vmin$") ? RegExReplace(o[i], "i)vmin$") * vmin : o[i]
+         o.%i% := (o.%i% ~= valid_positive) ? RegExReplace(o.%i%, "\s") : 0 ; Default for everything is 0.
+         o.%i% := (o.%i% ~= "i)(pt|px)$") ? SubStr(o.%i%, 1, -2) : o.%i%
+         o.%i% := (o.%i% ~= "i)vw$") ? RegExReplace(o.%i%, "i)vw$") * vw : o.%i%
+         o.%i% := (o.%i% ~= "i)vh$") ? RegExReplace(o.%i%, "i)vh$") * vh : o.%i%
+         o.%i% := (o.%i% ~= "i)vmin$") ? RegExReplace(o.%i%, "i)vmin$") * vmin : o.%i%
       }
 
-      o[1] := (o[1] ~= "%$") ? RTrim(o[1], "%") * 0.01 * font_size : o[1]
-      o[2] := this.color(o[2], font_color) ; Default color is the text font color.
-      o[3] := (o[3] ~= "%$") ? RTrim(o[3], "%") * 0.01 * font_size : o[3]
-      o[4] := this.color(o[4], o[2]) ; Default color is outline color.
+      o.1 := (o.1 ~= "%$") ? RTrim(o.1, "%") * 0.01 * font_size : o.1
+      o.2 := this.color(o.2, font_color) ; Default color is the text font color.
+      o.3 := (o.3 ~= "%$") ? RTrim(o.3, "%") * 0.01 * font_size : o.3
+      o.4 := this.color(o.4, o.2) ; Default color is outline color.
+
       return o
    }
 
@@ -2582,10 +2586,10 @@ class ImageRender extends TextRender {
       m  := this.margin_and_padding(m, vw, vh)
 
       ; Calculate border using margin.
-      _w := w + m[2] + m[4]
-      _h := h + m[1] + m[3]
-      _x := x - m[4]
-      _y := y - m[1]
+      _w := w + m.2 + m.4
+      _h := h + m.1 + m.3
+      _x := x - m.4
+      _y := y - m.1
 
       ; Save original Graphics settings.
       DllCall("gdiplus\GdipSaveGraphics", "ptr", gfx, "ptr*", &pState:=0)

@@ -461,6 +461,7 @@ class TextRender {
          _r  := (style1.radius != "")   ? style1.radius   : style1.r
          _c  := (style1.color != "")    ? style1.color    : style1.c
          _m  := (style1.margin != "")   ? style1.margin   : style1.m
+         _p  := (style1.padding != "")  ? style1.padding  : style1.p
          _q  := (style1.quality != "")  ? style1.quality  : (style1.q) ? style1.q : style1.SmoothingMode
       } else {
          RegExReplace(style1, "\s+", A_Space) ; Limit whitespace for fixed width look-behinds.
@@ -473,6 +474,7 @@ class TextRender {
          _r  := ((___ := RegExReplace(style1, q1    "(r(adius)?)"        q2, "${value}")) != style1) ? ___ : ""
          _c  := ((___ := RegExReplace(style1, q1    "(c(olor)?)"         q2, "${value}")) != style1) ? ___ : ""
          _m  := ((___ := RegExReplace(style1, q1    "(m(argin)?)"        q2, "${value}")) != style1) ? ___ : ""
+         _p  := ((___ := RegExReplace(style1, q1    "(p(adding)?)"       q2, "${value}")) != style1) ? ___ : ""
          _q  := ((___ := RegExReplace(style1, q1    "(q(uality)?)"       q2, "${value}")) != style1) ? ___ : ""
       }
 
@@ -672,25 +674,25 @@ class TextRender {
       (_h == "") && _h := height
 
       ; Get background anchor. This is where the origin of the background is located.
-      _a := (_a ~= "i)top" && _a ~= "i)left") ? 1
-         : (_a ~= "i)top" && _a ~= "i)cent(er|re)") ? 2
-         : (_a ~= "i)top" && _a ~= "i)right") ? 3
-         : (_a ~= "i)cent(er|re)" && _a ~= "i)left") ? 4
-         : (_a ~= "i)cent(er|re)" && _a ~= "i)right") ? 6
-         : (_a ~= "i)bottom" && _a ~= "i)left") ? 7
-         : (_a ~= "i)bottom" && _a ~= "i)cent(er|re)") ? 8
-         : (_a ~= "i)bottom" && _a ~= "i)right") ? 9
-         : (_a ~= "i)top") ? 2
-         : (_a ~= "i)left") ? 4
-         : (_a ~= "i)right") ? 6
-         : (_a ~= "i)bottom") ? 8
-         : (_a ~= "i)cent(er|re)") ? 5
-         : (_a ~= "^[1-9]$") ? _a
-         : 1 ; Default anchor is top-left.
+      _a := (_a ~= "i)top" && _a ~= "i)left") ? 0
+         : (_a ~= "i)top" && _a ~= "i)cent(er|re)") ? 1
+         : (_a ~= "i)top" && _a ~= "i)right") ? 2
+         : (_a ~= "i)cent(er|re)" && _a ~= "i)left") ? 3
+         : (_a ~= "i)cent(er|re)" && _a ~= "i)right") ? 5
+         : (_a ~= "i)bottom" && _a ~= "i)left") ? 6
+         : (_a ~= "i)bottom" && _a ~= "i)cent(er|re)") ? 7
+         : (_a ~= "i)bottom" && _a ~= "i)right") ? 8
+         : (_a ~= "i)top") ? 1
+         : (_a ~= "i)left") ? 3
+         : (_a ~= "i)right") ? 5
+         : (_a ~= "i)bottom") ? 7
+         : (_a ~= "i)cent(er|re)") ? 4
+         : (_a ~= "^[1-9]$") ? _a-1
+         : 0 ; Default anchor is top-left.
 
       ; The anchor can be implied from _x and _y (left, center, right, top, bottom).
-      _a := (_x ~= "i)left") ? 1+(((_a-1)//3)*3) : (_x ~= "i)cent(er|re)") ? 2+(((_a-1)//3)*3) : (_x ~= "i)right") ? 3+(((_a-1)//3)*3) : _a
-      _a := (_y ~= "i)top") ? 1+(mod(_a-1,3)) : (_y ~= "i)cent(er|re)") ? 4+(mod(_a-1,3)) : (_y ~= "i)bottom") ? 7+(mod(_a-1,3)) : _a
+      _a := (_x ~= "i)left") ? 0+(_a//3*3) : (_x ~= "i)cent(er|re)") ? 1+(_a//3*3) : (_x ~= "i)right") ? 2+(_a//3*3) : _a
+      _a := (_y ~= "i)top") ? 0+mod(_a,3) : (_y ~= "i)cent(er|re)") ? 3+mod(_a,3) : (_y ~= "i)bottom") ? 6+mod(_a,3) : _a
 
       ; Convert English words to numbers. Don't mess with these values any further.
       _x := (_x ~= "i)left") ? 0 : (_x ~= "i)cent(er|re)") ? 0.5*CanvasWidth : (_x ~= "i)right") ? CanvasWidth : _x
@@ -711,14 +713,14 @@ class TextRender {
 
       ; Default x and y to center of the canvas. Default anchor to horizontal center and vertical center.
       if (_x == "")
-         _x := 0.5*CanvasWidth, _a := 2+(((_a-1)//3)*3)
+         _x := 0.5*CanvasWidth, _a := 1+(_a//3*3)
       if (_y == "")
-         _y := 0.5*CanvasHeight, _a := 4+(mod(_a-1,3))
+         _y := 0.5*CanvasHeight, _a := 3+mod(_a,3)
 
       ; Now let's modify the _x and _y values with the _anchor, so that the image has a new point of origin.
       ; We need our calculated _width and _height for this!
-      _x -= (mod(_a-1,3) == 0) ? 0 : (mod(_a-1,3) == 1) ? _w/2 : (mod(_a-1,3) == 2) ? _w : 0
-      _y -= (((_a-1)//3) == 0) ? 0 : (((_a-1)//3) == 1) ? _h/2 : (((_a-1)//3) == 2) ? _h : 0
+      _x -= (mod(_a,3) == 0) ? 0 : (mod(_a,3) == 1) ? _w/2 : (mod(_a,3) == 2) ? _w : 0
+      _y -= ((_a//3) == 0) ? 0 : ((_a//3) == 1) ? _h/2 : ((_a//3) == 2) ? _h : 0
 
       ; Prevent half-pixel rendering and keep image sharp.
       _w := Round(_x + _w) - Round(_x) ; Use real x2 coordinate to determine width.
@@ -750,26 +752,26 @@ class TextRender {
          y  := (v = 1) ? _y + (_h/2) - (h/2) : (v = 2) ? _y + _h - h : y
 
       ; Get text anchor. This is where the origin of the text is located.
-      a := (a ~= "i)top" && a ~= "i)left") ? 1
-         : (a ~= "i)top" && a ~= "i)cent(er|re)") ? 2
-         : (a ~= "i)top" && a ~= "i)right") ? 3
-         : (a ~= "i)cent(er|re)" && a ~= "i)left") ? 4
-         : (a ~= "i)cent(er|re)" && a ~= "i)right") ? 6
-         : (a ~= "i)bottom" && a ~= "i)left") ? 7
-         : (a ~= "i)bottom" && a ~= "i)cent(er|re)") ? 8
-         : (a ~= "i)bottom" && a ~= "i)right") ? 9
-         : (a ~= "i)top") ? 2
-         : (a ~= "i)left") ? 4
-         : (a ~= "i)right") ? 6
-         : (a ~= "i)bottom") ? 8
-         : (a ~= "i)cent(er|re)") ? 5
-         : (a ~= "^[1-9]$") ? a
-         : 1 ; Default anchor is top-left.
+      a := (a ~= "i)top" && a ~= "i)left") ? 0
+         : (a ~= "i)top" && a ~= "i)cent(er|re)") ? 1
+         : (a ~= "i)top" && a ~= "i)right") ? 2
+         : (a ~= "i)cent(er|re)" && a ~= "i)left") ? 3
+         : (a ~= "i)cent(er|re)" && a ~= "i)right") ? 5
+         : (a ~= "i)bottom" && a ~= "i)left") ? 6
+         : (a ~= "i)bottom" && a ~= "i)cent(er|re)") ? 7
+         : (a ~= "i)bottom" && a ~= "i)right") ? 8
+         : (a ~= "i)top") ? 1
+         : (a ~= "i)left") ? 3
+         : (a ~= "i)right") ? 5
+         : (a ~= "i)bottom") ? 7
+         : (a ~= "i)cent(er|re)") ? 4
+         : (a ~= "^[1-9]$") ? a-1
+         : 0 ; Default anchor is top-left.
 
       ; Text x and text y can be specified as locations (left, center, right, top, bottom).
       ; These location words in text x and text y take precedence over the values in the text anchor.
-      a  := ( x ~= "i)left") ? 1+((( a-1)//3)*3) : ( x ~= "i)cent(er|re)") ? 2+((( a-1)//3)*3) : ( x ~= "i)right") ? 3+((( a-1)//3)*3) :  a
-      a  := ( y ~= "i)top") ? 1+(mod( a-1,3)) : ( y ~= "i)cent(er|re)") ? 4+(mod( a-1,3)) : ( y ~= "i)bottom") ? 7+(mod( a-1,3)) :  a
+      a  := ( x ~= "i)left") ? 0+( a//3*3) : ( x ~= "i)cent(er|re)") ? 1+( a//3*3) : ( x ~= "i)right") ? 2+( a//3*3) :  a
+      a  := ( y ~= "i)top") ? 0+mod( a,3) : ( y ~= "i)cent(er|re)") ? 3+mod( a,3) : ( y ~= "i)bottom") ? 6+mod( a,3) :  a
 
       ; Convert English words to numbers. Don't mess with these values any further.
       ; Also, these values are relative to the background.
@@ -795,22 +797,26 @@ class TextRender {
       ; Modify text x and text y values with the anchor, so that the text has a new point of origin.
       ; The text anchor is relative to the text width and height before margin/padding.
       ; This is NOT relative to the background width and height.
-      x  -= (mod(a-1,3) == 0) ? 0 : (mod(a-1,3) == 1) ? w/2 : (mod(a-1,3) == 2) ? w : 0
-      y  -= (((a-1)//3) == 0) ? 0 : (((a-1)//3) == 1) ? h/2 : (((a-1)//3) == 2) ? h : 0
+      x  -= (mod(a,3) == 0) ? 0 : (mod(a,3) == 1) ? w/2 : (mod(a,3) == 2) ? w : 0
+      y  -= ((a//3) == 0) ? 0 : ((a//3) == 1) ? h/2 : ((a//3) == 2) ? h : 0
 
       ; Get margin. Default margin is 1vmin.
       m  := this.margin_and_padding( m, vw, vh)
-      _m := this.margin_and_padding(_m, vw, vh, (m.void && _w > 0 && _h > 0) ? "1vmin" : "")
+      _m := this.margin_and_padding(_m, vw, vh, (text != "" && m.void && _w > 0 && _h > 0) ? "1vmin" : "")
 
       ; Modify _x, _y, _w, _h with margin and padding, increasing the size of the background.
       _w += _m.2 + _m.4 + m.2 + m.4
       _h += _m.1 + _m.3 + m.1 + m.3
       _x -= _m.4
       _y -= _m.1
+      MsgBox mod(_a,3)
+      _x -= m.2 + m.4
+;MsgBox m.2 ", " m.4
+      ;_x -= (mod(a,3) == 0) ? m.4 : (mod(a,3) == 1) ? 0 : (mod(a,3) == 2) ? m.2 + m.4 : _x
 
       ; If margin/padding are defined in the text parameter, shift the position of the text.
-      x  += m.4
-      y  += m.1
+      ;x  += m.4
+      ;y  += m.1
 
       ; Re-run: Condense Text using a Condensed Font if simulated text width exceeds screen width.
       if (z) {
@@ -2546,8 +2552,8 @@ class ImageRender extends TextRender {
          : (a ~= "i)cent(er|re)") ? 5 : (a ~= "^[1-9]$") ? a : 1 ; Default anchor is top-left.
 
       ; The anchor can be implied and overwritten by x and y (left, center, right, top, bottom).
-      a  := ( x ~= "i)left") ? 1+((( a-1)//3)*3) : ( x ~= "i)cent(er|re)") ? 2+((( a-1)//3)*3) : ( x ~= "i)right") ? 3+((( a-1)//3)*3) :  a
-      a  := ( y ~= "i)top") ? 1+(mod( a-1,3)) : ( y ~= "i)cent(er|re)") ? 4+(mod( a-1,3)) : ( y ~= "i)bottom") ? 7+(mod( a-1,3)) :  a
+      a  := ( x ~= "i)left") ? 1+(( a//3)*3) : ( x ~= "i)cent(er|re)") ? 2+(( a//3)*3) : ( x ~= "i)right") ? 3+(( a//3)*3) :  a
+      a  := ( y ~= "i)top") ? 1+(mod( a,3)) : ( y ~= "i)cent(er|re)") ? 4+(mod( a,3)) : ( y ~= "i)bottom") ? 7+(mod( a,3)) :  a
 
       ; Convert English words to numbers. Don't mess with these values any further.
       x  := ( x ~= "i)left") ? 0 : (x ~= "i)cent(er|re)") ? 0.5*CanvasWidth : (x ~= "i)right") ? CanvasWidth : x
@@ -2568,13 +2574,13 @@ class ImageRender extends TextRender {
 
       ; Default x and y.
       if (x == "")
-         x := 0.5*CanvasWidth, a := 2+((( a-1)//3)*3)
+         x := 0.5*CanvasWidth, a := 1+( a//3*3)
       if (y == "")
-         y := 0.5*CanvasHeight, a := 4+(mod( a-1,3))
+         y := 0.5*CanvasHeight, a := 3+(mod( a,3))
 
       ; Modify x and y values with the anchor, so that the image has a new point of origin.
-      x  -= (mod(a-1,3) == 0) ? 0 : (mod(a-1,3) == 1) ? w/2 : (mod(a-1,3) == 2) ? w : 0
-      y  -= (((a-1)//3) == 0) ? 0 : (((a-1)//3) == 1) ? h/2 : (((a-1)//3) == 2) ? h : 0
+      x  -= (mod(a,3) == 0) ? 0 : (mod(a,3) == 1) ? w/2 : (mod(a,3) == 2) ? w : 0
+      y  -= ((a//3) == 0) ? 0 : ((a//3) == 1) ? h/2 : ((a//3) == 2) ? h : 0
 
       ; Prevent half-pixel rendering and keep image sharp.
       w  := Round(x + w) - Round(x)    ; Use real x2 coordinate to determine width.

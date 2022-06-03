@@ -796,8 +796,8 @@ class TextRender {
       y  := ( y ~= "%$") ? RegExReplace( y, "%$") * 0.01 * _h :  y
 
       ; If margin/padding are defined in the text parameter, shift the position of the text.
-      x += m.4
-      y += m.1
+      x += (j == 0) ? m.4 : (j == 1) ? (m.4/2)-(m.2/2) : -m.2
+      y += (v == 0) ? m.1 : (v == 1) ? (m.1/2)-(m.3/2) : -m.3
 
       ; Modify text x and text y values with the anchor, so that the text has a new point of origin.
       ; The text anchor is relative to the text width and height before margin/padding.
@@ -1769,7 +1769,7 @@ class TextRender {
 
       this.friend1.Render(coordinates
          , {t: 7000, r: "0.5vmin", x: _x+20, y: _y+20}
-         , "s:1.5vmin f:(Consolas) o:(0.5) m:0.5vmin j:right")
+         , "s:1.5vmin f:(Consolas) o:(0.5) m:0.5vmin j:left")
       WinSet AlwaysOnTop, On, % "ahk_id" this.friend1.hwnd
    }
 

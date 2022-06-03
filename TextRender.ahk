@@ -1778,7 +1778,7 @@ class TextRender {
 
       this.friend1.Render(coordinates
          , {t: 7000, r: "0.5vmin", x: _x+20, y: _y+20}
-         , "s:1.5vmin f:(Consolas) o:(0.5) m:0.5vmin j:left")
+         , "s:1.5vmin f:(Consolas) o:(0.5) m:0.5vmin j:right")
       WinSetAlwaysOnTop(1, "ahk_id" this.friend1.hwnd)
    }
 

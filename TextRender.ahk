@@ -96,6 +96,11 @@ class TextRender {
       return this
    }
 
+   TopMost() {
+      WinSetAlwaysOnTop(1, "ahk_id" this.hwnd)
+      return this
+   }
+
    AlwaysOnTop() {
       WinSetAlwaysOnTop(-1, "ahk_id" this.hwnd)
       return this
@@ -461,7 +466,6 @@ class TextRender {
          _r  := (style1.radius != "")   ? style1.radius   : style1.r
          _c  := (style1.color != "")    ? style1.color    : style1.c
          _m  := (style1.margin != "")   ? style1.margin   : style1.m
-         _p  := (style1.padding != "")  ? style1.padding  : style1.p
          _q  := (style1.quality != "")  ? style1.quality  : (style1.q) ? style1.q : style1.SmoothingMode
       } else {
          RegExReplace(style1, "\s+", A_Space) ; Limit whitespace for fixed width look-behinds.
@@ -474,12 +478,11 @@ class TextRender {
          _r  := ((___ := RegExReplace(style1, q1    "(r(adius)?)"        q2, "${value}")) != style1) ? ___ : ""
          _c  := ((___ := RegExReplace(style1, q1    "(c(olor)?)"         q2, "${value}")) != style1) ? ___ : ""
          _m  := ((___ := RegExReplace(style1, q1    "(m(argin)?)"        q2, "${value}")) != style1) ? ___ : ""
-         _p  := ((___ := RegExReplace(style1, q1    "(p(adding)?)"       q2, "${value}")) != style1) ? ___ : ""
          _q  := ((___ := RegExReplace(style1, q1    "(q(uality)?)"       q2, "${value}")) != style1) ? ___ : ""
       }
 
       if IsObject(style2) {
-         style2.base := {__get: this.get} ; Returns the empty string for unknown properties.
+         style2.base.__get := this.get ; Returns the empty string for unknown properties.
          t  := (style2.time != "")        ? style2.time        : style2.t
          a  := (style2.anchor != "")      ? style2.anchor      : style2.a
          x  := (style2.left != "")        ? style2.left        : style2.x
@@ -673,8 +676,17 @@ class TextRender {
       (_w == "") && _w := width
       (_h == "") && _h := height
 
+      ; Get margin. Default margin is 1vmin.
+      m  := this.margin_and_padding( m, vw, vh)
+      _m := this.margin_and_padding(_m, vw, vh, (text != "" && m.void && _w > 0 && _h > 0) ? "1vmin" : "")
+
+      ; Modify _w, _h with margin and padding, increasing the size of the background.
+      _w += m.2 + m.4
+      _h += m.1 + m.3
+
       ; Get background anchor. This is where the origin of the background is located.
-      _a := (_a ~= "i)top" && _a ~= "i)left") ? 0
+      _a := (_a ~= "^[1-9]$") ? _a-1
+         : (_a ~= "i)top" && _a ~= "i)left") ? 0
          : (_a ~= "i)top" && _a ~= "i)cent(er|re)") ? 1
          : (_a ~= "i)top" && _a ~= "i)right") ? 2
          : (_a ~= "i)cent(er|re)" && _a ~= "i)left") ? 3
@@ -687,12 +699,10 @@ class TextRender {
          : (_a ~= "i)right") ? 5
          : (_a ~= "i)bottom") ? 7
          : (_a ~= "i)cent(er|re)") ? 4
-         : (_a ~= "^[1-9]$") ? _a-1
-         : 0 ; Default anchor is top-left.
-
-      ; The anchor can be implied from _x and _y (left, center, right, top, bottom).
-      _a := (_x ~= "i)left") ? 0+(_a//3*3) : (_x ~= "i)cent(er|re)") ? 1+(_a//3*3) : (_x ~= "i)right") ? 2+(_a//3*3) : _a
-      _a := (_y ~= "i)top") ? 0+mod(_a,3) : (_y ~= "i)cent(er|re)") ? 3+mod(_a,3) : (_y ~= "i)bottom") ? 6+mod(_a,3) : _a
+         ; The anchor can be implied from _x and _y (left, center, right, top, bottom).
+         : ((_x ~= "i)left") ? 0 : (_x ~= "i)cent(er|re)") ? 1 : (_x ~= "i)right") ? 2 : 0)
+         + ((_y ~= "i)top") ? 0 : (_y ~= "i)cent(er|re)") ? 3 : (_y ~= "i)bottom") ? 6 : 0)
+         ; Default anchor is top-left (0).
 
       ; Convert English words to numbers. Don't mess with these values any further.
       _x := (_x ~= "i)left") ? 0 : (_x ~= "i)cent(er|re)") ? 0.5*CanvasWidth : (_x ~= "i)right") ? CanvasWidth : _x
@@ -794,29 +804,21 @@ class TextRender {
       y  := ( y ~= "i)vmin$") ? RegExReplace( y, "i)vmin$") * vmin :  y
       y  := ( y ~= "%$") ? RegExReplace( y, "%$") * 0.01 * _h :  y
 
+      ; If margin/padding are defined in the text parameter, shift the position of the text.
+      x += m.4
+      y += m.1
+
       ; Modify text x and text y values with the anchor, so that the text has a new point of origin.
       ; The text anchor is relative to the text width and height before margin/padding.
       ; This is NOT relative to the background width and height.
       x  -= (mod(a,3) == 0) ? 0 : (mod(a,3) == 1) ? w/2 : (mod(a,3) == 2) ? w : 0
       y  -= ((a//3) == 0) ? 0 : ((a//3) == 1) ? h/2 : ((a//3) == 2) ? h : 0
 
-      ; Get margin. Default margin is 1vmin.
-      m  := this.margin_and_padding( m, vw, vh)
-      _m := this.margin_and_padding(_m, vw, vh, (text != "" && m.void && _w > 0 && _h > 0) ? "1vmin" : "")
-
       ; Modify _x, _y, _w, _h with margin and padding, increasing the size of the background.
-      _w += _m.2 + _m.4 + m.2 + m.4
-      _h += _m.1 + _m.3 + m.1 + m.3
+      _w += _m.4 + _m.2
+      _h += _m.1 + _m.3
       _x -= _m.4
       _y -= _m.1
-      MsgBox mod(_a,3)
-      _x -= m.2 + m.4
-;MsgBox m.2 ", " m.4
-      ;_x -= (mod(a,3) == 0) ? m.4 : (mod(a,3) == 1) ? 0 : (mod(a,3) == 2) ? m.2 + m.4 : _x
-
-      ; If margin/padding are defined in the text parameter, shift the position of the text.
-      ;x  += m.4
-      ;y  += m.1
 
       ; Re-run: Condense Text using a Condensed Font if simulated text width exceeds screen width.
       if (z) {

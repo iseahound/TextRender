@@ -61,8 +61,10 @@ class TextRender {
 
       ; Re-add the reference to avoid calling __Delete() twice.
       ; An unmanaged reference to "this" should be deleted manually.
-      ObjAddRef(ObjPtr(this))
-      TextRender.windows[this.hwnd] := ""
+      if IsObject(TextRender) {
+         ObjAddRef(ObjPtr(this))
+         TextRender.windows[this.hwnd] := ""
+      }
    }
 
    Default() {
@@ -2308,6 +2310,9 @@ class TextRender {
    }
 
    gdiplusShutdown(cotype := "", pBitmap := "") {
+      if not IsObject(TextRender)
+         return
+
       TextRender.gdiplus--
 
       ; When a buffer object is deleted a bitmap is sent here for disposal.

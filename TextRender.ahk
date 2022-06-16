@@ -1689,14 +1689,14 @@ class TextRender {
          ; A reference to "this" object.
          if not DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr")
             return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
-         this := ObjFromPtrAddRef(DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr"))
+         self := ObjFromPtrAddRef(DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr"))
 
          ; DestroyWindow ? WM_DESTROY ? FreeMemory ? PostQuitMessage ? WM_QUIT
 
          ; WM_DESTROY
          if (uMsg = 0x2) {
-            this.FreeMemory()
-            this.hwnd := ""
+            self.FreeMemory()
+            self.hwnd := ""
             Persistent(--active_windows)
          }
 
@@ -1704,17 +1704,17 @@ class TextRender {
          if (uMsg = 0x7E) {
             DllCall("QueryPerformanceFrequency", "int64*", &frequency:=0)
             DllCall("QueryPerformanceCounter", "int64*", &end:=0)
-            time_elapsed := (end - this.t0) / frequency * 1000
-            remaining_time := this.t - time_elapsed
-            if (this.t == 0 || remaining_time > 0) {
-               for i, layer in this.layers
-                  this.Draw(layer[1], layer[2], layer[3])
-               this.UpdateLayeredWindow()
-               this.flush_pending := True
+            time_elapsed := (end - self.t0) / frequency * 1000
+            remaining_time := self.t - time_elapsed
+            if (self.t == 0 || remaining_time > 0) {
+               for i, layer in self.layers
+                  self.Draw(layer[1], layer[2], layer[3])
+               self.UpdateLayeredWindow()
+               self.flush_pending := True
                ; Create a timer that eventually clears the canvas.
                if (remaining_time > 0) {
                   ; Create a reference to the object held by a timer.
-                  blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
+                  blank := ObjBindMethod(self, "blank", self.status) ; Calls Blank()
                   SetTimer blank, -remaining_time ; Calls __Delete.
                }
             }
@@ -1742,8 +1742,8 @@ class TextRender {
          ; Process windows messages by invoking the associated callback.
          try for message, event in dict.OwnProps()
             if (uMsg = message)
-               try if callback := this.events[event]
-                  return (callback.MaxParams = 0) ? callback() : callback(this) ; Callbacks have a reference to "this".
+               try if callback := self.events[event]
+                  return (callback.MaxParams = 0) ? callback() : callback(self) ; Callbacks have a reference to "this".
 
          ; Default processing of window messages.
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")

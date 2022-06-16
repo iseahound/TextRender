@@ -17,22 +17,28 @@ class TextRender {
       return super().Render(text, background_style, text_style)
    }
 
-   static windows := Map()
-
    __New(title := "", style := 0x80000000, styleEx := 0x80088, parent := "") {
       this.gdiplusStartup()
 
-      ; Create and show the window with DPI awareness PER_MONITOR_AWARE.
+      ; xd
+      this.hdc := ""
+      this.BitmapWidth := 0, this.BitmapHeight := 0
+      this.x := ""
+      this.status := ""
+      this.style1 := ""
+      this.style2 := ""
+
+      ; Create the window with PER_MONITOR_AWARE dpi awareness.
       dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       if !(this.hwnd := this.CreateWindow(title, style, styleEx, parent))
          throw Error("Max threads reached. Set #MaxThreads to a higher limit.")
-      DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
       DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
-      ; Store a reference to this object accessed by the window handle.
-      ; When processing window messages the hwnd can be used to retrieve "this".
-      TextRender.windows[this.hwnd] := this
-      ObjRelease(ObjPtr(this)) ; Allow __Delete() to be called. RefCount - 1.
+      ; Store a reference to "this" inside GWLP_USERDATA for window messages.
+      DllCall("SetWindowLongPtr", "ptr", this.hwnd, "int", GWLP_USERDATA := -21, "ptr", ObjPtr(this))
+      
+      ; Show the window without activating it.
+      DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
 
       ; Initalize default events.
       this.events := Map()
@@ -43,28 +49,12 @@ class TextRender {
       ; Calls Flush() to allocate the graphics buffer via UpdateMemory().
       this.flush_pending := True
 
-      ; xd
-      this.hdc := ""
-      this.BitmapWidth := 0, this.BitmapHeight := 0
-      this.x := ""
-      this.status := ""
-      this.style1 := ""
-      this.style2 := ""
-
       return this
    }
 
    __Delete() {
-      ; FreeMemory() is called by DestroyWindow().
-      this.DestroyWindow()
+      this.DestroyWindow() ; Calls FreeMemory()
       this.gdiplusShutdown()
-
-      ; Re-add the reference to avoid calling __Delete() twice.
-      ; An unmanaged reference to "this" should be deleted manually.
-      if IsObject(TextRender) {
-         ObjAddRef(ObjPtr(this))
-         TextRender.windows[this.hwnd] := ""
-      }
    }
 
    Default() {
@@ -1690,15 +1680,14 @@ class TextRender {
       WindowProc(hwnd, uMsg, wParam, lParam) {
          Critical ; Thread must never be interrupted.
 
-         ; Retrieve "this" from a dictionary stored as hwnd:this.
-         try this := TextRender.windows[hwnd]
-         catch
+         ; A reference to "this" object.
+         if not DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr")
             return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
+         this := ObjFromPtrAddRef(DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr"))
 
-
-         ; WM_DESTROY calls FreeMemory().
+         ; WM_DESTROY
          if (uMsg = 0x2)
-            return this.DestroyWindow()
+            return this.DestroyWindow() ; Calls FreeMemory()
 
          ; WM_DISPLAYCHANGE calls UpdateMemory() via Draw().
          if (uMsg = 0x7E) {

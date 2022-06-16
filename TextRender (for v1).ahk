@@ -52,6 +52,7 @@ class TextRender {
    }
 
    __Delete() {
+      ; __Delete ? DestroyWindow ? WM_DESTROY ? FreeMemory ? PostQuitMessage ? WM_QUIT
       this.DestroyWindow() ; Calls FreeMemory()
       this.gdiplusShutdown()
    }
@@ -1691,7 +1692,7 @@ class TextRender {
             return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
          self := Object(DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr"))
 
-         ; DestroyWindow ? WM_DESTROY ? FreeMemory ? PostQuitMessage ? WM_QUIT
+         ; __Delete ? DestroyWindow ? WM_DESTROY ? FreeMemory ? PostQuitMessage ? WM_QUIT
 
          ; WM_DESTROY
          if (uMsg = 0x2) {
@@ -1830,9 +1831,7 @@ class TextRender {
       if (!this.hwnd)
          return this
 
-      this.FreeMemory()
       DllCall("DestroyWindow", "ptr", this.hwnd) ; Sends WM_DESTROY
-      this.hwnd := ""
       return this
    }
 

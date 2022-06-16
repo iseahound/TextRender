@@ -1678,7 +1678,6 @@ class TextRender {
    }
       ; Define window behavior.
       WindowProc(uMsg, wParam, lParam) {
-         Critical ; Thread must never be interrupted.
          hwnd := this
          ; Prevent the script from exiting early.
          static void := ObjBindMethod({}, {})

@@ -1678,7 +1678,6 @@ class TextRender {
 
       ; Define window behavior.
       WindowProc(hwnd, uMsg, wParam, lParam) {
-         Critical ; Thread must never be interrupted.
 
          ; Prevent the script from exiting early.
          static active_windows := Persistent()

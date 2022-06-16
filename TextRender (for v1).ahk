@@ -1866,6 +1866,10 @@ class TextRender {
       if (!this.hdc)
          return this
 
+      ; Scramble timers to prevent them from attempting changes.
+      this.UpdateStatus()
+
+      ; Free memory objects that cannot be garbage collected.
       DllCall("gdiplus\GdipDeleteGraphics", "ptr", this.gfx)
       DllCall("SelectObject", "ptr", this.hdc, "ptr", this.obm)
       DllCall("DeleteObject", "ptr", this.hbm)

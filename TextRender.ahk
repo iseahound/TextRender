@@ -2323,8 +2323,8 @@ class TextRender {
             throw Error("The bitmap of this buffer object has already been deleted.")
 
       ; Check for unpaired calls of gdiplusShutdown.
-      ; if (TextRender.gdiplus < 0)
-      ;    throw Error("Missing TextRender.gdiplusStartup().")
+      if (TextRender.gdiplus < 0)
+         throw Error("Missing TextRender.gdiplusStartup().")
 
       ; Shutdown gdiplus when counter goes from 1 -> 0.
       if (TextRender.gdiplus == 0) {

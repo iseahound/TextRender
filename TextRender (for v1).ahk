@@ -6,7 +6,7 @@
 ; Version:   1.8.0
 
 #Requires AutoHotkey v1.1.33+
-#Persistent
+
 
 ; TextRender() - Display custom text on screen.
 TextRender(text:="", background_style:="", text_style:="") {
@@ -48,7 +48,6 @@ class TextRender {
 
       ; Calls Flush() to allocate the graphics buffer via UpdateMemory().
       this.flush_pending := True
-
       return this
    }
 
@@ -1680,14 +1679,26 @@ class TextRender {
       WindowProc(uMsg, wParam, lParam) {
          Critical ; Thread must never be interrupted.
          hwnd := this
+         ; Prevent the script from exiting early.
+         static void := ObjBindMethod({}, {})
+
+         ; WM_CREATE
+         if (uMsg = 0x1)
+            Hotkey % "^+F12", % void, On
+
          ; A reference to "this" object.
          if not DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr")
             return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
          this := Object(DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr"))
 
+         ; DestroyWindow ? WM_DESTROY ? FreeMemory ? PostQuitMessage ? WM_QUIT
+
          ; WM_DESTROY
-         if (uMsg = 0x2)
-            return this.DestroyWindow() ; Calls FreeMemory()
+         if (uMsg = 0x2) {
+            this.FreeMemory()
+            this.hwnd := ""
+            Hotkey % "^+F12", % void, Off ; Cannot disable, does nothing
+         }
 
          ; WM_DISPLAYCHANGE calls UpdateMemory() via Draw().
          if (uMsg = 0x7E) {
@@ -1820,7 +1831,7 @@ class TextRender {
          return this
 
       this.FreeMemory()
-      DllCall("DestroyWindow", "ptr", this.hwnd)
+      DllCall("DestroyWindow", "ptr", this.hwnd) ; Sends WM_DESTROY
       this.hwnd := ""
       return this
    }

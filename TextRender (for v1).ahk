@@ -2292,61 +2292,60 @@ class TextRender {
       return (this.x2 > this.x && this.y2 > this.y) ? [this.x, this.y, this.w, this.h] : default
    }
 
-   ; All references to gdiplus and pToken must be absolute!
-   static gdiplus := 0, pToken := 0
-
+   ; Source: ImagePut 1.8.0 - gdiplus()
    gdiplusStartup() {
-      TextRender.gdiplus++
-
-      ; Startup gdiplus when counter goes from 0 -> 1.
-      if (TextRender.gdiplus == 1) {
-
-         ; Startup gdiplus.
-         DllCall("LoadLibrary", "str", "gdiplus")
-         VarSetCapacity(si, A_PtrSize = 4 ? 16:24, 0) ; sizeof(GdiplusStartupInput) = 16, 24
-            , NumPut(0x1, si, "uint")
-         DllCall("gdiplus\GdiplusStartup", "ptr*", pToken:=0, "ptr", &si, "ptr", 0)
-
-         TextRender.pToken := pToken
-      }
+      return this.gdiplus(1)
    }
 
-   gdiplusShutdown(cotype := "", pBitmap := "") {
-      if not IsObject(TextRender)
-         return
+   gdiplusShutdown(cotype := "") {
+      return this.gdiplus(-1, cotype)
+   }
 
-      TextRender.gdiplus--
+   gdiplus(vary := 0, cotype := "") {
+      static pToken := 0 ; Takes advantage of the fact that objects contain identical methods.
+      static instances := 0 ; And therefore static variables can share data across instances.
 
-      ; When a buffer object is deleted a bitmap is sent here for disposal.
-      if (cotype == "smart_pointer")
-         if DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-            throw Exception("The bitmap of this buffer object has already been deleted.")
+      ; Startup gdiplus when counter rises from 0 -> 1.
+      if (instances = 0 && vary = 1) {
 
-      ; Check for unpaired calls of gdiplusShutdown.
-      if (TextRender.gdiplus < 0)
-         throw Exception("Missing TextRender.gdiplusStartup().")
+         DllCall("LoadLibrary", "str", "gdiplus")
+         VarSetCapacity(si, A_PtrSize = 4 ? 16:24, 0) ; sizeof(GdiplusStartupInput) = 16, 24
+            NumPut(0x1, si, "uint")
+         DllCall("gdiplus\GdiplusStartup", "ptr*", pToken:=0, "ptr", &si, "ptr", 0)
 
-      ; Shutdown gdiplus when counter goes from 1 -> 0.
-      if (TextRender.gdiplus == 0) {
-         pToken := TextRender.pToken
+      }
 
-         ; Shutdown gdiplus.
+      ; Shutdown gdiplus when counter falls from 1 -> 0.
+      if (instances = 1 && vary = -1) {
+
          DllCall("gdiplus\GdiplusShutdown", "ptr", pToken)
          DllCall("FreeLibrary", "ptr", DllCall("GetModuleHandle", "str", "gdiplus", "ptr"))
 
-         ; Exit if GDI+ is still loaded. GdiplusNotInitialized = 18
-         if (18 != DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", ImageAttr:=0)) {
-            DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
-            return
-         }
-
          ; Otherwise GDI+ has been truly unloaded from the script and objects are out of scope.
-         if (cotype = "bitmap")
-            throw Exception("Out of scope error. `n`nIf you wish to handle raw pointers to GDI+ bitmaps, add the line"
-               . "`n`n`t`t" this.__class ".gdiplusStartup()`n`nor 'pToken := Gdip_Startup()' to the top of your script."
-               . "`nAlternatively, use 'obj := ImagePutBuffer()' with 'obj.pBitmap'."
-               . "`nYou can copy this message by pressing Ctrl + C.")
+         if (cotype = "bitmap") {
+
+            ; Check if GDI+ is still loaded. GdiplusNotInitialized = 18
+            assert := (18 != DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", ImageAttr:=0))
+               DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
+
+            if not assert
+               throw Exception("Bitmap is out of scope. `n`nIf you wish to handle raw pointers to GDI+ bitmaps, add the line"
+                  . "`n`n`t`t" this.__class ".gdiplusStartup()"
+                  . "`n`nto the top of your script. If using Gdip_All.ahk use pToken := Gdip_Startup()."
+                  . "`nAlternatively, use pic := ImagePutBuffer() and pic.pBitmap instead."
+                  . "`nYou can copy this message by pressing Ctrl + C.", -5)
+         }
       }
+
+      ; Increment or decrement the number of available instances.
+      instances += vary
+
+      ; Check for unpaired calls of gdiplusShutdown.
+      if (instances < 0)
+         throw Exception("Missing gdiplusStartup().")
+
+      ; When vary is 0, just return the number of active instances!
+      return instances
    }
 } ; End of TextRender class.
 

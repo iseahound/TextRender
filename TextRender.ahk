@@ -1685,9 +1685,9 @@ class TextRender {
 
          ; WM_CREATE
          if (uMsg = 0x1)
-            return Persistent(++active_windows)
+            Persistent(++active_windows)
 
-         ; A reference to "this" object.
+         ; Exits window procedure early. Creates a reference to "this" from GWLP_USERDATA.
          if not DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr")
             return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
          self := ObjFromPtrAddRef(DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr"))

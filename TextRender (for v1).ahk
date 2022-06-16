@@ -52,7 +52,7 @@ class TextRender {
    }
 
    __Delete() {
-      ; __Delete ? DestroyWindow ? WM_DESTROY ? FreeMemory ? PostQuitMessage ? WM_QUIT
+      ; __Delete ? DestroyWindow ? WM_DESTROY ? FreeMemory ? Remove Persistence ? ExitApp
       this.DestroyWindow() ; Calls FreeMemory()
       this.gdiplusShutdown()
    }
@@ -364,7 +364,7 @@ class TextRender {
       }
 
       this.t := this.x := this.y := this.x2 := this.y2 := this.w := this.h := ""
-      this.layers := {}
+      this.layers := []
       this.flush_pending := False
       return this
    }
@@ -1440,7 +1440,7 @@ class TextRender {
          m := _
       } else if (default != "") {
          m := [default, default, default, default]
-         _.base.__get := this.get ; Returns the empty string for unknown properties.
+         m.base.__get := this.get ; Returns the empty string for unknown properties.
       } else {
          return {void:True, 1:0, 2:0, 3:0, 4:0}
       }
@@ -1687,12 +1687,12 @@ class TextRender {
          if (uMsg = 0x1)
             Hotkey % "^+F12", % void, On
 
-         ; A reference to "this" object.
+         ; Exits window procedure early. Creates a reference to "this" from GWLP_USERDATA.
          if not DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr")
             return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
          self := Object(DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr"))
 
-         ; __Delete ? DestroyWindow ? WM_DESTROY ? FreeMemory ? PostQuitMessage ? WM_QUIT
+         ; __Delete ? DestroyWindow ? WM_DESTROY ? FreeMemory ? Remove Persistence ? ExitApp
 
          ; WM_DESTROY
          if (uMsg = 0x2) {
@@ -1787,7 +1787,7 @@ class TextRender {
 
    EventCopyData() {
       ; Copies the rendered text to clipboard.
-      if !this.friend2 {
+      if not ObjHasKey(this, "friend2") {
          this.friend2 := new TextRender(,,, this.hwnd)
          this.friend2.OnEvent("MiddleMouseDown", "")
          this.friend2.OnEvent("RightMouseDown", "")
@@ -2091,7 +2091,7 @@ class TextRender {
       return filepath
    }
 
-   ; Source: ImagePut 1.7 - put_file()
+   ; Source: ImagePut 1.7.0 - put_file()
    SaveImageToFile(pBitmap, filepath := "", quality := "") {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
       extension := "png"

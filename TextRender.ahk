@@ -35,7 +35,7 @@ class TextRender {
       DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; Store a reference to "this" inside GWLP_USERDATA for window messages.
-      DllCall("SetWindowLongPtr", "ptr", this.hwnd, "int", GWLP_USERDATA := -21, "ptr", ObjPtr(this))
+      DllCall("SetWindowLongPtr", "ptr", this.hwnd, "int", 0, "ptr", ObjPtr(this))
       
       ; Show the window without activating it.
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
@@ -1661,7 +1661,7 @@ class TextRender {
          NumPut(  "uint",         0x8, wc,         4) ; style
          NumPut(   "ptr",    pWndProc, wc,         8) ; lpfnWndProc
          NumPut(   "int",           0, wc, _ ? 12:16) ; cbClsExtra
-         NumPut(   "int",           0, wc, _ ? 16:20) ; cbWndExtra
+         NumPut(   "int",          40, wc, _ ? 16:20) ; cbWndExtra
          NumPut(   "ptr",           0, wc, _ ? 20:24) ; hInstance
          NumPut(   "ptr",           0, wc, _ ? 24:32) ; hIcon
          NumPut(   "ptr",     hCursor, wc, _ ? 28:40) ; hCursor
@@ -1687,9 +1687,9 @@ class TextRender {
             Persistent(++active_windows)
 
          ; Exits window procedure early. Creates a reference to "this" from GWLP_USERDATA.
-         if not DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr")
+         if not DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr")
             return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
-         self := ObjFromPtrAddRef(DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr"))
+         self := ObjFromPtrAddRef(DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr"))
 
          ; __Delete ? DestroyWindow ? WM_DESTROY ? FreeMemory ? Remove Persistence ? ExitApp
 

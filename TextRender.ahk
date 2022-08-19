@@ -2265,16 +2265,16 @@ class TextRender {
       ; Nor does making the window opaque.
 
       pptDst := Buffer(8)
-         NumPut( x, pptDst, 0, "int")
-         NumPut( y, pptDst, 4, "int")
+         NumPut("int", x, pptDst, 0)
+         NumPut("int", y, pptDst, 4)
 
       psize := Buffer(8)
-         NumPut( w, psize, 0, "int")
-         NumPut( h, psize, 4, "int")
+         NumPut("int", w, psize, 0)
+         NumPut("int", h, psize, 4)
 
       pptSrc := Buffer(8)
-         NumPut( x - this.BitmapLeft, pptSrc, 0, "int")
-         NumPut( y - this.BitmapTop , pptSrc, 4, "int")
+         NumPut("int", x - this.BitmapLeft, pptSrc, 0)
+         NumPut("int", y - this.BitmapTop , pptSrc, 4)
 
       return DllCall("UpdateLayeredWindow"
                ,    "ptr", this.hwnd                ; hWnd

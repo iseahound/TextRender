@@ -2384,14 +2384,9 @@ TextRenderWallpaper(text:="", background_style:="", text_style:="") {
    DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0xD, "ptr", 1)
 
    ; Find a child window of class SHELLDLL_DefView.
-   owindows := WinGetList("ahk_class WorkerW",,,)
-   awindows := Array()
-   windows := owindows.Length
-   For v in owindows
-   {   awindows.Push(v)
-   }
-   Loop awindows.Length
-      hwnd := awindows[A_Index]
+
+   for window in WinGetList("ahk_class WorkerW")
+      hwnd := window
    until DllCall("FindWindowEx", "ptr", hwnd, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0)
 
    ; Find a child window of the desktop after the previous window of class WorkerW.

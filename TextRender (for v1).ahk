@@ -17,7 +17,8 @@ TextRender(text:="", background_style:="", text_style:="") {
 
 class TextRender {
 
-   __New(title := "", style := 0x80000000, styleEx := 0x80088, parent := 0, OffsetLeft := 0, OffsetTop := 0) {
+   __New(title := "", style := 0x80000000, styleEx := 0x80088, parent := 0
+      , OffsetLeft := 0, OffsetTop := 0, ScaleWidth := "", ScaleHeight := "") {
       this.gdiplusStartup()
 
       ; xd
@@ -2394,9 +2395,11 @@ TextRenderDesktop(text:="", background_style:="", text_style:="") {
    dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
    x := DllCall("GetSystemMetrics", "int", 76, "int")
    y := DllCall("GetSystemMetrics", "int", 77, "int")
+   w := DllCall("GetSystemMetrics", "int", 78, "int")
+   h := DllCall("GetSystemMetrics", "int", 79, "int")
    DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
-   return (new TextRender(, WS_CHILD, WS_EX_LAYERED, hwndParent, x, y)).Render(text, background_style, text_style)
+   return (new TextRender(, WS_CHILD, WS_EX_LAYERED, hwndParent, x, y, w, h)).Render(text, background_style, text_style)
 }
 
 TextRenderWallpaper(text:="", background_style:="", text_style:="") {
@@ -2421,9 +2424,11 @@ TextRenderWallpaper(text:="", background_style:="", text_style:="") {
    dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
    x := DllCall("GetSystemMetrics", "int", 76, "int")
    y := DllCall("GetSystemMetrics", "int", 77, "int")
+   w := DllCall("GetSystemMetrics", "int", 78, "int")
+   h := DllCall("GetSystemMetrics", "int", 79, "int")
    DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
-   return (new TextRender(, WS_CHILD, WS_EX_LAYERED, WorkerW, x, y)).Render(text, background_style, text_style)
+   return (new TextRender(, WS_CHILD, WS_EX_LAYERED, WorkerW, x, y, w, h)).Render(text, background_style, text_style)
 }
 
 

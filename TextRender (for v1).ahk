@@ -2388,20 +2388,19 @@ TextRenderDesktop(text:="", background_style:="", text_style:="") {
    static WS_CHILD := (A_OSVersion = "WIN_7") ? 0x80000000 : 0x40000000 ; Fallback to WS_POPUP for Win 7.
    static WS_EX_LAYERED := 0x80000
 
-   ; Used to show the desktop creations immediately.
-   ; Post-Creator's Update Windows 10. WM_SPAWN_WORKER = 0x052C
-   DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0xD, "ptr", 0)
-   DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0xD, "ptr", 1)
-
-   hwndParent := WinExist("ahk_class Progman")
-
    ; Get true virtual screen coordinates.
    dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
    x := DllCall("GetSystemMetrics", "int", 76, "int")
    y := DllCall("GetSystemMetrics", "int", 77, "int")
    DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
-   return (new TextRender(, WS_CHILD, WS_EX_LAYERED, hwndParent, x, y)).Render(text, background_style, text_style)
+   try return (new TextRender(, WS_CHILD, WS_EX_LAYERED, WinExist("ahk_class Progman"), x, y)).Render(text, background_style, text_style)
+   finally {
+      ; Used to show the desktop creations immediately.
+      ; Post-Creator's Update Windows 10. WM_SPAWN_WORKER = 0x052C
+      DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0xD, "ptr", 0)
+      DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0xD, "ptr", 1)
+   }
 }
 
 TextRenderWallpaper(text:="", background_style:="", text_style:="") {

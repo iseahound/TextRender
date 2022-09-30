@@ -18,7 +18,7 @@ TextRender(text:="", background_style:="", text_style:="") {
 class TextRender {
 
    __New(title := "", style := 0x80000000, styleEx := 0x80088, parent := 0
-      , OffsetLeft := 0, OffsetTop := 0, ScaleWidth := "", ScaleHeight := "") {
+      , OffsetLeft := 0, OffsetTop := 0, ScaleWidth := 0, ScaleHeight := 0) {
       this.gdiplusStartup()
 
       ; xd
@@ -33,13 +33,19 @@ class TextRender {
 
       ; Create the window with PER_MONITOR_AWARE dpi awareness.
       dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+
       if !(this.hwnd := this.CreateWindow(title, style, styleEx, parent))
          throw Exception("Max threads reached. Set #MaxThreads to a higher limit.")
-      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; Get real parent window coordinates. GetDesktopWindow is a default value.
       this.parent := DllCall("GetAncestor", "ptr", this.hwnd, "uint", 1, "ptr")
       (this.parent == DllCall("GetDesktopWindow", "ptr")) && this.parent := 0
+
+      ; Default to the primary monitor as a scale factor.
+      this.ScaleWidth := (ScaleWidth > 0) ? ScaleWidth : A_ScreenWidth
+      this.ScaleHeight := (ScaleHeight > 0) ? ScaleHeight : A_ScreenHeight
+
+      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; Store a reference to "this" inside GWLP_USERDATA for window messages.
       DllCall("SetWindowLongPtr", "ptr", this.hwnd, "int", 0, "ptr", &this)
@@ -1894,6 +1900,7 @@ class TextRender {
    }
 
    UpdateMemory() {
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       if (this.parent) {
          ; Get client window coordinates.
          DllCall("GetClientRect", "ptr", this.parent, "ptr", &Rect := VarSetCapacity(Rect, 16)) ; sizeof(RECT) = 16
@@ -1903,13 +1910,12 @@ class TextRender {
          h := NumGet(Rect, 12, "int")
       } else {
          ; Get true virtual screen coordinates.
-         dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          x := DllCall("GetSystemMetrics", "int", 76, "int")
          y := DllCall("GetSystemMetrics", "int", 77, "int")
          w := DllCall("GetSystemMetrics", "int", 78, "int")
          h := DllCall("GetSystemMetrics", "int", 79, "int")
-         DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
       }
+      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       if (w = this.BitmapWidth && h = this.BitmapHeight)
          return this

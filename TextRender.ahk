@@ -1896,10 +1896,10 @@ class TextRender {
       if (this.parent) {
          ; Get client window coordinates.
          DllCall("GetClientRect", "ptr", this.parent, "ptr", Rect := Buffer(16)) ; sizeof(RECT) = 16
-            , x := 0
-            , y := 0
-            , w := NumGet(Rect, 8, "int")
-            , h := NumGet(Rect, 12, "int")
+         x := this.OffsetLeft || 0
+         y := this.OffsetTop || 0
+         w := NumGet(Rect, 8, "int")
+         h := NumGet(Rect, 12, "int")
       } else {
          ; Get true virtual screen coordinates.
          dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
@@ -2282,8 +2282,8 @@ class TextRender {
       ; Nor does making the window opaque.
 
       pptDst := Buffer(8)
-         NumPut("int", x + this.OffsetLeft, pptDst, 0)
-         NumPut("int", y + this.OffsetTop, pptDst, 4)
+         NumPut("int", x - this.OffsetLeft, pptDst, 0)
+         NumPut("int", y - this.OffsetTop, pptDst, 4)
 
       psize := Buffer(8)
          NumPut("int", w, psize, 0)
@@ -2396,7 +2396,7 @@ TextRenderDesktop(text:="", background_style:="", text_style:="") {
    y := DllCall("GetSystemMetrics", "int", 77, "int")
    DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
-   return {base: TextRender.prototype}.__New("", WS_CHILD, WS_EX_LAYERED, hwndParent, -x, -y).Render(text, background_style, text_style)
+   return {base: TextRender.prototype}.__New("", WS_CHILD, WS_EX_LAYERED, hwndParent, x, y).Render(text, background_style, text_style)
 }
 
 TextRenderWallpaper(text:="", background_style:="", text_style:="") {
@@ -2423,7 +2423,7 @@ TextRenderWallpaper(text:="", background_style:="", text_style:="") {
    y := DllCall("GetSystemMetrics", "int", 77, "int")
    DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
-   return {base: TextRender.prototype}.__New("", WS_CHILD, WS_EX_LAYERED, WorkerW, -x, -y).Render(text, background_style, text_style)
+   return {base: TextRender.prototype}.__New("", WS_CHILD, WS_EX_LAYERED, WorkerW, x, y).Render(text, background_style, text_style)
 }
 
 

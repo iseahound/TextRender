@@ -1896,8 +1896,8 @@ class TextRender {
       if (this.parent) {
          ; Get client window coordinates.
          DllCall("GetClientRect", "ptr", this.parent, "ptr", &Rect := VarSetCapacity(Rect, 16)) ; sizeof(RECT) = 16
-         x := 0
-         y := 0
+         x := this.OffsetLeft ? this.OffsetLeft : 0
+         y := this.OffsetTop ? this.OffsetTop : 0
          w := NumGet(Rect, 8, "int")
          h := NumGet(Rect, 12, "int")
       } else {
@@ -2282,8 +2282,8 @@ class TextRender {
       ; Nor does making the window opaque.
 
       VarSetCapacity(pptDst, 8)
-         NumPut( x + this.OffsetLeft, pptDst, 0, "int")
-         NumPut( y + this.OffsetTop, pptDst, 4, "int")
+         NumPut( x - this.OffsetLeft, pptDst, 0, "int")
+         NumPut( y - this.OffsetTop, pptDst, 4, "int")
 
       VarSetCapacity(psize, 8)
          NumPut( w, psize, 0, "int")
@@ -2396,7 +2396,7 @@ TextRenderDesktop(text:="", background_style:="", text_style:="") {
    y := DllCall("GetSystemMetrics", "int", 77, "int")
    DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
-   return (new TextRender(, WS_CHILD, WS_EX_LAYERED, hwndParent, -x, -y)).Render(text, background_style, text_style)
+   return (new TextRender(, WS_CHILD, WS_EX_LAYERED, hwndParent, x, y)).Render(text, background_style, text_style)
 }
 
 TextRenderWallpaper(text:="", background_style:="", text_style:="") {
@@ -2423,7 +2423,7 @@ TextRenderWallpaper(text:="", background_style:="", text_style:="") {
    y := DllCall("GetSystemMetrics", "int", 77, "int")
    DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
-   return (new TextRender(, WS_CHILD, WS_EX_LAYERED, WorkerW, -x, -y)).Render(text, background_style, text_style)
+   return (new TextRender(, WS_CHILD, WS_EX_LAYERED, WorkerW, x, y)).Render(text, background_style, text_style)
 }
 
 

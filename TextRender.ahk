@@ -17,7 +17,7 @@ class TextRender {
       return super().Render(text, background_style, text_style)
    }
 
-   __New(title := "", style := 0x80000000, styleEx := 0x80088, parent := "") {
+   __New(title := "", style := 0x80000000, styleEx := 0x80088, parent := 0) {
       this.gdiplusStartup()
 
       ; xd
@@ -33,6 +33,10 @@ class TextRender {
       if !(this.hwnd := this.CreateWindow(title, style, styleEx, parent))
          throw Error("Max threads reached. Set #MaxThreads to a higher limit.")
       DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+
+      ; Get real parent window coordinates. GetDesktopWindow is a default value.
+      this.parent := DllCall("GetAncestor", "ptr", this.hwnd, "uint", 1, "ptr")
+      (this.parent == DllCall("GetDesktopWindow", "ptr")) && this.parent := 0
 
       ; Store a reference to "this" inside GWLP_USERDATA for window messages.
       DllCall("SetWindowLongPtr", "ptr", this.hwnd, "int", 0, "ptr", ObjPtr(this))
@@ -1799,7 +1803,7 @@ class TextRender {
       WinSetAlwaysOnTop(1, "ahk_id" this.friend2.hwnd)
    }
 
-   CreateWindow(title := "", style := 0x80000000, styleEx := 0x80088, parent := "") {
+   CreateWindow(title := "", style := 0x80000000, styleEx := 0x80088, parent := 0) {
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       WS_POPUP                  := 0x80000000   ; Allow small windows.
 
@@ -1818,7 +1822,7 @@ class TextRender {
                ,    "int", 0                        ; Y
                ,    "int", 0                        ; nWidth
                ,    "int", 0                        ; nHeight
-               ,    "ptr", (parent != "") ? parent : A_ScriptHwnd
+               ,    "ptr", parent                   ; hWndParent
                ,    "ptr", 0                        ; hMenu
                ,    "ptr", 0                        ; hInstance
                ,    "ptr", 0                        ; lpParam
@@ -1887,27 +1891,38 @@ class TextRender {
    }
 
    UpdateMemory() {
-      ; Get true virtual screen coordinates.
-      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-      sx := DllCall("GetSystemMetrics", "int", 76, "int")
-      sy := DllCall("GetSystemMetrics", "int", 77, "int")
-      sw := DllCall("GetSystemMetrics", "int", 78, "int")
-      sh := DllCall("GetSystemMetrics", "int", 79, "int")
-      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+      if (this.parent) {
+         ; Get client window coordinates.
+         DllCall("GetClientRect", "ptr", this.parent, "ptr", Rect := Buffer(16)) ; sizeof(RECT) = 16
+            , x := 0
+            , y := 0
+            , w := NumGet(Rect, 8, "int")
+            , h := NumGet(Rect, 12, "int")
+      } else {
+         ; Get true virtual screen coordinates.
+         dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         x := DllCall("GetSystemMetrics", "int", 76, "int")
+         y := DllCall("GetSystemMetrics", "int", 77, "int")
+         w := DllCall("GetSystemMetrics", "int", 78, "int")
+         h := DllCall("GetSystemMetrics", "int", 79, "int")
+         DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+      }
 
-      if (sw = this.BitmapWidth && sh = this.BitmapHeight)
+      if (w = this.BitmapWidth && h = this.BitmapHeight)
          return this
 
       ; Deletes bitmap coordinates.
       this.FreeMemory()
 
-      ; Sets bitmap coordinates.
-      this.BitmapLeft := sx
-      this.BitmapTop := sy
-      this.BitmapRight := sx + sw
-      this.BitmapBottom := sy + sh
-      this.BitmapWidth := sw
-      this.BitmapHeight := sh
+      ; Set bitmap coordinates.
+      this.BitmapLeft := x
+      this.BitmapTop := y
+      this.BitmapRight := x + w
+      this.BitmapBottom := y + h
+      this.BitmapWidth := w
+      this.BitmapHeight := h
+
+      ; Uses bitmap coordinates.
       this.LoadMemory()
 
       return this
@@ -2265,8 +2280,8 @@ class TextRender {
       ; Nor does making the window opaque.
 
       pptDst := Buffer(8)
-         NumPut("int", x, pptDst, 0)
-         NumPut("int", y, pptDst, 4)
+         NumPut("int", x + this.OffsetLeft, pptDst, 0)
+         NumPut("int", y + this.OffsetTop, pptDst, 4)
 
       psize := Buffer(8)
          NumPut("int", w, psize, 0)

@@ -1896,8 +1896,8 @@ class TextRender {
       if (this.parent) {
          ; Get client window coordinates.
          DllCall("GetClientRect", "ptr", this.parent, "ptr", Rect := Buffer(16)) ; sizeof(RECT) = 16
-         x := this.OffsetLeft || 0
-         y := this.OffsetTop || 0
+         x := this.OffsetLeft ; Default: 0
+         y := this.OffsetTop  ; Default: 0
          w := NumGet(Rect, 8, "int")
          h := NumGet(Rect, 12, "int")
       } else {

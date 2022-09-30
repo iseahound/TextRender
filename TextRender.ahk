@@ -17,10 +17,12 @@ class TextRender {
       return super().Render(text, background_style, text_style)
    }
 
-   __New(title := "", style := 0x80000000, styleEx := 0x80088, parent := 0) {
+   __New(title := "", style := 0x80000000, styleEx := 0x80088, parent := 0, OffsetLeft := 0, OffsetTop := 0) {
       this.gdiplusStartup()
 
       ; xd
+      this.OffsetLeft := OffsetLeft
+      this.OffsetTop := OffsetTop
       this.hdc := ""
       this.BitmapWidth := 0, this.BitmapHeight := 0
       this.x := ""
@@ -2387,7 +2389,14 @@ TextRenderDesktop(text:="", background_style:="", text_style:="") {
    DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0xD, "ptr", 1)
 
    hwndParent := WinExist("ahk_class Progman")
-   return {base: TextRender.prototype}.__New("", WS_CHILD, WS_EX_LAYERED, hwndParent).Render(text, background_style, text_style)
+
+   ; Get true virtual screen coordinates.
+   dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+   x := DllCall("GetSystemMetrics", "int", 76, "int")
+   y := DllCall("GetSystemMetrics", "int", 77, "int")
+   DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+
+   return {base: TextRender.prototype}.__New("", WS_CHILD, WS_EX_LAYERED, hwndParent, -x, -y).Render(text, background_style, text_style)
 }
 
 TextRenderWallpaper(text:="", background_style:="", text_style:="") {
@@ -2408,7 +2417,13 @@ TextRenderWallpaper(text:="", background_style:="", text_style:="") {
    if !(WorkerW := DllCall("FindWindowEx", "ptr", 0, "ptr", hwnd, "str", "WorkerW", "ptr", 0, "ptr"))
       throw Error("Could not locate hidden window behind desktop icons.")
 
-   return {base: TextRender.prototype}.__New("", WS_CHILD, WS_EX_LAYERED, WorkerW).Render(text, background_style, text_style)
+   ; Get true virtual screen coordinates.
+   dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+   x := DllCall("GetSystemMetrics", "int", 76, "int")
+   y := DllCall("GetSystemMetrics", "int", 77, "int")
+   DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+
+   return {base: TextRender.prototype}.__New("", WS_CHILD, WS_EX_LAYERED, WorkerW, -x, -y).Render(text, background_style, text_style)
 }
 
 

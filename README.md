@@ -9,7 +9,7 @@
 
 ## Documentation
 
-* [Quick Start](https://github.com/iseahound/TextRender/wiki/Quick-Start)
+* [Quick Start](https://github.com/iseahound/TextRender/wiki/Quick-Start) - Instructions
 * [Methods and Properties](https://github.com/iseahound/TextRender/wiki/Methods-and-Properties)
 * [Background and Text Styles](https://github.com/iseahound/TextRender/wiki/Styles)
 * [Tips & Tricks](https://github.com/iseahound/TextRender/wiki/Tips-&-Tricks)

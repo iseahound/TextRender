@@ -1246,13 +1246,13 @@ class TextRender {
 
       colormap(c, default := 0xFFFFFFFF) {
          if (c = "random") ; 93% opacity + random RGB.
-            return "0xEE" SubStr(ComObject("Scriptlet.TypeLib").GUID, 2, 6)
+            return "0xEE" Format("{:x}", Random(0, 0xFFFFFF))
 
          if (c = "random2") ; Solid opacity + random RGB.
-            return "0xFF" SubStr(ComObject("Scriptlet.TypeLib").GUID, 2, 6)
+            return "0xFF" Format("{:x}", Random(0, 0xFFFFFF))
 
          if (c = "random3") ; Fully random opacity and RGB.
-            return SubStr(ComObject("Scriptlet.TypeLib").GUID, 2, 8)
+            return Format("{:x}", Random(0, 0xFFFFFFFF))
 
          static colors :=
 
@@ -2344,7 +2344,7 @@ class TextRender {
       }
 
    ; Source: ImagePut 1.8.0 - gdiplus()
-   
+
       gdiplusStartup() {
          return this.gdiplus(1)
       }

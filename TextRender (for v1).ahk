@@ -2008,6 +2008,11 @@ class TextRender {
          width  := this.WindowWidth
          height := this.WindowHeight
 
+         if (width * height * 70**2 > 536870912) {
+            TextRender("Window is too large to debug.", "t:3000 c:#F9E486 r:10%")
+            return this
+         }
+
          ; Allocate buffer.
          size := 4 * width * height
          VarSetCapacity(buf, size)

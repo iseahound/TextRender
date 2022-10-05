@@ -1948,7 +1948,7 @@ class TextRender {
 
          return this
       }
-      
+
       LoadMemory() {
          width := this.BitmapWidth, height := this.BitmapHeight
 

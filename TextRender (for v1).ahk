@@ -1765,9 +1765,9 @@ class TextRender {
       }
 
       ; Source: ImagePut 1.9.0 - WindowClass()
-      WindowClass(style := 0) {
+      WindowClass(style := 0, cls := "") {
          ; The window class shares the name of this class.
-         cls := this.__class
+         (cls == "") && cls := this.__class
          VarSetCapacity(wc, size := A_PtrSize = 4 ? 48:80) ; sizeof(WNDCLASSEX) = 48, 80
 
          ; Check if the window class is already registered.

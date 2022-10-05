@@ -135,6 +135,25 @@ class TextRender {
 
    ; Renders and Effects
 
+      RenderAgain() {
+         DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
+         DllCall("QueryPerformanceCounter", "int64*", end:=0)
+         time_elapsed := (end - this.t0) / frequency * 1000
+         remaining_time := this.t - time_elapsed
+         if (this.t == 0 || remaining_time > 0) {
+            for i, layer in this.layers
+               this.Draw(layer[1], layer[2], layer[3])
+            this.UpdateLayeredWindow()
+            this.flush_pending := True
+            ; Create a timer that eventually clears the canvas.
+            if (remaining_time > 0) {
+               ; Create a reference to the object held by a timer.
+               blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
+               SetTimer % blank, % -remaining_time ; Calls __Delete.
+            }
+         }
+      }
+
       Render(terms*) {
 
          this.Draw(terms*)
@@ -1795,7 +1814,7 @@ class TextRender {
             if (uMsg = 0x1)
                Hotkey % "^+F12", % void, On
 
-            ; Exits window procedure early. Creates a reference to "this" from GWLP_USERDATA.
+            ; Exits window procedure early. Creates a reference to "this" from private window data.
             if not DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr")
                return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
             self := Object(DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr"))
@@ -1811,22 +1830,7 @@ class TextRender {
 
             ; WM_DISPLAYCHANGE calls UpdateMemory() via Draw().
             if (uMsg = 0x7E) {
-               DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
-               DllCall("QueryPerformanceCounter", "int64*", end:=0)
-               time_elapsed := (end - self.t0) / frequency * 1000
-               remaining_time := self.t - time_elapsed
-               if (self.t == 0 || remaining_time > 0) {
-                  for i, layer in self.layers
-                     self.Draw(layer[1], layer[2], layer[3])
-                  self.UpdateLayeredWindow()
-                  self.flush_pending := True
-                  ; Create a timer that eventually clears the canvas.
-                  if (remaining_time > 0) {
-                     ; Create a reference to the object held by a timer.
-                     blank := ObjBindMethod(self, "blank", self.status) ; Calls Blank()
-                     SetTimer % blank, % -remaining_time ; Calls __Delete.
-                  }
-               }
+               self.RenderAgain()
             }
 
             ; Match window messages to Rainmeter event names.

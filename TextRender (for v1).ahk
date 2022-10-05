@@ -186,14 +186,14 @@ class TextRender {
                NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
             hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
             obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-            gfx := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", gfx:=0, "int") ? False : gfx
+            Graphics := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", Graphics:=0, "int") ? False : Graphics
 
             ; Set the origin to this.x and this.y
-            DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", gfx, "float", -this.x, "float", -this.y, "int", 0)
+            DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", Graphics, "float", -this.x, "float", -this.y, "int", 0)
 
             ; Redraw on the canvas.
             for i, layer in this.layers
-               this.DrawOnGraphics(gfx, layer[1], layer[2], layer[3], this.BitmapWidth, this.BitmapHeight)
+               this.DrawOnGraphics(Graphics, layer[1], layer[2], layer[3], this.BitmapWidth, this.BitmapHeight)
 
             ; Show the objects on screen.
             ; This suffers from a windows limitation in that windows will appear in places that do not match the intended coordinates.
@@ -214,7 +214,7 @@ class TextRender {
                , "uint", 0x400 | 0x10 | 0x4 | 0x1) ; SWP_NOSENDCHANGING | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE
 
             ; Cleanup
-            DllCall("gdiplus\GdipDeleteGraphics", "ptr", gfx)
+            DllCall("gdiplus\GdipDeleteGraphics", "ptr", Graphics)
             DllCall("SelectObject", "ptr", hdc, "ptr", obm)
             DllCall("DeleteObject", "ptr", hbm)
             DllCall("DeleteDC",     "ptr", hdc)
@@ -324,7 +324,7 @@ class TextRender {
             this.UpdateMemory()
             ; Redraw on the canvas.
             for i, layer in this.layers
-               this.DrawOnGraphics(this.gfx, layer[1], layer[2], layer[3])
+               this.DrawOnGraphics(this.Graphics, layer[1], layer[2], layer[3])
          }
 
          ; A render to screen operation has occurred.
@@ -339,7 +339,7 @@ class TextRender {
 
          ; Drawing
          dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-         obj := this.DrawOnGraphics(this.gfx, data, style1, style2
+         obj := this.DrawOnGraphics(this.Graphics, data, style1, style2
             , this.ScaleWidth ? this.BitmapWidth : A_ScreenWidth
             , this.ScaleHeight ? this.BitmapHeight : A_ScreenHeight)
          DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
@@ -367,9 +367,9 @@ class TextRender {
          this.UpdateMemory()
 
          if (this.x != "") {
-            DllCall("gdiplus\GdipSetClipRect", "ptr", this.gfx, "float", this.x, "float", this.y, "float", this.w, "float", this.h, "int", 0)
-            DllCall("gdiplus\GdipGraphicsClear", "ptr", this.gfx, "uint", 0x00FFFFFF) ; All colors are the same speed.
-            DllCall("gdiplus\GdipResetClip", "ptr", this.gfx)
+            DllCall("gdiplus\GdipSetClipRect", "ptr", this.Graphics, "float", this.x, "float", this.y, "float", this.w, "float", this.h, "int", 0)
+            DllCall("gdiplus\GdipGraphicsClear", "ptr", this.Graphics, "uint", 0x00FFFFFF) ; All colors are the same speed.
+            DllCall("gdiplus\GdipResetClip", "ptr", this.Graphics)
             this.CanvasChanged()
          }
 
@@ -512,10 +512,10 @@ class TextRender {
 
 
 
-      DrawOnGraphics(gfx, text := "", style1 := "", style2 := "", CanvasWidth := "", CanvasHeight := "") {
+      DrawOnGraphics(Graphics, text := "", style1 := "", style2 := "", CanvasWidth := "", CanvasHeight := "") {
          ; Get default width and height from undocumented graphics pointer offset.
-         (CanvasWidth == "") && CanvasWidth := NumGet(gfx + 20 + A_PtrSize, "uint")
-         (CanvasHeight == "") && CanvasHeight := NumGet(gfx + 24 + A_PtrSize, "uint")
+         (CanvasWidth == "") && CanvasWidth := NumGet(Graphics + 20 + A_PtrSize, "uint")
+         (CanvasHeight == "") && CanvasHeight := NumGet(Graphics + 24 + A_PtrSize, "uint")
 
          ; RegEx help? https://regex101.com/r/rNsP6n/1
          static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
@@ -616,18 +616,18 @@ class TextRender {
             q := 4
 
          ; Save original Graphics settings.
-         DllCall("gdiplus\GdipSaveGraphics", "ptr", gfx, "ptr*", pState:=0)
+         DllCall("gdiplus\GdipSaveGraphics", "ptr", Graphics, "ptr*", pState:=0)
 
          ; Use pixels as the defualt unit when rendering.
-         DllCall("gdiplus\GdipSetPageUnit", "ptr", gfx, "int", 2) ; A unit is 1 pixel.
+         DllCall("gdiplus\GdipSetPageUnit", "ptr", Graphics, "int", 2) ; A unit is 1 pixel.
 
          ; Set Graphics settings.
-         DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", gfx, "int", 4) ; PixelOffsetModeHalf
-         ;DllCall("gdiplus\GdipSetCompositingMode",    "ptr", gfx, "int", 1) ; CompositingModeSourceCopy
-         DllCall("gdiplus\GdipSetCompositingQuality", "ptr", gfx, "int", 4) ; CompositingQualityGammaCorrected
-         DllCall("gdiplus\GdipSetSmoothingMode",      "ptr", gfx, "int", _q)
-         DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", gfx, "int", 7) ; HighQualityBicubic
-         DllCall("gdiplus\GdipSetTextRenderingHint",  "ptr", gfx, "int", q)
+         DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", Graphics, "int", 4) ; PixelOffsetModeHalf
+         ;DllCall("gdiplus\GdipSetCompositingMode",    "ptr", Graphics, "int", 1) ; CompositingModeSourceCopy
+         DllCall("gdiplus\GdipSetCompositingQuality", "ptr", Graphics, "int", 4) ; CompositingQualityGammaCorrected
+         DllCall("gdiplus\GdipSetSmoothingMode",      "ptr", Graphics, "int", _q)
+         DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", Graphics, "int", 7) ; HighQualityBicubic
+         DllCall("gdiplus\GdipSetTextRenderingHint",  "ptr", Graphics, "int", q)
 
          ; These are the type checkers.
          static valid := "^\s*(-?((\d+(\.\d*)?)|(\.\d+)))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
@@ -723,7 +723,7 @@ class TextRender {
 
          ; Otherwise simulate the drawing...
          DllCall("gdiplus\GdipMeasureString"
-                  ,    "ptr", gfx
+                  ,    "ptr", Graphics
                   ,   "wstr", text
                   ,    "int", -1                 ; string length is null terminated.
                   ,    "ptr", hFont
@@ -891,7 +891,7 @@ class TextRender {
          if (z) {
             if (width + x > CanvasWidth) {
                _redrawBecauseOfCondensedFont := True
-               return this.DrawOnGraphics(gfx, text, style1, style2, CanvasWidth, CanvasHeight)
+               return this.DrawOnGraphics(Graphics, text, style1, style2, CanvasWidth, CanvasHeight)
             }
          }
 
@@ -923,9 +923,9 @@ class TextRender {
 
             ; Fill a rectangle with a solid brush. Draw sharp rectangular edges.
             if (_r == 0) {
-               DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", 0) ; SmoothingModeNoAntiAlias
-               DllCall("gdiplus\GdipFillRectangle", "ptr", gfx, "ptr", pBrush, "float", _x, "float", _y, "float", _w, "float", _h) ; DRAWING!
-               DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", _q)
+               DllCall("gdiplus\GdipSetSmoothingMode", "ptr", Graphics, "int", 0) ; SmoothingModeNoAntiAlias
+               DllCall("gdiplus\GdipFillRectangle", "ptr", Graphics, "ptr", pBrush, "float", _x, "float", _y, "float", _w, "float", _h) ; DRAWING!
+               DllCall("gdiplus\GdipSetSmoothingMode", "ptr", Graphics, "int", _q)
             }
 
             ; Fill a rounded rectangle with a solid brush.
@@ -937,7 +937,7 @@ class TextRender {
                DllCall("gdiplus\GdipAddPathArc", "ptr", pPath, "float", _x + _w - _r2, "float", _y + _h - _r2, "float", _r2, "float", _r2, "float",   0, "float", 90)
                DllCall("gdiplus\GdipAddPathArc", "ptr", pPath, "float", _x           , "float", _y + _h - _r2, "float", _r2, "float", _r2, "float",  90, "float", 90)
                DllCall("gdiplus\GdipClosePathFigure", "ptr", pPath) ; Connect existing arc segments into a rounded rectangle.
-               DllCall("gdiplus\GdipFillPath", "ptr", gfx, "ptr", pBrush, "ptr", pPath) ; DRAWING!
+               DllCall("gdiplus\GdipFillPath", "ptr", Graphics, "ptr", pBrush, "ptr", pPath) ; DRAWING!
                DllCall("gdiplus\GdipDeletePath", "ptr", pPath)
             }
 
@@ -958,7 +958,7 @@ class TextRender {
                DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", DropShadow, "ptr*", DropShadowG:=0)
                DllCall("gdiplus\GdipSetSmoothingMode", "ptr", DropShadowG, "int", 0) ; SmoothingModeNoAntiAlias
                DllCall("gdiplus\GdipSetTextRenderingHint", "ptr", DropShadowG, "int", 1) ; TextRenderingHintSingleBitPerPixelGridFit
-               ;DllCall("gdiplus\GdipGraphicsClear", "ptr", gfx, "uint", d.4 & 0xFFFFFF)
+               ;DllCall("gdiplus\GdipGraphicsClear", "ptr", Graphics, "uint", d.4 & 0xFFFFFF)
                VarSetCapacity(RectF, 16, 0)          ; sizeof(RectF) = 16
                   NumPut(d.1+x, RectF,  0, "float") ; Left
                   NumPut(d.2+y, RectF,  4, "float") ; Top
@@ -973,7 +973,7 @@ class TextRender {
                   NumPut(d.2+y, RectF,  4, "float") ; Top
                   NumPut(     w, RectF,  8, "float") ; Width
                   NumPut(     h, RectF, 12, "float") ; Height
-               DropShadowG := gfx
+               DropShadowG := Graphics
             }
 
             ; Use Gdip_DrawString if and only if there is a horizontal/vertical offset.
@@ -1023,12 +1023,12 @@ class TextRender {
             if (True) {
                DllCall("gdiplus\GdipDeleteGraphics", "ptr", DropShadowG)
                this.GaussianBlur(DropShadow, d.3, d.5)
-               DllCall("gdiplus\GdipSetInterpolationMode", "ptr", gfx, "int", 5) ; NearestNeighbor
-               DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", 0) ; SmoothingModeNoAntiAlias
-               ;Gdip_DrawImage(gfx, DropShadow, x + d.1 - offset2, y + d.2 - offset2, w + 2*offset2, h + 2*offset2) ; DRAWING!
-               ;Gdip_DrawImage(gfx, DropShadow, 0, 0, A_Screenwidth, A_ScreenHeight) ; DRAWING!
+               DllCall("gdiplus\GdipSetInterpolationMode", "ptr", Graphics, "int", 5) ; NearestNeighbor
+               DllCall("gdiplus\GdipSetSmoothingMode", "ptr", Graphics, "int", 0) ; SmoothingModeNoAntiAlias
+               ;Gdip_DrawImage(Graphics, DropShadow, x + d.1 - offset2, y + d.2 - offset2, w + 2*offset2, h + 2*offset2) ; DRAWING!
+               ;Gdip_DrawImage(Graphics, DropShadow, 0, 0, A_Screenwidth, A_ScreenHeight) ; DRAWING!
                DllCall("gdiplus\GdipDrawImageRectRectI" ; DRAWING!
-                        ,    "ptr", gfx
+                        ,    "ptr", Graphics
                         ,    "ptr", DropShadow
                         ,    "int", 0, "int", 0, "int", A_Screenwidth, "int", A_Screenwidth ; destination rectangle
                         ,    "int", 0, "int", 0, "int", A_Screenwidth, "int", A_Screenwidth ; source rectangle
@@ -1036,7 +1036,7 @@ class TextRender {
                         ,    "ptr", 0  ; imageAttributes
                         ,    "ptr", 0  ; callback
                         ,    "ptr", 0) ; callbackData
-               DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", _q)
+               DllCall("gdiplus\GdipSetSmoothingMode", "ptr", Graphics, "int", _q)
                DllCall("gdiplus\GdipDisposeImage", "ptr", DropShadow)
             }
          }
@@ -1063,7 +1063,7 @@ class TextRender {
 
             ; Create a glow effect around the edges.
             if (o.3) {
-               DllCall("gdiplus\GdipSetClipPath", "ptr", gfx, "ptr", pPath, "int", 3) ; Exclude original text region from being drawn on.
+               DllCall("gdiplus\GdipSetClipPath", "ptr", Graphics, "ptr", pPath, "int", 3) ; Exclude original text region from being drawn on.
                ARGB := Format("0x{:02X}",((o.4 & 0xFF000000) >> 24)/o.3) . Format("{:06X}",(o.4 & 0x00FFFFFF))
                DllCall("gdiplus\GdipCreatePen1", "uint", ARGB, "float", 1, "int", 2, "ptr*", pPenGlow:=0) ; UnitTypePixel = 2
                DllCall("gdiplus\GdipSetPenLineJoin", "ptr", pPenGlow, "uint", 2) ; LineJoinTypeRound
@@ -1071,25 +1071,25 @@ class TextRender {
                loop % o.3
                {
                   DllCall("gdiplus\GdipSetPenWidth", "ptr", pPenGlow, "float", o.1 + 2*A_Index)
-                  DllCall("gdiplus\GdipDrawPath", "ptr", gfx, "ptr", pPenGlow, "ptr", pPath) ; DRAWING!
+                  DllCall("gdiplus\GdipDrawPath", "ptr", Graphics, "ptr", pPenGlow, "ptr", pPath) ; DRAWING!
                }
                DllCall("gdiplus\GdipDeletePen", "ptr", pPenGlow)
-               DllCall("gdiplus\GdipResetClip", "ptr", gfx)
+               DllCall("gdiplus\GdipResetClip", "ptr", Graphics)
             }
 
             ; Draw outline text.
             if (o.1) {
                DllCall("gdiplus\GdipCreatePen1", "uint", o.2, "float", o.1, "int", 2, "ptr*", pPen:=0) ; UnitTypePixel = 2
                DllCall("gdiplus\GdipSetPenLineJoin", "ptr", pPen, "uint", 2) ; LineJoinTypeRound
-               DllCall("gdiplus\GdipDrawPath", "ptr", gfx, "ptr", pPen, "ptr", pPath) ; DRAWING!
+               DllCall("gdiplus\GdipDrawPath", "ptr", Graphics, "ptr", pPen, "ptr", pPath) ; DRAWING!
                DllCall("gdiplus\GdipDeletePen", "ptr", pPen)
             }
 
             ; Fill outline text.
             DllCall("gdiplus\GdipCreateSolidFill", "uint", c, "ptr*", pBrush:=0)
-            DllCall("gdiplus\GdipSetCompositingMode", "ptr", gfx, "int", AlphaCopy)
-            DllCall("gdiplus\GdipFillPath", "ptr", gfx, "ptr", pBrush, "ptr", pPath) ; DRAWING!
-            DllCall("gdiplus\GdipSetCompositingMode", "ptr", gfx, "int", 0) ; CompositingModeSourceOver
+            DllCall("gdiplus\GdipSetCompositingMode", "ptr", Graphics, "int", AlphaCopy)
+            DllCall("gdiplus\GdipFillPath", "ptr", Graphics, "ptr", pBrush, "ptr", pPath) ; DRAWING!
+            DllCall("gdiplus\GdipSetCompositingMode", "ptr", Graphics, "int", 0) ; CompositingModeSourceOver
             DllCall("gdiplus\GdipDeleteBrush", "ptr", pBrush)
             DllCall("gdiplus\GdipDeletePath", "ptr", pPath)
          }
@@ -1097,7 +1097,7 @@ class TextRender {
 
          ; Draw 4 - Text
          if (text != "" && o.void) {
-            DllCall("gdiplus\GdipSetCompositingMode", "ptr", gfx, "int", AlphaCopy)
+            DllCall("gdiplus\GdipSetCompositingMode", "ptr", Graphics, "int", AlphaCopy)
 
             VarSetCapacity(RectF, 16, 0)     ; sizeof(RectF) = 16
                NumPut(x, RectF,  0, "float") ; Left
@@ -1106,7 +1106,7 @@ class TextRender {
                NumPut(h, RectF, 12, "float") ; Height
 
             DllCall("gdiplus\GdipMeasureString"
-                     ,    "ptr", gfx
+                     ,    "ptr", Graphics
                      ,   "wstr", text
                      ,    "int", -1                 ; string length.
                      ,    "ptr", hFont
@@ -1118,7 +1118,7 @@ class TextRender {
 
             DllCall("gdiplus\GdipCreateSolidFill", "uint", c, "ptr*", pBrush:=0)
             DllCall("gdiplus\GdipDrawString"
-                     ,    "ptr", gfx
+                     ,    "ptr", Graphics
                      ,   "wstr", text
                      ,    "int", -1
                      ,    "ptr", hFont
@@ -1145,7 +1145,7 @@ class TextRender {
          DllCall("gdiplus\GdipDeleteFontFamily", "ptr", hFamily)
 
          ; Restore original Graphics settings.
-         DllCall("gdiplus\GdipRestoreGraphics", "ptr", gfx, "ptr", pState)
+         DllCall("gdiplus\GdipRestoreGraphics", "ptr", Graphics, "ptr", pState)
 
          ; Calulate the number of words.
          ; First, use the number of chars displayed by GdipMeasureString to truncate "text".
@@ -1194,16 +1194,16 @@ class TextRender {
       }
 
       DrawOnBitmap(pBitmap, text := "", style1 := "", style2 := "") {
-         DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", pBitmap, "ptr*", gfx:=0)
-         obj := this.DrawOnGraphics(gfx, text, style1, style2)
-         DllCall("gdiplus\GdipDeleteGraphics", "ptr", gfx)
+         DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", pBitmap, "ptr*", Graphics:=0)
+         obj := this.DrawOnGraphics(Graphics, text, style1, style2)
+         DllCall("gdiplus\GdipDeleteGraphics", "ptr", Graphics)
          return obj
       }
 
       DrawOnHDC(hdc, text := "", style1 := "", style2 := "") {
-         DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", gfx:=0)
-         obj := this.DrawOnGraphics(gfx, text, style1, style2)
-         DllCall("gdiplus\GdipDeleteGraphics", "ptr", gfx)
+         DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", Graphics:=0)
+         obj := this.DrawOnGraphics(Graphics, text, style1, style2)
+         DllCall("gdiplus\GdipDeleteGraphics", "ptr", Graphics)
          return obj
       }
 
@@ -1926,15 +1926,15 @@ class TextRender {
             NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
          hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
          obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-         gfx := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", gfx:=0, "int") ? False : gfx
-         DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", gfx, "float", -this.BitmapLeft, "float", -this.BitmapTop, "int", 0)
+         DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", Graphics:=0)
+         DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", Graphics, "float", -this.BitmapLeft, "float", -this.BitmapTop, "int", 0)
 
          this.hdc := hdc
          this.hbm := hbm
          this.obm := obm
-         this.gfx := gfx
          this.ptr := pBits
          this.size := 4 * width * height
+         this.Graphics := Graphics
 
          return this
       }
@@ -1947,11 +1947,11 @@ class TextRender {
          this.UpdateStatus()
 
          ; Free memory objects that cannot be garbage collected.
-         DllCall("gdiplus\GdipDeleteGraphics", "ptr", this.gfx)
+         DllCall("gdiplus\GdipDeleteGraphics", "ptr", this.Graphics)
          DllCall("SelectObject", "ptr", this.hdc, "ptr", this.obm)
          DllCall("DeleteObject", "ptr", this.hbm)
          DllCall("DeleteDC",     "ptr", this.hdc)
-         this.gfx := this.obm := this.hbm := this.hdc := ""
+         this.Graphics := this.obm := this.hbm := this.hdc := ""
 
          ; Allow subsequent calls to UpdateMemory() to call LoadMemory()
          this.BitmapWidth := ""
@@ -2130,15 +2130,15 @@ class TextRender {
             NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
          hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
          obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-         gfx := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", gfx:=0, "int") ? False : gfx
+         Graphics := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", Graphics:=0, "int") ? False : Graphics
 
          ; Set the origin to this.x and this.y
-         DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", gfx, "float", -this.x, "float", -this.y, "int", 0)
+         DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", Graphics, "float", -this.x, "float", -this.y, "int", 0)
 
          for i, layer in this.layers
-            this.DrawOnGraphics(gfx, layer[1], layer[2], layer[3], this.BitmapWidth, this.BitmapHeight)
+            this.DrawOnGraphics(Graphics, layer[1], layer[2], layer[3], this.BitmapWidth, this.BitmapHeight)
 
-         DllCall("gdiplus\GdipDeleteGraphics", "ptr", gfx)
+         DllCall("gdiplus\GdipDeleteGraphics", "ptr", Graphics)
          DllCall("SelectObject", "ptr", hdc, "ptr", obm)
          DllCall("DeleteDC",     "ptr", hdc)
 
@@ -2162,11 +2162,11 @@ class TextRender {
       RenderToBitmap() {
          DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.w, "int", this.h
             , "uint", 0, "uint", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
-         DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", pBitmap, "ptr*", gfx:=0)
-         DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", gfx, "float", -this.x, "float", -this.y, "int", 0)
+         DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", pBitmap, "ptr*", Graphics:=0)
+         DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", Graphics, "float", -this.x, "float", -this.y, "int", 0)
          for i, layer in this.layers
-            this.DrawOnGraphics(gfx, layer[1], layer[2], layer[3], this.BitmapWidth, this.BitmapHeight)
-         DllCall("gdiplus\GdipDeleteGraphics", "ptr", gfx)
+            this.DrawOnGraphics(Graphics, layer[1], layer[2], layer[3], this.BitmapWidth, this.BitmapHeight)
+         DllCall("gdiplus\GdipDeleteGraphics", "ptr", Graphics)
          return pBitmap
       }
 
@@ -2458,7 +2458,7 @@ ImageRender(image:="", style:="", polygons:="") {
 
 class ImageRender extends TextRender {
 
-   DrawOnGraphics(gfx, image := "", style := "", polygons := "", CanvasWidth := "", CanvasHeight := "") {
+   DrawOnGraphics(Graphics, image := "", style := "", polygons := "", CanvasWidth := "", CanvasHeight := "") {
 
       ; Requires the ImagePut class for full features.
       if (image != "") {
@@ -2479,8 +2479,8 @@ class ImageRender extends TextRender {
       }
 
       ; Get default width and height from undocumented graphics pointer offset.
-      (CanvasWidth == "") && CanvasWidth := NumGet(gfx + 20 + A_PtrSize, "uint")
-      (CanvasHeight == "") && CanvasHeight := NumGet(gfx + 24 + A_PtrSize, "uint")
+      (CanvasWidth == "") && CanvasWidth := NumGet(Graphics + 20 + A_PtrSize, "uint")
+      (CanvasHeight == "") && CanvasHeight := NumGet(Graphics + 24 + A_PtrSize, "uint")
 
       ; RegEx help? https://regex101.com/r/rNsP6n/1
       static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
@@ -2664,14 +2664,14 @@ class ImageRender extends TextRender {
       _y := y - m.1
 
       ; Save original Graphics settings.
-      DllCall("gdiplus\GdipSaveGraphics", "ptr", gfx, "ptr*", pState:=0)
+      DllCall("gdiplus\GdipSaveGraphics", "ptr", Graphics, "ptr*", pState:=0)
 
       ; Set some general Graphics settings.
-      DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr",gfx, "int",2) ; Half pixel offset.
-      DllCall("gdiplus\GdipSetCompositingMode",    "ptr",gfx, "int",1) ; Overwrite/SourceCopy.
-      DllCall("gdiplus\GdipSetCompositingQuality", "ptr",gfx, "int",0) ; AssumeLinear
-      DllCall("gdiplus\GdipSetSmoothingMode",      "ptr",gfx, "int",0) ; No anti-alias.
-      DllCall("gdiplus\GdipSetInterpolationMode",  "ptr",gfx, "int",7) ; HighQualityBicubic
+      DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr",Graphics, "int",2) ; Half pixel offset.
+      DllCall("gdiplus\GdipSetCompositingMode",    "ptr",Graphics, "int",1) ; Overwrite/SourceCopy.
+      DllCall("gdiplus\GdipSetCompositingQuality", "ptr",Graphics, "int",0) ; AssumeLinear
+      DllCall("gdiplus\GdipSetSmoothingMode",      "ptr",Graphics, "int",0) ; No anti-alias.
+      DllCall("gdiplus\GdipSetInterpolationMode",  "ptr",Graphics, "int",7) ; HighQualityBicubic
 
       ; Begin drawing the image onto the canvas.
       if (pBitmap != "") {
@@ -2680,9 +2680,9 @@ class ImageRender extends TextRender {
          if (c != "" || !m.void) {
             c := this.color(c, 0xDD212121) ; Default color is transparent gray.
             if (c & 0xFF000000) {
-               DllCall("gdiplus\GdipSetSmoothingMode", "ptr", gfx, "int", 0) ; SmoothingModeNoAntiAlias
+               DllCall("gdiplus\GdipSetSmoothingMode", "ptr", Graphics, "int", 0) ; SmoothingModeNoAntiAlias
                DllCall("gdiplus\GdipCreateSolidFill", "uint", c, "ptr*", pBrush:=0)
-               DllCall("gdiplus\GdipFillRectangle", "ptr", gfx, "ptr", pBrush, "float", _x, "float", _y, "float", _w, "float", _h) ; DRAWING!
+               DllCall("gdiplus\GdipFillRectangle", "ptr", Graphics, "ptr", pBrush, "float", _x, "float", _y, "float", _w, "float", _h) ; DRAWING!
                DllCall("gdiplus\GdipDeleteBrush", "ptr", pBrush)
             }
          }
@@ -2690,7 +2690,7 @@ class ImageRender extends TextRender {
          ; Draw image using GDI.
          if (q = 0 || w == width && h == height) {
             ; Get a read-only device context associated with the Graphics object.
-            DllCall("gdiplus\GdipGetDC", "ptr", gfx, "ptr*", ddc:=0)
+            DllCall("gdiplus\GdipGetDC", "ptr", Graphics, "ptr*", ddc:=0)
 
             ; Allocate a top-down device independent bitmap (hbm) by inputting a negative height.
             ; Outputs a pointer to the pixel data. Select the new handle to a bitmap onto the cloned
@@ -2765,7 +2765,7 @@ class ImageRender extends TextRender {
             DllCall("DeleteObject", "ptr", hbm)
             DllCall("DeleteDC",     "ptr", hdc)
 
-            DllCall("gdiplus\GdipReleaseDC", "ptr", gfx, "ptr", ddc)
+            DllCall("gdiplus\GdipReleaseDC", "ptr", Graphics, "ptr", ddc)
          }
 
          ; Draw image scaled to a new width and height.
@@ -2773,11 +2773,11 @@ class ImageRender extends TextRender {
             ; Set InterpolationMode.
             q := (q >= 0 && q <= 7) ? q : 7    ; HighQualityBicubic
 
-            DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", gfx, "int", 2) ; Half pixel offset.
-            DllCall("gdiplus\GdipSetCompositingMode",    "ptr", gfx, "int", 1) ; Overwrite/SourceCopy.
-            DllCall("gdiplus\GdipSetSmoothingMode",      "ptr", gfx, "int", 0) ; No anti-alias.
-            DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", gfx, "int", q)
-            DllCall("gdiplus\GdipSetCompositingQuality", "ptr", gfx, "int", 0) ; AssumeLinear
+            DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", Graphics, "int", 2) ; Half pixel offset.
+            DllCall("gdiplus\GdipSetCompositingMode",    "ptr", Graphics, "int", 1) ; Overwrite/SourceCopy.
+            DllCall("gdiplus\GdipSetSmoothingMode",      "ptr", Graphics, "int", 0) ; No anti-alias.
+            DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", Graphics, "int", q)
+            DllCall("gdiplus\GdipSetCompositingQuality", "ptr", Graphics, "int", 0) ; AssumeLinear
 
             ; Draw image with proper edges and scaling.
             DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", ImageAttr)
@@ -2791,7 +2791,7 @@ class ImageRender extends TextRender {
 
             DllCall("gdiplus\GdipSetImageAttributesWrapMode", "ptr", ImageAttr, "int", 3) ; WrapModeTileFlipXY
             DllCall("gdiplus\GdipDrawImageRectRectI"
-                     ,    "ptr", gfx
+                     ,    "ptr", Graphics
                      ,    "ptr", pBitmap
                      ,    "int", x, "int", y, "int", w    , "int", h      ; destination rectangle
                      ,    "int", 0, "int", 0, "int", width, "int", height ; source rectangle
@@ -2805,9 +2805,9 @@ class ImageRender extends TextRender {
 
       ; Begin drawing the polygons onto the canvas.
       if (polygons != "") {
-         DllCall("gdiplus\GdipSetPixelOffsetMode",   "ptr",gfx, "int",0) ; No pixel offset.
-         DllCall("gdiplus\GdipSetCompositingMode",   "ptr",gfx, "int",1) ; Overwrite/SourceCopy.
-         DllCall("gdiplus\GdipSetSmoothingMode",     "ptr",gfx, "int",2) ; Use anti-alias.
+         DllCall("gdiplus\GdipSetPixelOffsetMode",   "ptr",Graphics, "int",0) ; No pixel offset.
+         DllCall("gdiplus\GdipSetCompositingMode",   "ptr",Graphics, "int",1) ; Overwrite/SourceCopy.
+         DllCall("gdiplus\GdipSetSmoothingMode",     "ptr",Graphics, "int",2) ; Use anti-alias.
 
          DllCall("gdiplus\GdipCreatePen1", "uint", 0xFFFF0000, "float", 1, "int", 2, "ptr*", pPen:=0)
 
@@ -2819,14 +2819,14 @@ class ImageRender extends TextRender {
                NumPut(point.y*s + y, pointf, 8*(A_Index-1) + 4, "float")
             }
             DllCall("gdiplus\GdipAddPathPolygon", "ptr",pPath, "ptr",&pointf, "uint",polygons[i].polygon.maxIndex())
-            DllCall("gdiplus\GdipDrawPath", "ptr",gfx, "ptr",pPen, "ptr",pPath) ; DRAWING!
+            DllCall("gdiplus\GdipDrawPath", "ptr",Graphics, "ptr",pPen, "ptr",pPath) ; DRAWING!
          }
 
          DllCall("gdiplus\GdipDeletePen", "ptr", pPen)
       }
 
       ; Restore original Graphics settings.
-      DllCall("gdiplus\GdipRestoreGraphics", "ptr", gfx, "ptr", pState)
+      DllCall("gdiplus\GdipRestoreGraphics", "ptr", Graphics, "ptr", pState)
 
       ; Define bounds.
       t_bound := this.time(t)

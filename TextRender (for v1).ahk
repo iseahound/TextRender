@@ -1131,13 +1131,13 @@ class TextRender {
             y := NumGet(RectF,  4, "float")
             w := NumGet(RectF,  8, "float")
             h := NumGet(RectF, 12, "float")
-
-            x := Round(x)
-            y := Round(y)
-            w := Round(x + w) - Round(x)
-            h := Round(y + h) - Round(y)
          }
 
+         ; Prevent half-pixel rendering and keep image sharp.
+         w := Round(x + w) - Round(x)
+         h := Round(y + h) - Round(y)
+         x := Round(x)
+         y := Round(y)
 
          ; Cleanup.
          DllCall("gdiplus\GdipDeleteStringFormat", "ptr", hFormat)
@@ -2008,7 +2008,7 @@ class TextRender {
          h := Round(this.WindowHeight)
 
          ; Allocate buffer.
-         VarSetCapacity(buffer, 4 * w * h, 0)
+         VarSetCapacity(buf, 4 * w * h, 0)
 
          ; Create a Bitmap with 32-bit pre-multiplied ARGB. (Owned by this object!)
          DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.BitmapWidth, "int", this.BitmapHeight
@@ -2022,7 +2022,7 @@ class TextRender {
             NumPut(      h, Rect, 12,   "uint") ; Height
          VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0) ; sizeof(BitmapData) = 24, 32
             NumPut(    4*w, BitmapData,  8,    "int")  ; Stride
-            NumPut(&buffer, BitmapData, 16,    "ptr")  ; Scan0
+            NumPut(   &buf, BitmapData, 16,    "ptr")  ; Scan0
 
          ; Convert pARGB to ARGB using a writable buffer created by LockBits.
          DllCall("gdiplus\GdipBitmapLockBits"
@@ -2046,7 +2046,7 @@ class TextRender {
             if _w*70 > A_ScreenWidth * 2
                continue
             formula := _h*w + _w
-            pixel := Format("{:08X}", NumGet(buffer, 4*formula, "uint"))
+            pixel := Format("{:08X}", NumGet(buf, 4*formula, "uint"))
             text := RegExReplace(pixel, "(.{4})(.{4})", "$1`r`n$2")
             this.Draw(text, "x" _w*70 " y"  70*(_h) " w70 h70 m0 c" pixel, "s:24pt v:center")
          }

@@ -1765,7 +1765,7 @@ class TextRender {
       }
 
       ; Source: ImagePut 1.9.0 - WindowClass()
-      WindowClass(style := 0, cls := "") {
+      WindowClass(cls := "", style := 0) {
          ; The window class shares the name of this class.
          (cls == "") && cls := this.__class
          wc := Buffer(A_PtrSize = 4 ? 48:80) ; sizeof(WNDCLASSEX) = 48, 80

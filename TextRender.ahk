@@ -1913,6 +1913,44 @@ class TextRender {
 
    ; Memory Management
 
+      UpdateMemory() {
+         dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         if (this.parent) {
+            ; Get client window coordinates.
+            DllCall("GetClientRect", "ptr", this.parent, "ptr", Rect := Buffer(16)) ; sizeof(RECT) = 16
+            x := this.OffsetLeft ; Default: 0
+            y := this.OffsetTop  ; Default: 0
+            w := NumGet(Rect, 8, "int")
+            h := NumGet(Rect, 12, "int")
+         } else {
+            ; Get true virtual screen coordinates.
+            x := DllCall("GetSystemMetrics", "int", 76, "int")
+            y := DllCall("GetSystemMetrics", "int", 77, "int")
+            w := DllCall("GetSystemMetrics", "int", 78, "int")
+            h := DllCall("GetSystemMetrics", "int", 79, "int")
+         }
+         DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+
+         if (w = this.BitmapWidth && h = this.BitmapHeight)
+            return this
+
+         ; Deletes bitmap coordinates.
+         this.FreeMemory()
+
+         ; Set bitmap coordinates.
+         this.BitmapLeft := x
+         this.BitmapTop := y
+         this.BitmapRight := x + w
+         this.BitmapBottom := y + h
+         this.BitmapWidth := w
+         this.BitmapHeight := h
+
+         ; Uses bitmap coordinates.
+         this.LoadMemory()
+
+         return this
+      }
+      
       LoadMemory() {
          width := this.BitmapWidth, height := this.BitmapHeight
 
@@ -1960,44 +1998,6 @@ class TextRender {
          this.BitmapTop := ""
          this.BitmapRight := ""
          this.BitmapBottom := ""
-         return this
-      }
-
-      UpdateMemory() {
-         dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-         if (this.parent) {
-            ; Get client window coordinates.
-            DllCall("GetClientRect", "ptr", this.parent, "ptr", Rect := Buffer(16)) ; sizeof(RECT) = 16
-            x := this.OffsetLeft ; Default: 0
-            y := this.OffsetTop  ; Default: 0
-            w := NumGet(Rect, 8, "int")
-            h := NumGet(Rect, 12, "int")
-         } else {
-            ; Get true virtual screen coordinates.
-            x := DllCall("GetSystemMetrics", "int", 76, "int")
-            y := DllCall("GetSystemMetrics", "int", 77, "int")
-            w := DllCall("GetSystemMetrics", "int", 78, "int")
-            h := DllCall("GetSystemMetrics", "int", 79, "int")
-         }
-         DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-
-         if (w = this.BitmapWidth && h = this.BitmapHeight)
-            return this
-
-         ; Deletes bitmap coordinates.
-         this.FreeMemory()
-
-         ; Set bitmap coordinates.
-         this.BitmapLeft := x
-         this.BitmapTop := y
-         this.BitmapRight := x + w
-         this.BitmapBottom := y + h
-         this.BitmapWidth := w
-         this.BitmapHeight := h
-
-         ; Uses bitmap coordinates.
-         this.LoadMemory()
-
          return this
       }
 

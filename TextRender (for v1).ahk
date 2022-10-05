@@ -2002,13 +2002,15 @@ class TextRender {
       }
 
       DebugMemory() {
-         x := this.WindowLeft
-         y := this.WindowTop
-         w := Round(this.WindowWidth)
-         h := Round(this.WindowHeight)
+         ; Using LockBits seems to bypass the need for DeleteGraphics to commit changes to this.ptr
+         left   := this.WindowLeft
+         top    := this.WindowTop
+         width  := this.WindowWidth
+         height := this.WindowHeight
 
          ; Allocate buffer.
-         VarSetCapacity(buf, 4 * w * h, 0)
+         size := 4 * width * height
+         VarSetCapacity(buf, size)
 
          ; Create a Bitmap with 32-bit pre-multiplied ARGB. (Owned by this object!)
          DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.BitmapWidth, "int", this.BitmapHeight
@@ -2016,12 +2018,12 @@ class TextRender {
 
          ; Specify that only a cropped bitmap portion will be copied.
          VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-            NumPut(      x, Rect,  0,    "int") ; X
-            NumPut(      y, Rect,  4,    "int") ; Y
-            NumPut(      w, Rect,  8,   "uint") ; Width
-            NumPut(      h, Rect, 12,   "uint") ; Height
+            NumPut(   left, Rect,  0,    "int") ; X
+            NumPut(    top, Rect,  4,    "int") ; Y
+            NumPut(  width, Rect,  8,   "uint") ; Width
+            NumPut( height, Rect, 12,   "uint") ; Height
          VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0) ; sizeof(BitmapData) = 24, 32
-            NumPut(    4*w, BitmapData,  8,    "int")  ; Stride
+            NumPut(4*width, BitmapData,  8,    "int")  ; Stride
             NumPut(   &buf, BitmapData, 16,    "ptr")  ; Scan0
 
          ; Convert pARGB to ARGB using a writable buffer created by LockBits.
@@ -2037,23 +2039,22 @@ class TextRender {
          DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
          ; Draw an enlarged pixel grid layout with printed color hexes.
-         loop % h {
-         _h := A_Index-1
-            if _h*70 > A_ScreenHeight * 3
-               break
-         loop % w {
-         _w := A_Index-1
-            if _w*70 > A_ScreenWidth * 2
-               continue
-            formula := _h*w + _w
-            pixel := Format("{:08X}", NumGet(buf, 4*formula, "uint"))
-            text := RegExReplace(pixel, "(.{4})(.{4})", "$1`r`n$2")
-            this.Draw(text, "x" _w*70 " y"  70*(_h) " w70 h70 m0 c" pixel, "s:24pt v:center")
-         }
+         tr := TextRender()
+         loop % height {
+            h := A_Index-1
+            loop % width {
+               w := A_Index-1
+               offset := h * width + w
+               tr.Render("Progress: " Round(offset / (width * height) * 100, 2) "%", "y:67%")
+               pixel := Format("{:08X}", NumGet(buf, 4*offset, "uint"))
+               hex := RegExReplace(pixel, "(.{4})(.{4})", "$1`r`n$2")
+               this.Draw(hex, {x:70*w, y:70*h, w:70, h:70, m:0, c:pixel}, "s:24pt v:center")
+            }
          }
 
-         ; Calling RenderOnScreen() is rather slow as every redraw happens again.
-         this.RenderOnScreen()
+         ; Show the user using their built-in image viewer.
+         tr.Render("Writing to disk...", "y:67%")
+         Run % this.save("TextRender.png")
 
          ; Note that this is a slow function in general. I'm not entirely sure how it can be sped up.
          return this

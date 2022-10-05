@@ -186,9 +186,7 @@ class TextRender {
                NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
             hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
             obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-            Graphics := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", Graphics:=0, "int") ? False : Graphics
-
-            ; Set the origin to this.x and this.y
+            DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", Graphics:=0)
             DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", Graphics, "float", -this.x, "float", -this.y, "int", 0)
 
             ; Redraw on the canvas.
@@ -1950,7 +1948,7 @@ class TextRender {
 
          return this
       }
-      
+
       LoadMemory() {
          width := this.BitmapWidth, height := this.BitmapHeight
 
@@ -2136,9 +2134,7 @@ class TextRender {
             NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
          hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
          obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-         Graphics := DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", Graphics:=0, "int") ? False : Graphics
-
-         ; Set the origin to this.x and this.y
+         DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", Graphics:=0)
          DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", Graphics, "float", -this.x, "float", -this.y, "int", 0)
 
          for i, layer in this.layers

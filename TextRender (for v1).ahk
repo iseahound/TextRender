@@ -1759,10 +1759,8 @@ class TextRender {
       }
 
       DestroyWindow() {
-         if (!this.hwnd)
-            return this
-
-         DllCall("DestroyWindow", "ptr", this.hwnd) ; Sends WM_DESTROY
+         if (this.hwnd)
+            DllCall("DestroyWindow", "ptr", this.hwnd) ; Sends WM_DESTROY
          return this
       }
 

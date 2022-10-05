@@ -100,12 +100,12 @@ class TextRender {
       }
 
       TopMost() {
-         WinSetAlwaysOnTop(1, "ahk_id" this.hwnd)
+         WinSetAlwaysOnTop 1, "ahk_id" this.hwnd
          return this
       }
 
       AlwaysOnTop() {
-         WinSetAlwaysOnTop(-1, "ahk_id" this.hwnd)
+         WinSetAlwaysOnTop -1, "ahk_id" this.hwnd
          return this
       }
 

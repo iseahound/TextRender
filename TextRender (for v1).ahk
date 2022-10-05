@@ -1836,17 +1836,17 @@ class TextRender {
             static dict :=
             ( LTrim Join
             {
-               WM_LBUTTONDOWN := 0x0201    : "LeftMouseDown",
-               WM_LBUTTONUP := 0x0202      : "LeftMouseUp",
-               WM_LBUTTONDBLCLK := 0x0203  : "LeftMouseDoubleClick",
-               WM_RBUTTONDOWN := 0x0204    : "RightMouseDown",
-               WM_RBUTTONUP := 0x0205      : "RightMouseUp",
-               WM_RBUTTONDBLCLK := 0x0206  : "RightMouseDoubleClick",
-               WM_MBUTTONDOWN := 0x0207    : "MiddleMouseDown",
-               WM_MBUTTONUP := 0x0208      : "MiddleMouseUp",
-               WM_MBUTTONDBLCLK := 0x0209  : "MiddleMouseDoubleClick",
-               WM_MOUSEHOVER := 0x02A1     : "MouseOver",
-               WM_MOUSELEAVE := 0x02A3     : "MouseLeave"
+               0x0201  : "LeftMouseDown",
+               0x0202  : "LeftMouseUp",
+               0x0203  : "LeftMouseDoubleClick",
+               0x0204  : "RightMouseDown",
+               0x0205  : "RightMouseUp",
+               0x0206  : "RightMouseDoubleClick",
+               0x0207  : "MiddleMouseDown",
+               0x0208  : "MiddleMouseUp",
+               0x0209  : "MiddleMouseDoubleClick",
+               0x02A1  : "MouseOver",
+               0x02A3  : "MouseLeave"
             }
             )
 

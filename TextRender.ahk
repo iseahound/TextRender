@@ -1834,6 +1834,7 @@ class TextRender {
             ; Match window messages to Rainmeter event names.
             ; https://docs.rainmeter.net/manual/mouse-actions/
             static dict :=
+
             {
                0x0201  : "LeftMouseDown",
                0x0202  : "LeftMouseUp",
@@ -1847,7 +1848,6 @@ class TextRender {
                0x02A1  : "MouseOver",
                0x02A3  : "MouseLeave"
             }
-
 
 
             ; Process windows messages by invoking the associated callback.

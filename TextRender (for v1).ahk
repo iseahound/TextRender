@@ -134,7 +134,7 @@ class TextRender {
       }
 
    ; Renders and Effects
-   
+
       Render(terms*) {
 
          this.Draw(terms*)

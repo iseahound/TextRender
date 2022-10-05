@@ -45,7 +45,7 @@ class TextRender {
 
       ; Store a reference to "this" inside GWLP_USERDATA for window messages.
       DllCall("SetWindowLongPtr", "ptr", this.hwnd, "int", 0, "ptr", ObjPtr(this))
-      
+
       ; Show the window without activating it.
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
 
@@ -450,7 +450,7 @@ class TextRender {
          }
          return this
       }
-      
+
       Wait(wait_time := 0) {
 
          ; Allow the user to override the original duration with a positive number.

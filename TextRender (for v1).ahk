@@ -1887,7 +1887,8 @@ class TextRender {
             , _x := NumGet(point, 0, "int")
             , _y := NumGet(point, 4, "int")
          WinGetPos x, y, w, h, % "ahk_id " this.hwnd
-         coordinates := Format("x:{:5} w:{:5}`r`ny:{:5} h:{:5}", x, w, y, h)
+         len := max(StrLen(x), StrLen(y), StrLen(w), StrLen(h)) + 1
+         coordinates := Format("x:{:" len "} w:{:" len "}`r`ny:{:" len "} h:{:" len "}", x, w, y, h)
 
          this.friend1.Render(coordinates
             , {t: 7000, r: "0.5vmin", x: _x+20, y: _y+20}

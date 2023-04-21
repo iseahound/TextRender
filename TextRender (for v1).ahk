@@ -34,10 +34,10 @@ class TextRender {
       this.style2 := ""
 
       ; Create the window with PER_MONITOR_AWARE dpi awareness.
-      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       if !(this.hwnd := this.CreateWindow(title, style, styleEx, parent))
          throw Exception("Max threads reached. Set #MaxThreads to a higher limit.")
-      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; Get real parent window coordinates. GetDesktopWindow is a default value.
       this.parent := DllCall("GetAncestor", "ptr", this.hwnd, "uint", 1, "ptr")
@@ -355,11 +355,11 @@ class TextRender {
          this.layers.push([data, style1, style2])
 
          ; Drawing
-         dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          obj := this.DrawOnGraphics(this.Graphics, data, style1, style2
             , this.ScaleWidth ? this.BitmapWidth : A_ScreenWidth
             , this.ScaleHeight ? this.BitmapHeight : A_ScreenHeight)
-         DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
          ; Create a unique signature for each call to Draw().
          this.CanvasChanged()
@@ -1914,7 +1914,7 @@ class TextRender {
    ; Memory Management
 
       UpdateMemory() {
-         dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          if (this.parent) {
             ; Get client window coordinates.
             DllCall("GetClientRect", "ptr", this.parent, "ptr", &Rect := VarSetCapacity(Rect, 16)) ; sizeof(RECT) = 16
@@ -1929,7 +1929,7 @@ class TextRender {
             w := DllCall("GetSystemMetrics", "int", 78, "int")
             h := DllCall("GetSystemMetrics", "int", 79, "int")
          }
-         DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
          if (w = this.BitmapWidth && h = this.BitmapHeight)
             return this
@@ -2414,10 +2414,10 @@ TextRenderDesktop(text:="", background_style:="", text_style:="") {
    desktop := WinExist("ahk_class Progman")
 
    ; Get true virtual screen coordinates.
-   dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+   try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
    x := DllCall("GetSystemMetrics", "int", 76, "int")
    y := DllCall("GetSystemMetrics", "int", 77, "int")
-   DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+   try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
    try return (new TextRender(, WS_CHILD, WS_EX_LAYERED, desktop, x, y)).Render(text, background_style, text_style)
    finally { ; Used to show the desktop creations immediately.
@@ -2447,10 +2447,10 @@ TextRenderWallpaper(text:="", background_style:="", text_style:="") {
       throw Exception("Could not locate hidden window behind desktop icons.")
 
    ; Get true virtual screen coordinates.
-   dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+   try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
    x := DllCall("GetSystemMetrics", "int", 76, "int")
    y := DllCall("GetSystemMetrics", "int", 77, "int")
-   DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+   try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
    return (new TextRender(, WS_CHILD, WS_EX_LAYERED, WorkerW, x, y)).Render(text, background_style, text_style)
 }

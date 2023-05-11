@@ -44,7 +44,7 @@ class TextRender {
       (this.parent == DllCall("GetDesktopWindow", "ptr")) && this.parent := 0
 
       ; Store a reference to "this" inside GWLP_USERDATA for window messages.
-      DllCall("SetWindowLongPtr", "ptr", this.hwnd, "int", 0, "ptr", &this)
+      DllCall("SetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", this.hwnd, "int", 0, "ptr", &this)
 
       ; Show the window without activating it.
       DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
@@ -1813,9 +1813,9 @@ class TextRender {
                Hotkey % "^+F12", % void, On
 
             ; Exits window procedure early. Creates a reference to "this" from private window data.
-            if not DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr")
+            if not DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 0, "ptr")
                return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
-            self := Object(DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr"))
+            self := Object(DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 0, "ptr"))
 
             ; __Delete ? DestroyWindow ? WM_DESTROY ? FreeMemory ? Remove Persistence ? ExitApp
 

@@ -627,6 +627,33 @@ class TextRender {
          }
          try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
+         ; Check if an hMonitor is passed.
+         if (_s > MonitorGetCount)
+            hMon := _s
+         ; Use the screen where the cursor is located.
+         if (_s = "cursor") {
+            DllCall("GetCursorPos", "uint64*", point:=0)
+            hMon := DllCall("MonitorFromPoint", "uint64", point, "uint", 0x2, "ptr")
+         }
+         ; Or use the screen where the current active window is located.
+         if (_s = "window")
+            hMon := DllCall("MonitorFromWindow", "ptr", WinExist("A"), "uint", 0, "ptr")
+
+         ; Convert the hMonitor to canvas coordinates.
+         if IsSet(hMon) {
+            VarSetCapacity(MIEX, 40 + (32 << !!A_IsUnicode))
+            NumPut("uint", 40 + (32 << !!A_IsUnicode), MIEX)
+            if !DllCall("GetMonitorInfo", "ptr", hMon, "ptr", &MIEX)
+               throw Exception("The following value " _s " is not a correct screen parameter. ('s')")
+
+            CanvasLeft   := NumGet(MIEX, 4, "int")
+            CanvasTop    := NumGet(MIEX, 8, "int")
+            CanvasRight  := NumGet(MIEX, 12, "int")
+            CanvasBottom := NumGet(MIEX, 16, "int")
+            CanvasWidth  := CanvasRight - CanvasLeft
+            CanvasHeight := CanvasBottom - CanvasTop
+         }
+
          ; Set default width and height from undocumented graphics pointer offset.
          (CanvasLeft == "")   && CanvasLeft   := NumGet(Graphics + 12 + A_PtrSize, "int")
          (CanvasTop == "")    && CanvasTop    := NumGet(Graphics + 16 + A_PtrSize, "int")

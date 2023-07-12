@@ -609,7 +609,7 @@ class TextRender {
             o  := ((___ := RegExReplace(style2, q1    "(o(utline)?)"       q2, "${value}")) != style2) ? ___ : ""
             q  := ((___ := RegExReplace(style2, q1    "(q(uality)?)"       q2, "${value}")) != style2) ? ___ : ""
          }
-
+         
          ; Set canvas boundaries. Although inifinite, this rectangle gives it an internal sense of scale.
          try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          ; Use the coordinates of the screen index.
@@ -619,13 +619,41 @@ class TextRender {
             CanvasHeight := CanvasBottom - CanvasTop
          } 
          ; Use the coordinates of all screens.
-         else if (_s == 0) {
+         if (_s == 0) {
             CanvasLeft   := DllCall("GetSystemMetrics", "int", 76, "int")
             CanvasTop    := DllCall("GetSystemMetrics", "int", 77, "int")
             CanvasWidth  := DllCall("GetSystemMetrics", "int", 78, "int")
             CanvasHeight := DllCall("GetSystemMetrics", "int", 79, "int")
          }
+         ; Check if an hMonitor is passed.
+         if (_s > MonitorGetCount())
+            hMon := _s
          try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+
+
+         ; Use the screen where the cursor is located.
+         if (_s = "cursor") {
+            DllCall("GetCursorPos", "uint64*", &point:=0)
+            hMon := DllCall("MonitorFromPoint", "uint64", point, "uint", 0x2, "ptr")
+         }
+         ; Or use the screen where the current active window is located.
+         if (_s = "window")
+            hMon := DllCall("MonitorFromWindow", "ptr", WinExist("A"), "uint", 0, "ptr")
+
+         ; Convert the hMonitor to canvas coordinates.
+         if IsSet(hMon) {
+            MIEX := Buffer(40 + 64)
+            NumPut("uint", MIEX.size, MIEX)
+            if !DllCall("GetMonitorInfo", "ptr", hMon, "ptr", MIEX)
+               throw Error("The following value " _s " is not a correct screen parameter. ('s')")
+
+            CanvasLeft   := NumGet(MIEX, 4, "int")
+            CanvasTop    := NumGet(MIEX, 8, "int")
+            CanvasRight  := NumGet(MIEX, 12, "int")
+            CanvasBottom := NumGet(MIEX, 16, "int")
+            CanvasWidth  := CanvasRight - CanvasLeft
+            CanvasHeight := CanvasBottom - CanvasTop
+         }
 
          ; Set default width and height from undocumented graphics pointer offset.
          (CanvasLeft == "")   && CanvasLeft   := NumGet(Graphics + 12 + A_PtrSize, "int")

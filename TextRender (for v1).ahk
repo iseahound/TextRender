@@ -264,6 +264,7 @@ class TextRender {
          return this
       }
 
+      ; Fade is actually broken with how it interfaces with Render().
       Fade(fade_in := 250, fade_out := 250, status := "") {
          if (fade_in > 0) {
             ; Render: Off-Screen areas are not rendered. Clip objects that reside off screen.

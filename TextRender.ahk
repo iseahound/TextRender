@@ -530,11 +530,7 @@ class TextRender {
          }
       }
 
-      DrawOnGraphics(Graphics, text := "", style1 := "", style2 := "", CanvasWidth := "", CanvasHeight := "") {
-         ; Get default width and height from undocumented graphics pointer offset.
-         (CanvasWidth == "") && CanvasWidth := NumGet(Graphics + 20 + A_PtrSize, "uint")
-         (CanvasHeight == "") && CanvasHeight := NumGet(Graphics + 24 + A_PtrSize, "uint")
-
+      DrawOnGraphics(Graphics, text := "", style1 := "", style2 := "", CanvasWidth := "", CanvasHeight := "", CanvasLeft := "", CanvasTop := "") {
          ; RegEx help? https://regex101.com/r/rNsP6n/1
          static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
          static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\\\/\s:#%_a-z\-\.\d]+|\([\\\/\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
@@ -543,6 +539,7 @@ class TextRender {
          if IsObject(style1) {
             style1.base.__get := this.get ; Returns the empty string for unknown properties.
             _t  := (style1.time != "")     ? style1.time     : style1.t
+            _s  := (style1.screen != "")   ? style1.screen   : style1.s
             _a  := (style1.anchor != "")   ? style1.anchor   : style1.a
             _x  := (style1.left != "")     ? style1.left     : style1.x
             _y  := (style1.top != "")      ? style1.top      : style1.y
@@ -555,6 +552,7 @@ class TextRender {
          } else {
             RegExReplace(style1, "\s+", A_Space) ; Limit whitespace for fixed width look-behinds.
             _t  := ((___ := RegExReplace(style1, q1    "(t(ime)?)"          q2, "${value}")) != style1) ? ___ : ""
+            _s  := ((___ := RegExReplace(style1, q1    "(s(creen)?)"        q2, "${value}")) != style1) ? ___ : ""
             _a  := ((___ := RegExReplace(style1, q1    "(a(nchor)?)"        q2, "${value}")) != style1) ? ___ : ""
             _x  := ((___ := RegExReplace(style1, q1    "(x|left)"           q2, "${value}")) != style1) ? ___ : ""
             _y  := ((___ := RegExReplace(style1, q1    "(y|top)"            q2, "${value}")) != style1) ? ___ : ""
@@ -612,6 +610,29 @@ class TextRender {
             q  := ((___ := RegExReplace(style2, q1    "(q(uality)?)"       q2, "${value}")) != style2) ? ___ : ""
          }
 
+         ; Set canvas boundaries. Although inifinite, this rectangle gives it an internal sense of scale.
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         ; Use the coordinates of the screen index.
+         if (_s ~= "^\d+$" && _s > 0 && _s <= MonitorGetCount()) {
+            MonitorGet(_s, &CanvasLeft, &CanvasTop, &CanvasRight, &CanvasBottom)
+            CanvasWidth  := CanvasRight - CanvasLeft
+            CanvasHeight := CanvasBottom - CanvasTop
+         } 
+         ; Use the coordinates of all screens.
+         else if (_s == 0) {
+            CanvasLeft   := DllCall("GetSystemMetrics", "int", 76, "int")
+            CanvasTop    := DllCall("GetSystemMetrics", "int", 77, "int")
+            CanvasWidth  := DllCall("GetSystemMetrics", "int", 78, "int")
+            CanvasHeight := DllCall("GetSystemMetrics", "int", 79, "int")
+         }
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+
+         ; Set default width and height from undocumented graphics pointer offset.
+         (CanvasLeft == "")   && CanvasLeft   := NumGet(Graphics + 12 + A_PtrSize, "int")
+         (CanvasTop == "")    && CanvasTop    := NumGet(Graphics + 16 + A_PtrSize, "int")
+         (CanvasWidth == "")  && CanvasWidth  := NumGet(Graphics + 20 + A_PtrSize, "int")
+         (CanvasHeight == "") && CanvasHeight := NumGet(Graphics + 24 + A_PtrSize, "int")
+         
          ; Parse background color.
          _c := this.color(_c, 0xDD212121) ; Default color for background is transparent gray.
 
@@ -816,6 +837,10 @@ class TextRender {
          ; We need our calculated _width and _height for this!
          _x -= (mod(_a,3) == 0) ? 0 : (mod(_a,3) == 1) ? _w/2 : (mod(_a,3) == 2) ? _w : 0
          _y -= ((_a//3) == 0) ? 0 : ((_a//3) == 1) ? _h/2 : ((_a//3) == 2) ? _h : 0
+
+         ; Offset with canvas boundaries.
+         _x += CanvasLeft
+         _y += CanvasTop
 
          ; Prevent half-pixel rendering and keep image sharp.
          _w := Round(_x + _w) - Round(_x) ; Use real x2 coordinate to determine width.
@@ -1200,6 +1225,7 @@ class TextRender {
          y2_bound := max(y + h + d.2 + d_bound, y2_bound)
 
          return {t: t_bound
+               , s: _s
                , x: x_bound
                , y: y_bound
                , x2: x2_bound

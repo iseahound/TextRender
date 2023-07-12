@@ -619,7 +619,7 @@ class TextRender {
             CanvasHeight := CanvasBottom - CanvasTop
          } 
          ; Use the coordinates of all screens.
-         else if (_s == 0) {
+         if (_s ~= "^\d+$" && _s == 0) {
             CanvasLeft   := DllCall("GetSystemMetrics", "int", 76, "int")
             CanvasTop    := DllCall("GetSystemMetrics", "int", 77, "int")
             CanvasWidth  := DllCall("GetSystemMetrics", "int", 78, "int")
@@ -628,7 +628,7 @@ class TextRender {
          try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
          ; Check if an hMonitor is passed.
-         if (_s > MonitorGetCount)
+         if (_s ~= "^\d+$" && _s > MonitorGetCount)
             hMon := _s
          ; Use the screen where the cursor is located.
          if (_s = "cursor") {

@@ -136,6 +136,10 @@ class TextRender {
    ; Renders and Effects
 
       RenderAgain() {
+         ; Todo: control your variables better.
+         if !this.HasProp("t0")
+            return
+
          DllCall("QueryPerformanceFrequency", "int64*", &frequency:=0)
          DllCall("QueryPerformanceCounter", "int64*", &end:=0)
          time_elapsed := (end - this.t0) / frequency * 1000

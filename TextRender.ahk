@@ -5,7 +5,7 @@
 ; Date:      2022-06-13
 ; Version:   1.8.0
 
-#Requires AutoHotkey v2.0-beta.3+
+#Requires AutoHotkey v2.0-beta.13+
 
 
 ; TextRender() - Display custom text on screen.

@@ -71,17 +71,17 @@ class TextRender {
       Default() {
          ; Left Click to drag. Right click to close.
          return this
-            .OnEvent("MiddleMouseDown")
-            .OnEvent("RightMouseDown")
+            .OnEvent("MiddleMouseDown", "")
+            .OnEvent("RightMouseDown", "")
             .OnEvent("RightMouseUp", this.DestroyWindow)
       }
 
       None() {
          ; Removes all events.
          return this
-            .OnEvent("LeftMouseDown")
-            .OnEvent("MiddleMouseDown")
-            .OnEvent("RightMouseDown")
+            .OnEvent("LeftMouseDown", "")
+            .OnEvent("MiddleMouseDown", "")
+            .OnEvent("RightMouseDown", "")
       }
 
       Show() {

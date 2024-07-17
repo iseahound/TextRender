@@ -431,25 +431,16 @@ class TextRender {
          ; Changing x, y, w, h to be stationary does not provide a speed boost.
          ; Nor does making the window opaque.
 
-         pptDst := Buffer(8)
-            NumPut("int", x - this.OffsetLeft, pptDst, 0)
-            NumPut("int", y - this.OffsetTop, pptDst, 4)
-
-         psize := Buffer(8)
-            NumPut("int", w, psize, 0)
-            NumPut("int", h, psize, 4)
-
-         pptSrc := Buffer(8)
-            NumPut("int", x - this.BitmapLeft, pptSrc, 0)
-            NumPut("int", y - this.BitmapTop , pptSrc, 4)
+         pptDst := x - this.OffsetLeft << 32 >>> 32 | y - this.OffsetTop << 32
+         pptSrc := x - this.BitmapLeft << 32 >>> 32 | y - this.BitmapTop << 32
 
          DllCall("UpdateLayeredWindow"
                   ,    "ptr", this.hwnd                ; hWnd
                   ,    "ptr", 0                        ; hdcDst
-                  ,    "ptr", pptDst                   ; *pptDst
-                  ,    "ptr", psize                    ; *psize
+                  ,"uint64*", pptDst                   ; *pptDst
+                  ,"uint64*", w | h << 32              ; *psize
                   ,    "ptr", this.hdc                 ; hdcSrc
-                  ,    "ptr", pptSrc                   ; *pptSrc
+                  ,"uint64*", pptSrc                   ; *pptSrc
                   ,   "uint", 0                        ; crKey
                   ,  "uint*", alpha << 16 | 0x01 << 24 ; *pblend
                   ,   "uint", 2                        ; dwFlags

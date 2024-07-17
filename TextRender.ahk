@@ -2402,62 +2402,67 @@ class TextRender {
          return (this.x2 > this.x && this.y2 > this.y) ? [this.x, this.y, this.w, this.h] : default
       }
 
-   ; Source: ImagePut 1.8.0 - gdiplus()
+   ; Source: ImagePut 1.11
 
-      gdiplusStartup() {
-         return this.gdiplus(1)
+   static gdiplusStartup() {
+      return this.gdiplus(1)
+   }
+
+   static gdiplusShutdown(cotype := "") {
+      return this.gdiplus(-1, cotype)
+   }
+
+   static gdiplus(vary := 0, cotype := "") {
+      static pToken := 0 ; Takes advantage of the fact that objects contain identical methods.
+      static instances := 0 ; And therefore static variables can share data across instances.
+
+      ; Guard against __Delete() errors when WindowProc is running an animated GIF.
+      if not IsSet(pToken) || not IsSet(instances)
+         return
+
+      ; Startup gdiplus when counter rises from 0 -> 1.
+      if (instances = 0 && vary = 1) {
+
+         DllCall("LoadLibrary", "str", "gdiplus")
+         si := Buffer(A_PtrSize = 4 ? 20:32, 0) ; sizeof(GdiplusStartupInputEx) = 20, 32
+            NumPut("uint", 0x2, si)
+            NumPut("uint", 0x4, si, A_PtrSize = 4 ? 16:24)
+         DllCall("gdiplus\GdiplusStartup", "ptr*", &pToken:=0, "ptr", si, "ptr", 0)
+
       }
 
-      gdiplusShutdown(cotype := "") {
-         return this.gdiplus(-1, cotype)
-      }
+      ; Shutdown gdiplus when counter falls from 1 -> 0.
+      if (instances = 1 && vary = -1) {
 
-      gdiplus(vary := 0, cotype := "") {
-         static pToken := 0 ; Takes advantage of the fact that objects contain identical methods.
-         static instances := 0 ; And therefore static variables can share data across instances.
+         DllCall("gdiplus\GdiplusShutdown", "ptr", pToken)
+         DllCall("FreeLibrary", "ptr", DllCall("GetModuleHandle", "str", "gdiplus", "ptr"))
 
-         ; Startup gdiplus when counter rises from 0 -> 1.
-         if (instances = 0 && vary = 1) {
+         ; Otherwise GDI+ has been truly unloaded from the script and objects are out of scope.
+         if (cotype = "bitmap") {
 
-            DllCall("LoadLibrary", "str", "gdiplus")
-            si := Buffer(A_PtrSize = 4 ? 16:24, 0) ; sizeof(GdiplusStartupInput) = 16, 24
-               NumPut("uint", 0x1, si)
-            DllCall("gdiplus\GdiplusStartup", "ptr*", &pToken:=0, "ptr", si, "ptr", 0)
+            ; Check if GDI+ is still loaded. GdiplusNotInitialized = 18
+            assert := (18 != DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", &ImageAttr:=0))
+               DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
 
+            if not assert
+               throw Error("Bitmap is out of scope. `n`nIf you wish to handle raw pointers to GDI+ bitmaps, add the line"
+                  . "`n`n`t`t" this.prototype.__class ".gdiplusStartup()"
+                  . "`n`nto the top of your script. If using Gdip_All.ahk use pToken := Gdip_Startup()."
+                  . "`nAlternatively, use pic := ImagePutBuffer(image) and pic.pBitmap instead."
+                  . "`nYou can copy this message by pressing Ctrl + C.", -4)
          }
-
-         ; Shutdown gdiplus when counter falls from 1 -> 0.
-         if (instances = 1 && vary = -1) {
-
-            DllCall("gdiplus\GdiplusShutdown", "ptr", pToken)
-            DllCall("FreeLibrary", "ptr", DllCall("GetModuleHandle", "str", "gdiplus", "ptr"))
-
-            ; Otherwise GDI+ has been truly unloaded from the script and objects are out of scope.
-            if (cotype = "bitmap") {
-
-               ; Check if GDI+ is still loaded. GdiplusNotInitialized = 18
-               assert := (18 != DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", &ImageAttr:=0))
-                  DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
-
-               if not assert
-                  throw Error("Bitmap is out of scope. `n`nIf you wish to handle raw pointers to GDI+ bitmaps, add the line"
-                     . "`n`n`t`t" this.prototype.__class ".gdiplusStartup()"
-                     . "`n`nto the top of your script. If using Gdip_All.ahk use pToken := Gdip_Startup()."
-                     . "`nAlternatively, use pic := ImagePutBuffer() and pic.pBitmap instead."
-                     . "`nYou can copy this message by pressing Ctrl + C.", -4)
-            }
-         }
-
-         ; Increment or decrement the number of available instances.
-         instances += vary
-
-         ; Check for unpaired calls of gdiplusShutdown.
-         if (instances < 0)
-            throw Error("Missing gdiplusStartup().")
-
-         ; When vary is 0, just return the number of active instances!
-         return instances
       }
+
+      ; Increment or decrement the number of available instances.
+      instances += vary
+
+      ; Check for unpaired calls of gdiplusShutdown.
+      if (instances < 0)
+         throw Error("Missing gdiplusStartup().")
+
+      ; When vary is 0, just return the number of active instances!
+      return instances
+   }
 } ; End of TextRender class.
 
 

@@ -19,7 +19,7 @@ class TextRender {
 
    __New(title := "", style := 0x80000000, styleEx := 0x80088, parent := 0
       , OffsetLeft := 0, OffsetTop := 0, ScaleWidth := False, ScaleHeight := False) {
-      this.gdiplusStartup()
+      TextRender.gdiplusStartup()
 
       ; xd
       this.OffsetLeft := OffsetLeft
@@ -63,7 +63,7 @@ class TextRender {
    __Delete() {
       ; __Delete ? DestroyWindow ? WM_DESTROY ? FreeMemory ? Remove Persistence ? ExitApp
       this.DestroyWindow() ; Calls FreeMemory()
-      this.gdiplusShutdown()
+      TextRender.gdiplusShutdown()
    }
 
    ; Window Styles
@@ -2230,159 +2230,16 @@ class TextRender {
 
       Save(filename := "", quality := "") {
          pBitmap := this.InBounds() ? this.CopyToBitmap() : this.RenderToBitmap()
-         filepath := this.SaveImageToFile(pBitmap, filename, quality)
+         filepath := TextRender.BitmapToFile(pBitmap, filename, quality)
          DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
          return filepath
       }
 
       Screenshot(filename := "", quality := "") {
-         pBitmap := this.GetImageFromScreen([this.x, this.y, this.w, this.h])
-         filepath := this.SaveImageToFile(pBitmap, filename, quality)
+         pBitmap := TextRender.ScreenshotToBitmap([this.x, this.y, this.w, this.h])
+         filepath := TextRender.BitmapToFile(pBitmap, filename, quality)
          DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
          return filepath
-      }
-
-      ; Source: ImagePut 1.7.0 - put_file()
-      SaveImageToFile(pBitmap, filepath := "", quality := "") {
-         ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
-         extension := "png"
-
-         ; Save default extension.
-         default := extension
-
-         ; Split the filepath, convert forward slashes, strip invalid chars.
-         filepath := RegExReplace(filepath, "/", "\")
-         filepath := RegExReplace(filepath, "[*?\x22<>|\x00-\x1F]")
-         SplitPath % filepath,, directory, extension, filename
-
-         ; Check if the entire filepath is a directory.
-         if InStr(FileExist(filepath), "D")   ; If the filepath refers to a directory,
-            directory := (directory != "")    ; then SplitPath wrongly assumes a directory to be a filename.
-               ? ((filename != "")
-                  ? directory "\" filename    ; Combine directory + filename.
-                  : directory)                ; Do nothing.
-               : (filepath ~= "^\\")
-                  ? "\" filename              ; Root level directory.
-                  : ".\" filename             ; Script level directory.
-            , filename := ""
-
-         ; Create a new directory if needed.
-         if (directory != "" && !InStr(FileExist(directory), "D"))
-            FileCreateDir % directory
-
-         ; Default directory is a dot.
-         (directory == "") && directory := "."
-
-         ; Check if the filename is actually the extension.
-         if (extension == "" && filename ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
-            extension := filename, filename := ""
-
-         ; An invalid extension is actually part of the filename.
-         if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$") {
-            ; Avoid appending an extra period without an extension.
-            if (extension != "")
-               filename .= "." extension
-
-            ; Restore default extension.
-            extension := default
-         }
-
-         ; Create a filepath based on the timestamp.
-         if (filename == "") {
-            FormatTime, filename,, % "yyyy-MM-dd HH?mm?ss"
-            filepath := directory "\" filename "." extension
-            while FileExist(filepath)
-               filepath := directory "\" filename " (" A_Index ")." extension
-         }
-
-         ; Create a numeric sequence of files...
-         else if (filename == "0" or filename == "1") {
-            filepath := directory "\" filename "." extension
-            while FileExist(filepath)
-               filepath := directory "\" A_Index "." extension
-         }
-
-         ; Always overwrite specific filenames.
-         else filepath := directory "\" filename "." extension
-
-         ; Fill a buffer with the available image codec info.
-         DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
-         DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", &ci := VarSetCapacity(ci, size))
-
-         ; struct ImageCodecInfo - http://www.jose.it-berater.org/gdiplus/reference/structures/imagecodecinfo.htm
-         loop {
-            if (A_Index > count)
-               throw Exception("Could not find a matching encoder for the specified file format.")
-
-            idx := (48+7*A_PtrSize)*(A_Index-1)
-         } until InStr(StrGet(NumGet(ci, idx+32+3*A_PtrSize, "ptr"), "UTF-16"), extension) ; FilenameExtension
-
-         ; Get the pointer to the clsid of the matching encoder.
-         pCodec := &ci + idx ; ClassID
-
-         ; JPEG default quality is 75. Otherwise set a quality value from [0-100].
-         if (quality ~= "^-?\d+$") and ("image/jpeg" = StrGet(NumGet(ci, idx+32+4*A_PtrSize, "ptr"), "UTF-16")) { ; MimeType
-            ; Use a separate buffer to store the quality as ValueTypeLong (4).
-            VarSetCapacity(v, 4), NumPut(quality, v, "uint")
-
-            ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
-            ; enum ValueType - https://docs.microsoft.com/en-us/dotnet/api/system.drawing.imaging.encoderparametervaluetype
-            ; clsid Image Encoder Constants - http://www.jose.it-berater.org/gdiplus/reference/constants/gdipimageencoderconstants.htm
-            VarSetCapacity(ep, 24+2*A_PtrSize)            ; sizeof(EncoderParameter) = ptr + n*(28, 32)
-               NumPut(    1, ep,            0,   "uptr")  ; Count
-               DllCall("ole32\CLSIDFromString", "wstr", "{1D5BE4B5-FA4A-452D-9CDD-5DB35105E7EB}", "ptr", &ep+A_PtrSize, "uint")
-               NumPut(    1, ep, 16+A_PtrSize,   "uint")  ; Number of Values
-               NumPut(    4, ep, 20+A_PtrSize,   "uint")  ; Type
-               NumPut(   &v, ep, 24+A_PtrSize,    "ptr")  ; Value
-         }
-
-         ; Write the file to disk using the specified encoder and encoding parameters with exponential backoff.
-         loop
-            if !DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "ptr", (ep) ? &ep : 0)
-               break
-            else
-               if A_Index < 6
-                  Sleep (2**(A_Index-1) * 30)
-               else throw Exception("Could not save file to disk.")
-
-         return filepath
-      }
-
-      ; Source: ImagePut 1.7.0 - from_screenshot()
-      GetImageFromScreen(image) {
-         ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
-
-         ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
-         hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-         VarSetCapacity(bi, 40, 0)              ; sizeof(bi) = 40
-            NumPut(       40, bi,  0,   "uint") ; Size
-            NumPut( image[3], bi,  4,   "uint") ; Width
-            NumPut(-image[4], bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
-            NumPut(        1, bi, 12, "ushort") ; Planes
-            NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
-         hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
-         obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-
-         ; Retrieve the device context for the screen.
-         sdc := DllCall("GetDC", "ptr", 0, "ptr")
-
-         ; Copies a portion of the screen to a new device context.
-         DllCall("gdi32\BitBlt"
-                  , "ptr", hdc, "int", 0, "int", 0, "int", image[3], "int", image[4]
-                  , "ptr", sdc, "int", image[1], "int", image[2], "uint", 0x00CC0020 | 0x40000000) ; SRCCOPY | CAPTUREBLT
-
-         ; Release the device context to the screen.
-         DllCall("ReleaseDC", "ptr", 0, "ptr", sdc)
-
-         ; Convert the hBitmap to a Bitmap using a built in function as there is no transparency.
-         DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", pBitmap:=0)
-
-         ; Cleanup the hBitmap and device contexts.
-         DllCall("SelectObject", "ptr", hdc, "ptr", obm)
-         DllCall("DeleteObject", "ptr", hbm)
-         DllCall("DeleteDC",     "ptr", hdc)
-
-         return pBitmap
       }
 
    ; Simple Questions and Tests
@@ -2462,6 +2319,177 @@ class TextRender {
 
       ; When vary is 0, just return the number of active instances!
       return instances
+   }
+
+   BitmapToFile(pBitmap, filepath := "", quality := "") {
+      extension := "png"
+      this.select_filepath(filepath, extension)
+      this.select_codec(pBitmap, extension, quality, pCodec, ep)
+      DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", &pCodec, "ptr", &ep)
+      return filepath
+   }
+
+   select_codec(pBitmap, extension, quality, ByRef pCodec, ByRef ep) {
+      extension := RegExReplace(extension, "^(\*?\.)?") ; Trim leading "*." or "." from the extension
+      extension :=  extension ~= "^(?i:avif|avifs)$"           ? "avif"
+                  : extension ~= "^(?i:bmp|dib|rle)$"          ? "bmp"
+                  : extension ~= "^(?i:gif)$"                  ? "gif"
+                  : extension ~= "^(?i:heic|heif|hif)$"        ? "heic"
+                  : extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"    ? "jpeg"
+                  : extension ~= "^(?i:png)$"                  ? "png"
+                  : extension ~= "^(?i:tif|tiff)$"             ? "tiff"
+                  : "png" ; Defaults to PNG
+
+      VarSetCapacity(pCodec, 16)
+
+      switch extension {
+      case "avif": MsgBox % "AVIF is not supported by GDI+."
+      case "bmp":  DllCall("ole32\CLSIDFromString", "wstr", "{557CF400-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
+      case "gif":  DllCall("ole32\CLSIDFromString", "wstr", "{557CF402-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
+      case "heic": DllCall("ole32\CLSIDFromString", "wstr", "{557CF408-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
+      case "jpeg": DllCall("ole32\CLSIDFromString", "wstr", "{557CF401-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
+      case "png":  DllCall("ole32\CLSIDFromString", "wstr", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
+      case "tiff": DllCall("ole32\CLSIDFromString", "wstr", "{557CF405-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
+      }
+
+      ; Default encoding parameter.
+      ep := 0
+
+      ; JPEG default quality is 75. Otherwise set a quality value from [0-100].
+      if (extension = "jpeg") && (quality ~= "^\d+$") {
+         ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
+         ; enum ValueType - https://docs.microsoft.com/en-us/dotnet/api/system.drawing.imaging.encoderparametervaluetype
+         ; clsid Image Encoder Constants - http://www.jose.it-berater.org/gdiplus/reference/constants/gdipimageencoderconstants.htm
+         VarSetCapacity(ep, 24+2*A_PtrSize + 4)            ; sizeof(EncoderParameter) = ptr + n*(28, 32)
+         offset := &ep + 24+2*A_PtrSize                    ; Address of extra values appended to end
+            NumPut(      1, ep,              0,   "uptr")  ; Count
+            DllCall("ole32\CLSIDFromString", "wstr", "{1D5BE4B5-FA4A-452D-9CDD-5DB35105E7EB}", "ptr", &ep+A_PtrSize, "uint")
+            NumPut(      1, ep,   16+A_PtrSize,   "uint")  ; Number of Values
+            NumPut(      4, ep,   20+A_PtrSize,   "uint")  ; Type
+            NumPut( offset, ep,   24+A_PtrSize,    "ptr")  ; Value
+            NumPut(quality, ep, 24+2*A_PtrSize,   "uint")  ; Quality (extra value appended to end)
+      }
+   }
+
+   select_filepath(ByRef filepath, ByRef extension) {
+      ; Save default extension.
+      default := extension
+
+      ; Split the filepath, convert forward slashes, strip invalid chars.
+      filepath := RegExReplace(filepath, "/", "\")
+      filepath := RegExReplace(filepath, "[*?\x22<>|\x00-\x1F]")
+      SplitPath % filepath,, directory, extension, filename
+
+      ; Check if the entire filepath is a directory.
+      if InStr(FileExist(filepath), "D")   ; If the filepath refers to a directory,
+         directory := (directory != "")    ; then SplitPath wrongly assumes a directory to be a filename.
+            ? ((filename != "")
+               ? directory "\" filename    ; Combine directory + filename.
+               : directory)                ; Do nothing.
+            : (filepath ~= "^\\")
+               ? "\" filename              ; Root level directory.
+               : ".\" filename             ; Script level directory.
+         , filename := ""
+
+      ; Create a new directory if needed.
+      if (directory != "" && !InStr(FileExist(directory), "D"))
+         FileCreateDir % directory
+
+      ; Default directory is a dot.
+      (directory == "") && directory := "."
+
+      ; Declare allowed extension outputs.
+      outputs := "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$"
+
+      ; Check if the filename is actually the extension.
+      if (extension == "" && filename ~= outputs)
+         extension := filename, filename := ""
+
+      ; An invalid extension is actually part of the filename.
+      if !(extension ~= outputs) {
+         ; Avoid appending an extra period without an extension.
+         if (extension != "")
+            filename .= "." extension
+
+         ; Restore default extension.
+         extension := default
+      }
+
+      ; Create a filepath based on the timestamp.
+      if (filename == "") {
+         colon := A_IsUnicode ? Chr(0xA789) : "_"
+         FormatTime, filename,, % "yyyy-MM-dd HH" colon "mm" colon "ss"
+         filepath := directory "\" filename "." extension
+         while FileExist(filepath)
+            filepath := directory "\" filename " (" A_Index ")." extension
+      }
+
+      ; Create a numeric sequence of files...
+      else if (filename == "0" or filename == "1") {
+         filepath := directory "\" filename "." extension
+         while FileExist(filepath)
+            filepath := directory "\" A_Index "." extension
+      }
+
+      ; Always overwrite specific filenames.
+      else filepath := directory "\" filename "." extension
+   }
+
+   ScreenshotToBitmap(image) {
+      ; Allow the image to be a window handle.
+      if !IsObject(image) and WinExist(image) || DllCall("IsWindow", "ptr", image) {
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         image := (hwnd := IsObject(image) ? image.hwnd : WinExist(image)) ? hwnd : image
+         VarSetCapacity(rect, 16)
+         DllCall("GetClientRect", "ptr", image, "ptr", &rect)
+         DllCall("ClientToScreen", "ptr", image, "ptr", &rect)
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         image := [NumGet(rect, 0, "int"), NumGet(rect, 4, "int"), NumGet(rect, 8, "int"), NumGet(rect, 12, "int")]
+      }
+
+      ; Adjust coordinates relative to specified window.
+      if image.HasKey(5) && (WinExist(image[5]) || DllCall("IsWindow", "ptr", image[5])) {
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         image[5] := (hwnd := WinExist(image[5])) ? hwnd : image[5]
+         VarSetCapacity(rect, 16)
+         DllCall("GetClientRect", "ptr", image[5], "ptr", &rect)
+         DllCall("ClientToScreen", "ptr", image[5], "ptr", &rect)
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         image[1] += NumGet(rect, 0, "int")
+         image[2] += NumGet(rect, 4, "int")
+      }
+
+      ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
+      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+      VarSetCapacity(bi, 40, 0)              ; sizeof(bi) = 40
+         NumPut(       40, bi,  0,   "uint") ; Size
+         NumPut( image[3], bi,  4,   "uint") ; Width
+         NumPut(-image[4], bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+         NumPut(        1, bi, 12, "ushort") ; Planes
+         NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+
+      ; Retrieve the device context for the screen.
+      sdc := DllCall("GetDC", "ptr", 0, "ptr")
+
+      ; Copies a portion of the screen to a new device context.
+      DllCall("gdi32\BitBlt"
+               , "ptr", hdc, "int", 0, "int", 0, "int", image[3], "int", image[4]
+               , "ptr", sdc, "int", image[1], "int", image[2], "uint", 0x00CC0020 | 0x40000000) ; SRCCOPY | CAPTUREBLT
+
+      ; Release the device context to the screen.
+      DllCall("ReleaseDC", "ptr", 0, "ptr", sdc)
+
+      ; Convert the hBitmap to a Bitmap using a built in function as there is no transparency.
+      DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", pBitmap:=0)
+
+      ; Cleanup the hBitmap and device contexts.
+      DllCall("SelectObject", "ptr", hdc, "ptr", obm)
+      DllCall("DeleteObject", "ptr", hbm)
+      DllCall("DeleteDC",     "ptr", hdc)
+
+      return pBitmap
    }
 } ; End of TextRender class.
 

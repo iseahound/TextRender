@@ -21,33 +21,30 @@ class TextRender {
       , OffsetLeft := 0, OffsetTop := 0, ScaleWidth := False, ScaleHeight := False) {
       TextRender.gdiplusStartup()
 
-      ; xd
+      ; Create the window and save a reference to this instance.
+      hwnd := this.CreateWindow(title, style, styleEx, parent)
+      DllCall("SetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 0, "ptr", &this)
+
+      ; Check if a custom parent window was set and save it.
+      parent := DllCall("GetAncestor", "ptr", hwnd, "uint", 1, "ptr")
+      (parent == DllCall("GetDesktopWindow", "ptr")) && parent := 0
+
+      ; Show the window without activating it. (WS_VISIBLE wouldn't work here.)
+      DllCall("ShowWindow", "ptr", hwnd, "int", 4) ; SW_SHOWNOACTIVATE
+
+      ; Save parameters.
+      this.hwnd := hwnd
+      this.parent := parent
       this.OffsetLeft := OffsetLeft
       this.OffsetTop := OffsetTop
       this.ScaleWidth := ScaleWidth
       this.ScaleHeight := ScaleHeight
-      this.hdc := ""
-      this.BitmapWidth := 0, this.BitmapHeight := 0
-      this.x := ""
-      this.status := ""
+
+      ; These are always preserved between all calls.
       this.style1 := ""
       this.style2 := ""
-
-      ; Create the window with PER_MONITOR_AWARE dpi awareness.
-      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-      if !(this.hwnd := this.CreateWindow(title, style, styleEx, parent))
-         throw Exception("Max threads reached. Set #MaxThreads to a higher limit.")
-      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-
-      ; Get real parent window coordinates. GetDesktopWindow is a default value.
-      this.parent := DllCall("GetAncestor", "ptr", this.hwnd, "uint", 1, "ptr")
-      (this.parent == DllCall("GetDesktopWindow", "ptr")) && this.parent := 0
-
-      ; Store a reference to "this" inside GWLP_USERDATA for window messages.
-      DllCall("SetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", this.hwnd, "int", 0, "ptr", &this)
-
-      ; Show the window without activating it.
-      DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
+      this.layers := []
+      this.status := 0xFFFF0001 ; Resets when the lower 16 bits overflow.
 
       ; Initalize default events.
       this.events := {}
@@ -55,8 +52,9 @@ class TextRender {
       this.OnEvent("MiddleMouseDown", this.EventShowCoordinates)
       this.OnEvent("RightMouseDown", this.EventCopyData)
 
-      ; Calls Flush() to allocate the graphics buffer via UpdateMemory().
-      this.flush_pending := True
+      ; The current memory state is uninitialized, and will be allocated by UpdateMemory().
+      this.memorystate := 0
+
       return this
    }
 
@@ -133,12 +131,29 @@ class TextRender {
          return this
       }
 
+   ; Simple Questions and Tests
+
+      InBounds() { ; Requires memorystate 2 or greater
+         ; Check if canvas coordinates are inside bitmap coordinates.
+         return this.x >= this.BitmapLeft
+            and this.y >= this.BitmapTop
+            and this.x2 <= this.BitmapRight
+            and this.y2 <= this.BitmapBottom
+      }
+
+      Bounds() { ; Requires memorystate 2 or greater
+         return [this.x, this.y, this.x2, this.y2]
+      }
+
+      Rect() { ; Requires memorystate 2 or greater
+         return [this.x, this.y, this.w, this.h]
+      }
+
    ; Renders and Effects
 
       RenderAgain() {
-         ; Todo: control your variables better.
-         if !this.HasProp("t0")
-            return
+         if (this.memorystate < 3)
+            return this
 
          DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
          DllCall("QueryPerformanceCounter", "int64*", end:=0)
@@ -148,7 +163,6 @@ class TextRender {
             for i, layer in this.layers
                this.Draw(layer[1], layer[2], layer[3])
             this.UpdateLayeredWindow()
-            this.flush_pending := True
             ; Create a timer that eventually clears the canvas.
             if (remaining_time > 0) {
                ; Create a reference to the object held by a timer.
@@ -162,29 +176,24 @@ class TextRender {
 
          this.Draw(terms*)
 
-         ; Allow Render() to commit only when previous calls to Draw() have occurred.
-         if (this.layers.length() > 0) {
+         ; Reminder: Only the visible screen area will be rendered. Clipping will occur.
+         this.UpdateLayeredWindow()
 
-            ; Reminder: Only the visible screen area will be rendered. Clipping will occur.
-            this.UpdateLayeredWindow()
+         ; Start Timestamp
+         DllCall("QueryPerformanceCounter", "int64*", start:=0)
+         this.t0 := start
 
-            ; Ensure that Flush() will be called at the start of a new drawing.
-            ; This approach keeps this.layers and the underlying graphics intact,
-            ; so that calls to Save() and Screenshot() will not encounter a blank canvas.
-            this.flush_pending := True
-
-            ; Start Timestamp
-            DllCall("QueryPerformanceCounter", "int64*", start:=0)
-            this.t0 := start
-
-            ; Create a timer that eventually clears the canvas.
-            if (this.t > 0) {
-               ; Create a reference to the object held by a timer.
-               blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
-               SetTimer % blank, % -this.t ; Calls __Delete.
-            }
+         ; Create a timer that eventually clears the canvas.
+         if (this.t > 0) {
+            ; Create a reference to the object held by a timer.
+            blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
+            SetTimer % blank, % -this.t ; Calls __Delete.
          }
 
+         ; Ensure that Flush() will be called at the start of a new drawing.
+         ; This approach keeps this.layers and the underlying graphics intact,
+         ; so that calls to Save() and Screenshot() will not encounter a blank canvas.
+         this.memorystate := 3
          return this
       }
 
@@ -261,10 +270,7 @@ class TextRender {
             SetTimer % blank, % -this.t ; Calls __Delete.
          }
 
-         ; Ensure that Flush() will be called at the start of a new drawing.
-         ; This approach keeps this.layers and the underlying graphics intact,
-         ; so that calls to Save() and Screenshot() will not encounter a blank canvas.
-         this.flush_pending := True
+         this.memorystate := 3
          return this
       }
 
@@ -306,10 +312,7 @@ class TextRender {
                SetTimer % fade, % -this.t ; Calls __Delete.
             }
 
-            ; Ensure that Flush() will be called at the start of a new drawing.
-            ; This approach keeps this.layers and the underlying graphics intact,
-            ; so that calls to Save() and Screenshot() will not encounter a blank canvas.
-            this.flush_pending := True
+            this.memorystate := 3
             return this
          }
 
@@ -341,20 +344,21 @@ class TextRender {
 
       Draw(data := "", style1 := "", style2 := "") {
 
-         ; Check if FreeMemory() was called between draws.
-         if (!this.hdc && this.flush_pending == False) {
-            this.UpdateMemory()
-            ; Redraw on the canvas.
-            for i, layer in this.layers
-               this.DrawOnGraphics(this.Graphics, layer[1], layer[2], layer[3])
-         }
+         ; Check if the screen or window or window size has changed.
+         this.UpdateMemory() ; Calls LoadMemory() if needed.
 
-         ; A render to screen operation has occurred.
-         if (this.flush_pending == True)
-            this.Flush() ; Clears the graphics buffer.
+         ; Redraw the canvas if any layers are present.
+         if (this.memorystate == 1)
+            this.Redraw()
 
-         if (style1 = "" && style2 = "")
-            style1 := this.style1, style2 := this.style2
+         ; Clear the canvas as it has been rendered to screen.
+         if (this.memorystate == 3)
+            this.Flush()
+
+         ; Use previous styles if blank.
+         (style1 = "" && style2 = "") && (style1 := this.style1, style2 := this.style2)
+
+         ; Save data and styles into layers.
          this.data := data
          this.style1 := style1, this.style2 := style2
          this.layers.push([data, style1, style2])
@@ -370,34 +374,59 @@ class TextRender {
          this.CanvasChanged()
 
          ; Set canvas coordinates.
-         this.t  := (this.t  == "") ? obj.t  : max(this.t, obj.t)
-         this.x  := (this.x  == "") ? obj.x  : min(this.x, obj.x)
-         this.y  := (this.y  == "") ? obj.y  : min(this.y, obj.y)
-         this.x2 := (this.x2 == "") ? obj.x2 : max(this.x2, obj.x2)
-         this.y2 := (this.y2 == "") ? obj.y2 : max(this.y2, obj.y2)
+         this.t  := this.HasKey("t")  ? max(this.t, obj.t) : obj.t
+         this.x  := this.HasKey("x")  ? min(this.x, obj.x) : obj.x 
+         this.y  := this.HasKey("y")  ? min(this.y, obj.y) : obj.y
+         this.x2 := this.HasKey("x2") ? max(this.x2, obj.x2) : obj.x2
+         this.y2 := this.HasKey("y2") ? max(this.y2, obj.y2) : obj.y2
          this.w  := this.x2 - this.x
          this.h  := this.y2 - this.y
          this.chars := obj.chars
          this.words := obj.words
          this.lines := obj.lines
 
+         this.memorystate := 2
          return this
       }
 
       Flush() {
-         ; Reallocate the graphics buffer between draws.
-         this.UpdateMemory()
+         if (this.memorystate < 2)
+            return this
 
-         if (this.x != "") {
-            DllCall("gdiplus\GdipSetClipRect", "ptr", this.Graphics, "float", this.x, "float", this.y, "float", this.w, "float", this.h, "int", 0)
-            DllCall("gdiplus\GdipGraphicsClear", "ptr", this.Graphics, "uint", 0x00FFFFFF) ; All colors are the same speed.
-            DllCall("gdiplus\GdipResetClip", "ptr", this.Graphics)
-            this.CanvasChanged()
-         }
+         DllCall("gdiplus\GdipSetClipRect", "ptr", this.Graphics, "float", this.x, "float", this.y, "float", this.w, "float", this.h, "int", 0)
+         DllCall("gdiplus\GdipGraphicsClear", "ptr", this.Graphics, "uint", 0x00FFFFFF) ; All colors are the same speed.
+         DllCall("gdiplus\GdipResetClip", "ptr", this.Graphics)
+         this.CanvasChanged()
 
-         this.t := this.x := this.y := this.x2 := this.y2 := this.w := this.h := ""
+         try this.Delete("t")
+         try this.Delete("x")
+         try this.Delete("y")
+         try this.Delete("x2")
+         try this.Delete("y2")
+         try this.Delete("w")
+         try this.Delete("h")
+         try this.Delete("chars")
+         try this.Delete("words")
+         try this.Delete("lines")
+
+         ; Redraws are no longer possible!
          this.layers := []
-         this.flush_pending := False
+
+         this.memorystate := 1
+         return this
+      }
+
+      Redraw() {
+         if (this.memorystate == 0)
+            this.UpdateMemory()
+
+         if (this.memorystate > 1)
+            return this
+
+         for i, layer in this.layers
+            this.DrawOnGraphics(this.Graphics, layer[1], layer[2], layer[3])
+
+         this.memorystate := 2
          return this
       }
 
@@ -458,7 +487,7 @@ class TextRender {
          this.Wait(wait_time)
          if (sleep_time > 0) {
             this.UpdateLayeredWindow(0)
-            this.flush_pending := True
+            this.memorystate := 3
             Sleep sleep_time
          }
          return this
@@ -497,10 +526,12 @@ class TextRender {
       }
 
       UpdateStatus() {
-         loop ; Collision free
-            Random rand, -2147483648, 2147483647
-         until (rand != this.status)
-         this.status := rand
+         this.status += 1
+         if 0xFFFF & this.status == 0xFFFF {
+            Random h, 0x1000, 0xFFFF
+            l := 0
+            this.status := h << 32 | l
+         }
       }
 
       Blank(status) {
@@ -1791,7 +1822,8 @@ class TextRender {
          WS_EX_LAYERED             :=    0x80000   ; For UpdateLayeredWindow.
 
          ; Start off hidden with WS_VISIBLE off and zero width/height coordinates.
-         return DllCall("CreateWindowEx"
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         hwnd := DllCall("CreateWindowEx"
                   ,   "uint", styleEx                  ; dwExStyle
                   ,    "str", this.WindowClass()       ; lpClassName
                   ,    "str", title                    ; lpWindowName
@@ -1805,6 +1837,12 @@ class TextRender {
                   ,    "ptr", 0                        ; hInstance
                   ,    "ptr", 0                        ; lpParam
                   ,    "ptr")
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+
+         if (hwnd == 0)
+            throw Exception("CreateWindow failed. If #MaxThreads is set to 1, increase it to at least 2.")
+
+         return hwnd
       }
 
       DestroyWindow() {
@@ -1980,8 +2018,10 @@ class TextRender {
          }
          try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
-         if (w = this.BitmapWidth && h = this.BitmapHeight)
-            return this
+         ; Check if the screen or window no longer matches the size of the internal bitmap.
+         if (this.memorystate > 0)
+            if (w = this.BitmapWidth && h = this.BitmapHeight)
+               return this
 
          ; Deletes bitmap coordinates.
          this.FreeMemory()
@@ -2001,6 +2041,9 @@ class TextRender {
       }
 
       LoadMemory() {
+         if (this.memorystate > 0)
+            return
+
          width := this.BitmapWidth, height := this.BitmapHeight
 
          ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
@@ -2023,30 +2066,52 @@ class TextRender {
          this.size := 4 * width * height
          this.Graphics := Graphics
 
+         this.memorystate := 1
          return this
       }
 
       FreeMemory() {
-         if (!this.hdc)
-            return this
+         if (this.memorystate == 0)
+            return
 
-         ; Scramble timers to prevent them from attempting changes.
-         this.UpdateStatus()
-
-         ; Free memory objects that cannot be garbage collected.
+         ; Cleanup
          DllCall("gdiplus\GdipDeleteGraphics", "ptr", this.Graphics)
          DllCall("SelectObject", "ptr", this.hdc, "ptr", this.obm)
          DllCall("DeleteObject", "ptr", this.hbm)
          DllCall("DeleteDC",     "ptr", this.hdc)
-         this.Graphics := this.obm := this.hbm := this.hdc := ""
 
-         ; Allow subsequent calls to UpdateMemory() to call LoadMemory()
-         this.BitmapWidth := ""
-         this.BitmapHeight := ""
-         this.BitmapLeft := ""
-         this.BitmapTop := ""
-         this.BitmapRight := ""
-         this.BitmapBottom := ""
+         try this.Delete("BitmapWidth")
+         try this.Delete("BitmapHeight")
+         try this.Delete("BitmapLeft")
+         try this.Delete("BitmapTop")
+         try this.Delete("BitmapRight")
+         try this.Delete("BitmapBottom")
+
+         try this.Delete("hdc")
+         try this.Delete("hbm")
+         try this.Delete("obm")
+         try this.Delete("ptr")
+         try this.Delete("size")
+         try this.Delete("Graphics")
+
+         this.memorystate := 0
+         return this
+      }
+
+      FreeGraphics() {
+         try this.Delete("status")
+
+         try this.Delete("t")
+         try this.Delete("x")
+         try this.Delete("y")
+         try this.Delete("x2")
+         try this.Delete("y2")
+         try this.Delete("w")
+         try this.Delete("h")
+         try this.Delete("chars")
+         try this.Delete("words")
+         try this.Delete("lines")
+
          return this
       }
 
@@ -2224,6 +2289,7 @@ class TextRender {
       }
 
       Save(filename := "", quality := "") {
+         this.Redraw()
          pBitmap := this.InBounds() ? this.CopyToBitmap() : this.RenderToBitmap()
          filepath := TextRender.BitmapToFile(pBitmap, filename, quality)
          DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
@@ -2235,23 +2301,6 @@ class TextRender {
          filepath := TextRender.BitmapToFile(pBitmap, filename, quality)
          DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
          return filepath
-      }
-
-   ; Simple Questions and Tests
-
-      InBounds() { ; Check if canvas coordinates are inside bitmap coordinates.
-         return this.x >= this.BitmapLeft
-            and this.y >= this.BitmapTop
-            and this.x2 <= this.BitmapRight
-            and this.y2 <= this.BitmapBottom
-      }
-
-      Bounds(default := "") {
-         return (this.x2 > this.x && this.y2 > this.y) ? [this.x, this.y, this.x2, this.y2] : default
-      }
-
-      Rect(default := "") {
-         return (this.x2 > this.x && this.y2 > this.y) ? [this.x, this.y, this.w, this.h] : default
       }
 
    ; Source: ImagePut 1.11
@@ -2510,9 +2559,7 @@ TextRenderDesktop(text:="", background_style:="", text_style:="") {
 }
 
 TextRenderWallpaper(text:="", background_style:="", text_style:="") {
-   static WS_CHILD := (A_OSVersion = "WIN_7") ? 0x80000000 : 0x40000000 ; Fallback to WS_POPUP for Win 7.
-   static WS_EX_LAYERED := 0x80000
-
+   ; Thanks Gerald Degeneve - https://www.codeproject.com/Articles/856020/Draw-Behind-Desktop-Icons-in-Windows-plus
    ; Post-Creator's Update Windows 10. WM_SPAWN_WORKER = 0x052C
    desktop := WinExist("ahk_class Progman")
    DllCall("SendMessage", "ptr", desktop, "uint", 0x052C, "ptr", 0xD, "ptr", 0)
@@ -2520,13 +2567,19 @@ TextRenderWallpaper(text:="", background_style:="", text_style:="") {
 
    ; Find a child window of class SHELLDLL_DefView.
    WinGet windows, List, ahk_class WorkerW
-   Loop % windows
-      hwnd := windows%A_Index%
-   until DllCall("FindWindowEx", "ptr", hwnd, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0)
+   loop % windows
+      if DllCall("FindWindowEx", "ptr", windows%A_Index%, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0) {
+         hwnd := windows%A_Index%
+         break
+      }
 
    ; Find a child window of the desktop after the previous window of class WorkerW.
    if !(WorkerW := DllCall("FindWindowEx", "ptr", 0, "ptr", hwnd, "str", "WorkerW", "ptr", 0, "ptr"))
       throw Exception("Could not locate hidden window behind desktop icons.")
+
+   ; Once the WorkerW window is found, use it as the parent window.
+   WS_CHILD                  := 0x40000000   ; Creates a child window.
+   WS_VISIBLE                := 0x10000000   ; Show on creation.
 
    ; Get true virtual screen coordinates.
    try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
@@ -2534,7 +2587,7 @@ TextRenderWallpaper(text:="", background_style:="", text_style:="") {
    y := DllCall("GetSystemMetrics", "int", 77, "int")
    try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
-   return (new TextRender(, WS_CHILD, WS_EX_LAYERED, WorkerW, x, y)).Render(text, background_style, text_style)
+   return (new TextRender(, WS_CHILD,, WorkerW, x, y)).Render(text, background_style, text_style)
 }
 
 

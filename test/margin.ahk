@@ -4,6 +4,7 @@
 
 ; Backdrop
 shadow := TextRender("", "w:80% h:80% c:83888888").ClickThrough()
+
 ; Red Dot in Center
 origin := TextRender("", "r:25 w:50 h:50 c:Red").ClickThrough()
 
@@ -15,13 +16,13 @@ margins := ["(top:50 right:100 bottom:300 left:0)"
 a := TextRender()
 
 for each, value in margins {
-   a.Render("center on text `nmargin: " value, "color:Random x:center y:center t:auto m:" value, "j:left s:5vmin").Wait()
+   a.Render("center on text `nmargin: " value, "color:Random x:center y:center t:fast m:" value, "j:left s:5vmin").Wait()
 
-   a.Render("center on background `ntext margin: " value, "color:Random x:center y:center t:auto m:0", "j:left s:5vmin m:" value).Wait()
+   a.Render("center on background `ntext margin: " value, "color:Random x:center y:center t:fast m:0", "j:left s:5vmin m:" value).Wait()
 
    origin.TopMost()
 }
 
-shadow := origin := a := ""
+
 ExitApp
 Esc:: ExitApp

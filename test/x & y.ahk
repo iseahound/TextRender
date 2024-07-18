@@ -11,11 +11,11 @@ y := ["top", "center", "bottom"]
 a := TextRender()
 
 for each, value in x
-   a.Render("x: " value, "color:Random y:center t:auto m:0 x:" value, "j:left s:10vmin").Wait()
+   a.Render("x: " value, "color:Random y:center t:fast m:0 x:" value, "j:left s:10vmin").Wait()
 
 for each, value in y
-   a.Render("y: " value, "color:Random x:center t:auto m:0 y:" value, "j:left s:10vmin").Wait()
+   a.Render("y: " value, "color:Random x:center t:fast m:0 y:" value, "j:left s:10vmin").Wait()
 
-origin := a := ""
+
 ExitApp
 Esc:: ExitApp

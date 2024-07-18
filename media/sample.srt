@@ -1,0 +1,11 @@
+1
+00:00:00,000 --> 00:00:01,500
+Surely you can't be serious.
+
+2
+00:00:01,500 --> 00:00:03,500
+I am serious, and don't call me Shirley.
+
+3
+00:00:05,000 --> 00:00:15,000
+Thanks for using TextRender!

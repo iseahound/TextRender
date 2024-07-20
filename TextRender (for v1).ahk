@@ -2044,6 +2044,7 @@ class TextRender {
          if (this.memorystate > 0)
             return
 
+         left := this.BitmapLeft, top := this.BitmapTop
          width := this.BitmapWidth, height := this.BitmapHeight
 
          ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
@@ -2057,7 +2058,7 @@ class TextRender {
          hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
          obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
          DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", Graphics:=0)
-         DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", Graphics, "float", -this.BitmapLeft, "float", -this.BitmapTop, "int", 0)
+         DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", Graphics, "float", -left, "float", -top, "int", 0)
 
          this.hdc := hdc
          this.hbm := hbm

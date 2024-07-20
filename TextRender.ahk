@@ -3,7 +3,7 @@
 ; Author:    Edison Hua (iseahound)
 ; Github:    https://github.com/iseahound/TextRender
 ; Date:      2024-07-20
-; Version:   1.9.1
+; Version:   1.9.2
 
 #Requires AutoHotkey v2.0-beta.13+
 

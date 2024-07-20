@@ -404,16 +404,16 @@ class TextRender {
          DllCall("gdiplus\GdipResetClip", "ptr", this.Graphics)
          this.CanvasChanged()
 
-         try this.Delete("t")
-         try this.Delete("x")
-         try this.Delete("y")
-         try this.Delete("x2")
-         try this.Delete("y2")
-         try this.Delete("w")
-         try this.Delete("h")
-         try this.Delete("chars")
-         try this.Delete("words")
-         try this.Delete("lines")
+         try this.DeleteProp("t")
+         try this.DeleteProp("x")
+         try this.DeleteProp("y")
+         try this.DeleteProp("x2")
+         try this.DeleteProp("y2")
+         try this.DeleteProp("w")
+         try this.DeleteProp("h")
+         try this.DeleteProp("chars")
+         try this.DeleteProp("words")
+         try this.DeleteProp("lines")
 
          ; Redraws are no longer possible!
          this.layers := []
@@ -2087,37 +2087,37 @@ class TextRender {
          DllCall("DeleteObject", "ptr", this.hbm)
          DllCall("DeleteDC",     "ptr", this.hdc)
 
-         try this.Delete("BitmapWidth")
-         try this.Delete("BitmapHeight")
-         try this.Delete("BitmapLeft")
-         try this.Delete("BitmapTop")
-         try this.Delete("BitmapRight")
-         try this.Delete("BitmapBottom")
+         try this.DeleteProp("BitmapWidth")
+         try this.DeleteProp("BitmapHeight")
+         try this.DeleteProp("BitmapLeft")
+         try this.DeleteProp("BitmapTop")
+         try this.DeleteProp("BitmapRight")
+         try this.DeleteProp("BitmapBottom")
 
-         try this.Delete("hdc")
-         try this.Delete("hbm")
-         try this.Delete("obm")
-         try this.Delete("ptr")
-         try this.Delete("size")
-         try this.Delete("Graphics")
+         try this.DeleteProp("hdc")
+         try this.DeleteProp("hbm")
+         try this.DeleteProp("obm")
+         try this.DeleteProp("ptr")
+         try this.DeleteProp("size")
+         try this.DeleteProp("Graphics")
 
          this.memorystate := 0
          return this
       }
 
       FreeGraphics() {
-         try this.Delete("status")
+         try this.DeleteProp("status")
 
-         try this.Delete("t")
-         try this.Delete("x")
-         try this.Delete("y")
-         try this.Delete("x2")
-         try this.Delete("y2")
-         try this.Delete("w")
-         try this.Delete("h")
-         try this.Delete("chars")
-         try this.Delete("words")
-         try this.Delete("lines")
+         try this.DeleteProp("t")
+         try this.DeleteProp("x")
+         try this.DeleteProp("y")
+         try this.DeleteProp("x2")
+         try this.DeleteProp("y2")
+         try this.DeleteProp("w")
+         try this.DeleteProp("h")
+         try this.DeleteProp("chars")
+         try this.DeleteProp("words")
+         try this.DeleteProp("lines")
 
          return this
       }

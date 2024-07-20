@@ -160,8 +160,8 @@ class TextRender {
          time_elapsed := (end - this.t0) / frequency * 1000
          remaining_time := this.t - time_elapsed
          if (this.t == 0 || remaining_time > 0) {
-            for i, layer in this.layers
-               this.Draw(layer[1], layer[2], layer[3])
+            this.UpdateMemory()
+            this.Redraw()
             this.UpdateLayeredWindow()
             ; Create a timer that eventually clears the canvas.
             if (remaining_time > 0) {
@@ -170,6 +170,8 @@ class TextRender {
                SetTimer % blank, % -remaining_time ; Calls __Delete.
             }
          }
+         this.memorystate := 3
+         return this
       }
 
       Render(terms*) {
@@ -363,15 +365,22 @@ class TextRender {
          this.style1 := style1, this.style2 := style2
          this.layers.push([data, style1, style2])
 
+         this.Paint(data, style1, style2)
+
+         ; Create a unique signature for each call to Draw().
+         this.CanvasChanged()
+
+         this.memorystate := 2
+         return this
+      }
+
+      Paint(data := "", style1 := "", style2 := "") {
          ; Drawing
          try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          obj := this.DrawOnGraphics(this.Graphics, data, style1, style2
             , this.ScaleWidth ? this.BitmapWidth : A_ScreenWidth
             , this.ScaleHeight ? this.BitmapHeight : A_ScreenHeight)
          try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-
-         ; Create a unique signature for each call to Draw().
-         this.CanvasChanged()
 
          ; Set canvas coordinates.
          this.t  := this.HasKey("t")  ? max(this.t, obj.t) : obj.t
@@ -384,9 +393,6 @@ class TextRender {
          this.chars := obj.chars
          this.words := obj.words
          this.lines := obj.lines
-
-         this.memorystate := 2
-         return this
       }
 
       Flush() {
@@ -424,7 +430,7 @@ class TextRender {
             return this
 
          for i, layer in this.layers
-            this.DrawOnGraphics(this.Graphics, layer[1], layer[2], layer[3])
+            this.Paint(layer*)
 
          this.memorystate := 2
          return this
@@ -2080,7 +2086,7 @@ class TextRender {
          DllCall("SelectObject", "ptr", this.hdc, "ptr", this.obm)
          DllCall("DeleteObject", "ptr", this.hbm)
          DllCall("DeleteDC",     "ptr", this.hdc)
-
+ 
          try this.Delete("BitmapWidth")
          try this.Delete("BitmapHeight")
          try this.Delete("BitmapLeft")

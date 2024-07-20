@@ -443,8 +443,10 @@ class TextRender {
       }
 
       UpdateLayeredWindow(alpha := 255) {
-         ; If width and height are unset or zero, blank the canvas.
-         if !(this.w && this.h) {
+         if (this.memorystate == 0)
+            return this
+
+         if (this.memorystate == 1) {
             DllCall("UpdateLayeredWindow"
                      ,    "ptr", this.hwnd                ; hWnd
                      ,    "ptr", 0                        ; hdcDst

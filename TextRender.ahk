@@ -443,10 +443,9 @@ class TextRender {
       }
 
       UpdateLayeredWindow(alpha := 255) {
-         if (this.memorystate == 0)
-            return this
 
          if (this.memorystate == 1) {
+            ; Make the window completely invisible but preserves what was already on screen.
             DllCall("UpdateLayeredWindow"
                      ,    "ptr", this.hwnd                ; hWnd
                      ,    "ptr", 0                        ; hdcDst
@@ -458,34 +457,40 @@ class TextRender {
                      ,  "uint*", 0 << 16 | 0x01 << 24     ; *pblend
                      ,   "uint", 2                        ; dwFlags
                      ,    "int")                          ; Success = 1
-            return this
          }
 
-         ; Define the smaller of canvas and bitmap coordinates.
-         x  := this.WindowLeft   := max(this.BitmapLeft, this.x)
-         y  := this.WindowTop    := max(this.BitmapTop, this.y)
-         x2 := this.WindowRight  := min(this.BitmapRight, this.x2)
-         y2 := this.WindowBottom := min(this.BitmapBottom, this.y2)
-         w  := this.WindowWidth  := this.WindowRight - this.WindowLeft
-         h  := this.WindowHeight := this.WindowBottom - this.WindowTop
+         if (this.memorystate >= 2) {
+            ; Define the smaller of canvas and bitmap coordinates.
+            x  := this.WindowLeft   := max(this.BitmapLeft, this.x)
+            y  := this.WindowTop    := max(this.BitmapTop, this.y)
+            x2 := this.WindowRight  := min(this.BitmapRight, this.x2)
+            y2 := this.WindowBottom := min(this.BitmapBottom, this.y2)
+            w  := this.WindowWidth  := this.WindowRight - this.WindowLeft
+            h  := this.WindowHeight := this.WindowBottom - this.WindowTop
 
-         ; Changing x, y, w, h to be stationary does not provide a speed boost.
-         ; Nor does making the window opaque.
+            ; Changing x, y, w, h to be stationary does not provide a speed boost.
+            ; Nor does making the window opaque.
 
-         pptDst := x - this.OffsetLeft << 32 >>> 32 | y - this.OffsetTop << 32
-         pptSrc := x - this.BitmapLeft << 32 >>> 32 | y - this.BitmapTop << 32
+            pptDst := x - this.OffsetLeft << 32 >>> 32 | y - this.OffsetTop << 32
+            pptSrc := x - this.BitmapLeft << 32 >>> 32 | y - this.BitmapTop << 32
 
-         DllCall("UpdateLayeredWindow"
-                  ,    "ptr", this.hwnd                ; hWnd
-                  ,    "ptr", 0                        ; hdcDst
-                  ,"uint64*", pptDst                   ; *pptDst
-                  ,"uint64*", w | h << 32              ; *psize
-                  ,    "ptr", this.hdc                 ; hdcSrc
-                  ,"uint64*", pptSrc                   ; *pptSrc
-                  ,   "uint", 0                        ; crKey
-                  ,  "uint*", alpha << 16 | 0x01 << 24 ; *pblend
-                  ,   "uint", 2                        ; dwFlags
-                  ,    "int")                          ; Success = 1
+            DllCall("UpdateLayeredWindow"
+                     ,    "ptr", this.hwnd                ; hWnd
+                     ,    "ptr", 0                        ; hdcDst
+                     ,"uint64*", pptDst                   ; *pptDst
+                     ,"uint64*", w | h << 32              ; *psize
+                     ,    "ptr", this.hdc                 ; hdcSrc
+                     ,"uint64*", pptSrc                   ; *pptSrc
+                     ,   "uint", 0                        ; crKey
+                     ,  "uint*", alpha << 16 | 0x01 << 24 ; *pblend
+                     ,   "uint", 2                        ; dwFlags
+                     ,    "int")                          ; Success = 1
+
+            ; Fixes a long standing bug where Windows forgets which windows are on top.
+            ; Seems to happen mostly when connecting a laptop to an external monitor.
+            WinSetAlwaysOnTop True, this.hwnd
+         }
+
          return this
       }
 

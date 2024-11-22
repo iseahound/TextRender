@@ -23,6 +23,15 @@
 
 That's it.
 
+#### Installation
+
+1. Save [TextRender.ahk](https://github.com/iseahound/TextRender/blob/main/TextRender.ahk) to your script directory.
+2. Add `#include TextRender.ahk` to your script.
+
+Another way:
+1. Clone this github repository. [[download]](https://github.com/iseahound/TextRender/archive/refs/heads/main.zip)
+2. Browse into the `test` folder and start clicking on scripts. `Examples` contains more advanced usage.
+
 #### Contributing
 
 * This project is considered to be **complete** and will only receive long term support from now on.

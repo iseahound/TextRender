@@ -14,6 +14,15 @@
 * [Background and Text Styles](https://github.com/iseahound/TextRender/wiki/Styles)
 * [Tips & Tricks](https://github.com/iseahound/TextRender/wiki/Tips-&-Tricks)
 
+#### Example
+
+    #include TextRender.ahk
+    tr := TextRender("hello world!", "color: Aquamarine")
+
+![example](https://github.com/user-attachments/assets/9fcc377c-827f-4381-a251-8e85670ca789)
+
+That's it.
+
 #### Contributing
 
 * This project is considered to be **complete** and will only receive long term support from now on.

@@ -5,11 +5,12 @@
 * Features background color, text outline, and drop shadow.
 * Renders to the screen, desktop, or behind desktop icons as a wallpaper.
 * Supports events such as OnEvent("LeftMouseDown", callback).
-* Extremely fast and lightweight, capable of rendering at 300+ fps. 
+* Extremely fast and lightweight, capable of rendering at 300+ fps.
+* Redraws to scale when monitor resolution changes or new displays are connected.
 
 #### Documentation
 
-* [Quick Start](https://github.com/iseahound/TextRender/wiki/Quick-Start) (Click me)
+* [Quick Start](https://github.com/iseahound/TextRender/wiki/Quick-Start)
 * [Methods and Properties](https://github.com/iseahound/TextRender/wiki/Methods-and-Properties)
 * [Background and Text Styles](https://github.com/iseahound/TextRender/wiki/Styles)
 * [Tips & Tricks](https://github.com/iseahound/TextRender/wiki/Tips-&-Tricks)
@@ -22,6 +23,9 @@
 ![example](https://github.com/user-attachments/assets/9fcc377c-827f-4381-a251-8e85670ca789)
 
 That's it.
+
+> If you want an anonymous notification set the time.
+> `TextRender("hello world!", "t:3s color: Aquamarine")`
 
 #### Installation
 

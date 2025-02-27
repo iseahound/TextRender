@@ -509,7 +509,7 @@ class TextRender {
       Wait(wait_time := 0) {
 
          ; Allow the user to override the original duration with a positive number.
-         (wait_time <= 0) && wait_time := this.t
+         (wait_time <= 0) && wait_time := (this.HasProp("t") ? this.t : 0)
 
          if (wait_time > 0) {
             ; Prevents the timer from blanking the canvas.

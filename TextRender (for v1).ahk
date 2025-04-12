@@ -1904,6 +1904,8 @@ class TextRender {
       }
          ; Define window behavior.
          WindowProc(uMsg, wParam, lParam) {
+            ll := A_ListLines
+            ListLines 0
             hwnd := this
             ; Prevent the script from exiting early.
             static void := ObjBindMethod({}, {})
@@ -1953,11 +1955,15 @@ class TextRender {
             ; Process windows messages by invoking the associated callback.
             for message, event in dict
                if (uMsg = message)
-                  try if callback := self.events[event]
-                     return %callback%(self) ; Callbacks have a reference to "this".
+                  try if callback := self.events[event] {
+                     consideration := %callback%(self) ; Callbacks have a reference to "this".
+                     ListLines %ll%
+                     return consideration
+                  }
 
             ; Default processing of window messages.
-            return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
+            try return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
+            finally ListLines %ll%
          }
 
 

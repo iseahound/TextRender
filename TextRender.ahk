@@ -1904,6 +1904,8 @@ class TextRender {
 
          ; Define window behavior.
          WindowProc(hwnd, uMsg, wParam, lParam) {
+            ll := A_ListLines
+            ListLines 0
 
             ; Prevent the script from exiting early.
             static active_windows := Persistent()
@@ -1953,11 +1955,15 @@ class TextRender {
             ; Process windows messages by invoking the associated callback.
             try for message, event in dict.OwnProps()
                if (uMsg = message)
-                  try if callback := self.events[event]
-                     return (callback.MaxParams = 0) ? callback() : callback(self) ; Callbacks have a reference to "this".
+                  try if callback := self.events[event] {
+                     consideration := (callback.MaxParams = 0) ? callback() : callback(self) ; Callbacks have a reference to "this".
+                     ListLines ll
+                     return consideration
+                  }
 
             ; Default processing of window messages.
-            return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
+            try return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
+            finally ListLines ll
          }
       }
 

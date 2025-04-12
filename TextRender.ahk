@@ -1904,7 +1904,7 @@ class TextRender {
 
          ; Define window behavior.
          WindowProc(hwnd, uMsg, wParam, lParam) {
-            ll := A_ListLines
+            static ll := A_ListLines
             ListLines 0
 
             ; Prevent the script from exiting early.

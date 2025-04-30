@@ -13,7 +13,7 @@ SetTimer coroutine, 1000
 ; Specifically allows animation while dragging. If you use a loop that won't work.
 ; Change TextRenderWallpaper() to just TextRender() to see this in action.
 coroutine() {
-
+    global
     ; Draw the main clock.
     time.Render(A_Hour ":" A_Min ":" A_Sec          ; Current Time
         , {x:"right", y:"top", c:0x66000000, m:0}   ; top-right, transparent black, no margin

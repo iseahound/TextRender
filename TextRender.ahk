@@ -1,4 +1,4 @@
-; Script:    TextRender.ahk
+﻿; Script:    TextRender.ahk
 ; License:   MIT License
 ; Author:    Edison Hua (iseahound)
 ; Github:    https://github.com/iseahound/TextRender
@@ -11,40 +11,56 @@
 ; TextRender() - Display custom text on screen.
 class TextRender {
 
-   static call(text:="", background_style:="", text_style:="") {
-      if (text == "" && background_style == "" && text_style == "")
-         return super()
-      return super().Render(text, background_style, text_style)
+   static call(text:="sentinel", background_style:="", text_style:="") {
+      ; super is used to overshadow "this" to instantiate without infinite recursion.
+      this := super()
+      this.style1 := background_style
+      this.style2 := text_style
+
+      if (text == "sentinel")
+         return this
+      else
+         return this.Render(text, background_style, text_style)
    }
 
-   __New(title := "", style := 0x80000000, styleEx := 0x80088, parent := 0
-      , OffsetLeft := 0, OffsetTop := 0, ScaleWidth := False, ScaleHeight := False) {
+   ; Sections
+   ; Recipe Functions - Modifies recipe states only
+   ; Window Functions - Modifies window states only
+   ; Bitmap Functions - Modifies bitmap states only
+   ; Main Functions - Modifies recipe, window, and memory states
+
+   ; recipestate
+   ; 0 - "noideas"     | object
+   ; 1 - "recorded"    | object + recipe
+
+   ; bitmapstate
+   ; 0 - "freed"       | object
+   ; 1 - "allocated"   | object + bitmap
+   ; 2 - "filled"      | object + bitmap + bitmap coordinates
+   ; 3 - "copied"      | object + bitmap + bitmap coordinates + pending deletion
+
+   ; windowstate
+   ; 0 - "notexist"    | object
+   ; 1 - "invalid"     | object + window
+   ; 2 - "updated"     | object + window + window coordinates
+   ; 3 - "rendered"    | object + window + window coordinates + active timers (t0)
+
+   __Delete() {
+      this.Forget()              ; recipestate ? ← 0
+      this.Free()                ; bitmapstate ? ← 0
+      this.Destroy()             ; windowstate ? ← 0
+
+      TextRender.gdiplusShutdown()
+   }
+
+   __New(OffsetLeft := 0, OffsetTop := 0, ScaleWidth := False, ScaleHeight := False) {
       TextRender.gdiplusStartup()
 
-      ; Create the window and save a reference to this instance.
-      hwnd := this.CreateWindow(title, style, styleEx, parent)
-      DllCall("SetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 0, "ptr", ObjPtr(this))
-
-      ; Check if a custom parent window was set and save it.
-      parent := DllCall("GetAncestor", "ptr", hwnd, "uint", 1, "ptr")
-      (parent == DllCall("GetDesktopWindow", "ptr")) && parent := 0
-
-      ; Show the window without activating it. (WS_VISIBLE wouldn't work here.)
-      DllCall("ShowWindow", "ptr", hwnd, "int", 4) ; SW_SHOWNOACTIVATE
-
-      ; Save parameters.
-      this.hwnd := hwnd
-      this.parent := parent
+      ; User defined custom scaling
       this.OffsetLeft := OffsetLeft
       this.OffsetTop := OffsetTop
       this.ScaleWidth := ScaleWidth
       this.ScaleHeight := ScaleHeight
-
-      ; These are always preserved between all calls.
-      this.style1 := ""
-      this.style2 := ""
-      this.layers := []
-      this.status := 0xFFFF0001 ; Resets when the lower 16 bits overflow.
 
       ; Initalize default events.
       this.events := Map()
@@ -52,152 +68,727 @@ class TextRender {
       this.OnEvent("MiddleMouseDown", this.EventShowCoordinates)
       this.OnEvent("RightMouseDown", this.EventCopyData)
 
-      ; The current memory state is uninitialized, and will be allocated by UpdateMemory().
-      this.memorystate := 0
+      ; These are global variables. Can cause infinite loops otherwise.
+      this.status := 0xFFFF0001  ; Can never be unset
+      this.layers := []
+      this.data := ""
+      this.style1 := ""
+      this.style2 := ""
 
+      ; Allows WinExist!
+      this.hwnd := 0
+
+      this.recipestate := 0      ; recipestate ? → 0
+      this.bitmapstate := 0      ; bitmapstate ? → 0
+      this.windowstate := 0      ; windowstate ? → 0
       return this
    }
 
-   __Delete() {
-      ; __Delete ? DestroyWindow ? WM_DESTROY ? FreeMemory ? Remove Persistence ? ExitApp
-      this.DestroyWindow() ; Calls FreeMemory()
-      TextRender.gdiplusShutdown()
+   ; Recipe Functions
+
+   Remember(data := "", style1 := "", style2 := "") {
+      this.RememberRecipe(data, style1, style2)
+
+      this.recipestate := 1   ; recipestate x → 1
+      return this
    }
 
-   ; Window Styles
+   RememberRecipe(data := "", style1 := "", style2 := "") {
+      ; Use previous styles if and only if both styles are blank.
+      if (style1 = "" && style2 = "") {
+         style1 := this.style1
+         style2 := this.style2
+      }
 
-      Default() {
-         ; Left Click to drag. Right click to close.
+      ; Global Variables
+      this.data := data
+      this.style1 := style1
+      this.style2 := style2
+      this.layers.push([data, style1, style2])
+   }
+
+   Forget(n := "sentinel") {
+      this.ForgetRecipe(n)
+
+      this.recipestate := !!this.layers.length ; recipestate 0|1 ← x
+      return this
+   }
+
+   ForgetRecipe(n := "sentinel") {
+      ; Redraws are no longer possible!
+      if (n = "sentinel")
+         this.layers := []
+
+      else
+         loop min(this.layers.length, n)
+            this.layers.pop()
+   }
+
+   ; Window Functions
+
+   Destroy() {
+      if (this.windowstate <= 0) ; Ignore current and lower states
          return this
-            .OnEvent("MiddleMouseDown", "")
-            .OnEvent("RightMouseDown", "")
-            .OnEvent("RightMouseUp", this.DestroyWindow)
-      }
 
-      None() {
-         ; Removes all events.
+      if (this.windowstate >= 2) ; Previous state applies all previous changes
+         this.InvalidateWindow()
+
+      this.DestroyWindow()
+
+      this.windowstate := 0      ; windowstate 0 ← x
+      return this
+   }
+
+   DestroyWindow() {
+      DllCall("DestroyWindow", "ptr", this.hwnd) ; Sends WM_DESTROY
+      this.hwnd := 0 ; Don't delete the property, just set it to 0.
+   }
+
+   Create(title := "", style := 0x80000000, styleEx := 0x80088, parent := 0) {
+      if (this.windowstate >= 1) ; Ignore current and higher states
          return this
-            .OnEvent("LeftMouseDown", "")
-            .OnEvent("MiddleMouseDown", "")
-            .OnEvent("RightMouseDown", "")
-      }
 
-      Show() {
-         DllCall("ShowWindow", "ptr", this.hwnd, "int", 4) ; SW_SHOWNOACTIVATE
+      ; Create the window and save a reference to this instance.
+      this.CreateWindow(title, style, styleEx, parent)
+
+      this.windowstate := 1      ; windowstate x → 1
+      return this
+   }
+
+   CreateWindow(title := "", style := 0x80000000, styleEx := 0x80088, parent := 0) {
+      ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
+      WS_POPUP                  := 0x80000000   ; Allow small windows.
+
+      ; Extended Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
+      WS_EX_TOPMOST             :=        0x8   ; Always on top.
+      WS_EX_TOOLWINDOW          :=       0x80   ; Hides from Alt+Tab menu. Removes small icon.
+      WS_EX_LAYERED             :=    0x80000   ; For UpdateLayeredWindow.
+
+      ; Start off hidden with WS_VISIBLE off and zero width/height coordinates.
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+      hwnd := DllCall("CreateWindowEx"
+               ,   "uint", styleEx                  ; dwExStyle
+               ,    "str", this.WindowClass()       ; lpClassName
+               ,    "str", title                    ; lpWindowName
+               ,   "uint", style                    ; dwStyle
+               ,    "int", 0                        ; X
+               ,    "int", 0                        ; Y
+               ,    "int", 0                        ; nWidth
+               ,    "int", 0                        ; nHeight
+               ,    "ptr", parent                   ; hWndParent
+               ,    "ptr", 0                        ; hMenu
+               ,    "ptr", 0                        ; hInstance
+               ,    "ptr", 0                        ; lpParam
+               ,    "ptr")
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+
+      if (hwnd == 0)
+         throw Error("CreateWindow failed. If #MaxThreads is set to 1, increase it to at least 2.")
+
+      ; Show the window without activating it. (WS_VISIBLE wouldn't work here. Also WS_EX_NOACTIVATE does something else.)
+      DllCall("ShowWindow", "ptr", hwnd, "int", 4) ; SW_SHOWNOACTIVATE
+
+      ; Save a reference to this object to process window messages.
+      DllCall("SetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 0, "ptr", ObjPtr(this))
+
+      ; Set the window property.
+      this.hwnd := hwnd
+
+      ; Check if an actual parent was supplied.
+      if DllCall("GetAncestor", "ptr", hwnd, "uint", 1, "ptr") != DllCall("GetDesktopWindow", "ptr")
+         this.parent := parent
+   }
+
+   Invalidate() {
+      if (this.windowstate <= 1) ; Ignore current and lower states
          return this
+
+      this.InvalidateWindow()
+
+      this.windowstate := 1      ; windowstate 1 ← x
+      return this
+   }
+
+   InvalidateWindow() {
+      this.DeleteProp("WindowLeft")
+      this.DeleteProp("WindowTop")
+      this.DeleteProp("WindowRight")
+      this.DeleteProp("WindowBottom")
+      this.DeleteProp("WindowWidth")
+      this.DeleteProp("WindowHeight")
+   }
+
+   UpdateLayered(alpha := 255) {
+      if (this.windowstate <= 0) ; Previous state applies all previous changes
+         this.Create()
+
+      this.UpdateLayeredWindow(alpha)
+
+      this.windowstate := 3      ; windowstate x → 3 ← x
+      return this
+   }
+
+   UpdateLayeredWindow(alpha := 255) {
+      ; Define the smaller of canvas and bitmap coordinates.
+      x  := this.WindowLeft   := max(this.BitmapLeft, this.x)
+      y  := this.WindowTop    := max(this.BitmapTop, this.y)
+      x2 := this.WindowRight  := min(this.BitmapRight, this.x2)
+      y2 := this.WindowBottom := min(this.BitmapBottom, this.y2)
+      w  := this.WindowWidth  := this.WindowRight - this.WindowLeft
+      h  := this.WindowHeight := this.WindowBottom - this.WindowTop
+
+      if !(w && h) { ; If the width and height are zero, render a blank screen.
+         this.HideWindow() ; Note the windowstate is will be 3, as it's considered rendered.
+         return
       }
 
-      Hide() {
-         DllCall("ShowWindow", "ptr", this.hwnd, "int", 0) ; SW_HIDE
+      ; Changing x, y, w, h to be stationary does not provide a speed boost.
+      ; Nor does making the window opaque.
+      pptDst := x - this.OffsetLeft << 32 >>> 32 | y - this.OffsetTop << 32
+      pptSrc := x - this.BitmapLeft << 32 >>> 32 | y - this.BitmapTop << 32
+
+      ; Reminder: Only the visible screen area will be rendered. Clipping will occur.
+      DllCall("UpdateLayeredWindow"
+               ,    "ptr", this.hwnd                ; hWnd
+               ,    "ptr", 0                        ; hdcDst
+               ,"uint64*", pptDst                   ; *pptDst
+               ,"uint64*", w | h << 32              ; *psize
+               ,    "ptr", this.hdc                 ; hdcSrc
+               ,"uint64*", pptSrc                   ; *pptSrc
+               ,   "uint", 0                        ; crKey
+               ,  "uint*", alpha << 16 | 0x01 << 24 ; *pblend
+               ,   "uint", 2                        ; dwFlags
+               ,    "int")                          ; Success = 1
+
+      ; Fixes a long standing bug where Windows forgets which windows are on top.
+      ; Seems to happen mostly when connecting a laptop to an external monitor.
+      if WinGetExStyle(this.hwnd) & 0x8      ; WS_EX_TOPMOST
+         WinSetAlwaysOnTop True, this.hwnd   ; Set always on top again.
+
+      this.UpdateStatus() ; Block timers
+   }
+
+   FadeWindow(alpha) {
+      DllCall("UpdateLayeredWindow"
+               ,    "ptr", this.hwnd                ; hWnd
+               ,    "ptr", 0                        ; hdcDst
+               ,    "ptr", 0                        ; *pptDst
+               ,    "ptr", 0                        ; *psize
+               ,    "ptr", 0                        ; hdcSrc
+               ,    "ptr", 0                        ; *pptSrc
+               ,   "uint", 0                        ; crKey
+               ,  "uint*", alpha << 16 | 0x01 << 24 ; *pblend
+               ,   "uint", 2                        ; dwFlags
+               ,    "int")                          ; Success = 1
+   }
+
+   Hide() {
+      if (this.windowstate != 3)
          return this
-      }
 
-      ToggleVisible() {
-         DllCall("IsWindowVisible", "ptr", this.hwnd) ? this.Hide() : this.Show()
+      this.HideWindow()
+
+      this.windowstate := 2      ; windowstate 2 ← 3
+      return this
+   }
+
+   HideWindow() {
+      ; Make the window completely invisible but preserves what was already on screen.
+      this.FadeWindow(0x00)
+      this.UpdateStatus() ; Block timers
+   }
+
+   Show() {
+      if (this.windowstate != 2)
          return this
-      }
 
-      TopMost() {
-         WinSetAlwaysOnTop 1, "ahk_id" this.hwnd
+      this.ShowWindow()
+
+      this.windowstate := 3      ; windowstate 2 → 3
+      return this
+   }
+
+   ShowWindow() {
+      ; Sets the alpha of the window back to 255 to restore visibility.
+      this.FadeWindow(0xFF)
+      this.TimeSetBlank(this.TimeRemaining()) ; Resume Timers
+   }
+
+   ShowHide() {
+      if (this.windowstate == 2)
+         return this.Show()
+      if (this.windowstate == 3)
+         return this.Hide()
+   }
+
+   Screenshot(filepath := "", quality := "") {
+      if (this.windowstate <= 1)
          return this
-      }
 
-      AlwaysOnTop() {
-         WinSetAlwaysOnTop -1, "ahk_id" this.hwnd
+      ; Takes a picture even when the window is fully invisible!
+      pBitmap := TextRender.ScreenshotToBitmap([this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight])
+      TextRender.BitmapToFile(pBitmap, filepath, quality)
+      DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+
+      return this   ; windowstate x → x
+   }
+
+; Memory Functions
+
+   Free() {
+      if (this.bitmapstate <= 0) ; Ignore current and lower states
          return this
-      }
 
-      ClickThrough() {
-         return this.ToggleExStyle(0x20)
-      }
+      if (this.bitmapstate >= 2) ; Previous state applies all previous changes
+         this.Erase()
 
-      NoActivate() {
-         return this.ToggleExStyle(0x8000000)
-      }
+      this.FreeMemory()
 
-      ToggleStyle(long) {
-         return this.ToggleWindowLong(-16, long)
-      }
+      this.bitmapstate := 0      ; bitmapstate 0 ← x
+      return this
+   }
 
-      ToggleExStyle(long) {
-         return this.ToggleWindowLong(-20, long)
-      }
+   FreeMemory() {
+      DllCall("gdiplus\GdipDeleteGraphics", "ptr", this.Graphics)
+      obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
+      DllCall("SelectObject", "ptr", this.hdc, "ptr", obm)
+      DllCall("DeleteObject", "ptr", this.hbm)
+      DllCall("DeleteDC",     "ptr", this.hdc)
 
-      ToggleWindowLong(index, long) {
-         value := DllCall("GetWindowLong", "ptr", this.hwnd, "int", index, "int")
-         (value & long) == long
-            ? DllCall("SetWindowLong", "ptr", this.hwnd, "int", index, "int", value ^ long)
-            : DllCall("SetWindowLong", "ptr", this.hwnd, "int", index, "int", value | long)
+      this.DeleteProp("hdc")
+      this.DeleteProp("hbm")
+      this.DeleteProp("ptr")
+      this.DeleteProp("size")
+      this.DeleteProp("Graphics")
+
+      this.DeleteProp("BitmapWidth")
+      this.DeleteProp("BitmapHeight")
+      this.DeleteProp("BitmapLeft")
+      this.DeleteProp("BitmapTop")
+      this.DeleteProp("BitmapRight")
+      this.DeleteProp("BitmapBottom")
+   }
+
+   Allocate() {
+      if (this.bitmapstate >= 1) ; Ignore current and higher states
          return this
+
+      this.AllocateMemory()
+
+      this.bitmapstate := 1      ; bitmapstate x → 1
+      return this
+   }
+
+   AllocateMemory(left := 0, top := 0, width := 0, height := 0) {
+      if !(width && height)
+         this.GetParentCoordinates(&left, &top, &width, &height)
+
+      this.BitmapLeft := left
+      this.BitmapTop := top
+      this.BitmapRight := left + width
+      this.BitmapBottom := top + height
+      this.BitmapWidth := width
+      this.BitmapHeight := height
+
+      ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
+      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+      bi := Buffer(40, 0)                    ; sizeof(bi) = 40
+         NumPut(  "uint",        40, bi,  0) ; Size
+         NumPut(   "int",     width, bi,  4) ; Width
+         NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
+         NumPut("ushort",         1, bi, 12) ; Planes
+         NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+      DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", &Graphics:=0)
+      DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", Graphics, "float", -left, "float", -top, "int", 0)
+
+      this.hdc := hdc
+      this.hbm := hbm
+      this.ptr := pBits
+      this.size := 4 * width * height
+      this.Graphics := Graphics
+   }
+
+   Erase() {
+      if (this.bitmapstate <= 1) ; Ignore current and lower states
+         return this
+
+      if (this.bitmapstate >= 3) ; Previous state applies all previous changes
+         this.Recycle()
+
+      this.EraseMemory()
+
+      this.bitmapstate := 1      ; bitmapstate 1 ← x
+      return this
+   }
+
+   EraseMemory() {
+      ; Restricting the area to the canvas coordinates is faster than clearing the entire memory.
+      DllCall("gdiplus\GdipSetClipRect", "ptr", this.Graphics, "float", this.x, "float", this.y, "float", this.w, "float", this.h, "int", 0)
+      DllCall("gdiplus\GdipGraphicsClear", "ptr", this.Graphics, "uint", 0x00FFFFFF) ; All colors are the same speed.
+      DllCall("gdiplus\GdipResetClip", "ptr", this.Graphics)
+
+      ; Invalidate canvas coordinates.
+      this.DeleteProp("t")
+      this.DeleteProp("x")
+      this.DeleteProp("y")
+      this.DeleteProp("x2")
+      this.DeleteProp("y2")
+      this.DeleteProp("w")
+      this.DeleteProp("h")
+      this.DeleteProp("chars")
+      this.DeleteProp("words")
+      this.DeleteProp("lines")
+
+      ; Creates a unique signature for each change to the bitmap or canvas.
+      this.CanvasChanged()
+   }
+
+   Fill() {
+      if (this.bitmapstate >= 2) ; Ignore current and higher states
+         return this
+
+      if (this.bitmapstate <= 0) ; Previous state applies all previous changes
+         this.Allocate()
+
+      this.FillMemory()
+
+      this.bitmapstate := 2      ; bitmapstate x → 2
+      return this
+   }
+
+   FillMemory() {
+      for layer in this.layers
+         this.DrawMemory(layer*)
+   }
+
+   DrawMemory(data := "", style1 := "", style2 := "") {
+      ; Drawing
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+      obj := this.DrawOnGraphics(this.Graphics, data, style1, style2
+         , this.ScaleWidth ? this.BitmapWidth : A_ScreenWidth
+         , this.ScaleHeight ? this.BitmapHeight : A_ScreenHeight)
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+
+      ; Set canvas coordinates. Ensure the starting coordinates are blank.
+      this.t  := this.HasProp("t")  ? max(this.t, obj.t) : obj.t
+      this.x  := this.HasProp("x")  ? min(this.x, obj.x) : obj.x
+      this.y  := this.HasProp("y")  ? min(this.y, obj.y) : obj.y
+      this.x2 := this.HasProp("x2") ? max(this.x2, obj.x2) : obj.x2
+      this.y2 := this.HasProp("y2") ? max(this.y2, obj.y2) : obj.y2
+      this.w  := this.x2 - this.x
+      this.h  := this.y2 - this.y
+      this.chars := obj.chars
+      this.words := obj.words
+      this.lines := obj.lines
+
+      ; Creates a unique signature for each change to the bitmap or canvas.
+      this.CanvasChanged()
+   }
+
+   Recycle() {
+      if (this.bitmapstate <= 2) ; Ignore current and lower states
+         return this
+
+      this.bitmapstate := 2      ; bitmapstate 2 ← x
+      return this
+   }
+
+   Resolve() {
+      if (this.bitmapstate <= 2) ; Previous state applies all previous changes
+         this.Fill()
+
+      this.bitmapstate := 3      ; bitmapstate x → 3
+      return this
+   }
+
+   Reallocate() {
+      ; bitmapstate x → 1 - Initalize memory buffer
+      if (this.bitmapstate <= 0) ; Previous state applies all previous changes
+         return this.Allocate()
+
+      ; bitmapstate 1|2|3 ← x - Conditionally reallocate memory
+      this.ReallocateMemory()
+
+      this.bitmapstate := 1      ; bitmapstate x → 1|2|3 ← x
+      return this
+   }
+
+   ReallocateMemory() {
+      this.GetParentCoordinates(&left, &top, &width, &height)
+
+      ; No need to reallocate if the width and height are the same.
+      if !(width = this.BitmapWidth && height = this.BitmapHeight) {
+         this.FreeMemory()
+         this.AllocateMemory(left, top, width, height)
+      }
+   }
+
+   Save(filepath := "", quality := "") {
+      ; bitmapstate x → 1|2|3 ← x - The bitmap memory could be reallocated or remain the same.
+      this.Redraw()
+
+      ; bitmapstate 1 → ∅ - Guard against saving a blank bitmap.
+      if (this.bitmapstate <= 1)
+         return this
+
+      ; Always try to render the bitmap even when off screen and invisible.
+      pBitmap := this.InBounds() ? this.CopyToBitmap() : this.RenderToBitmap()
+      TextRender.BitmapToFile(pBitmap, filepath, quality)
+      DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+
+      ; If the memory has been freed it is now reallocated.
+      return this   ; bitmapstate x → 1|2|3 ← x
+   }
+
+   ; Main Functions - Modifies window and memory states
+
+   Reset() {
+      this.Forget()              ; recipestate 0 ← x
+      this.Erase()               ; bitmapstate 1 ← x
+      this.Hide()                ; windowstate 2 ← 3
+      return this
+   }
+
+   Clear() {
+      this.Erase()               ; bitmapstate 1 ← x
+      this.Hide()                ; windowstate 2 ← 3
+      return this
+   }
+
+   Blank(status) {
+      ; Blocks timers from acting when bitmaps have changed.
+      if (this.status = status)  ; bitmapstate a:x = a:x
+         this.Destroy()          ; windowstate 0 ← x
+   }
+
+   Flush() {
+      ; recipestate 0 → ∅ - Do nothing if this.layers is blank
+      if (this.recipestate <= 0)
+         return this
+
+      ; bitmapstate x → 1|2|3 ← x - Check if screen size has changed
+      this.Reallocate()
+
+      ; bitmapstate 1 ← x - Clear the bitmap and canvas and expire timers
+      this.Erase()
+
+      ; bitmapstate 1 → 2 - Fill the bitmap with queued drawings
+      this.Fill()
+
+      ; recipestate 0 ← x - Deletes this.layers to prevent redrawing
+      this.Forget()
+
+      this.recipestate := 0   ; recipestate 0 ← x
+      this.bitmapstate := 2   ; bitmapstate x → 2 ← x
+      return this
+   }
+
+   Paint() {
+      if (this.recipestate <= 0) ; Ignore current and lower states
+         return this
+
+      ; recipestate 0 ← x - Flushes all pending events and draws them immediately
+      ; bitmapstate x → 2 ← x - The bitmap is filled with new drawings!
+      this.Flush()
+
+      ; bitmapstate 2 → 3 -  Mark bitmap as completed to avoid more drawing
+      this.Resolve()
+
+       ; windowstate x → 2 ← x - Renders the bitmap to screen
+      this.UpdateLayered()
+
+      ; windowstate 2 → 3 - Starts any timers
+      this.RenderWindow()
+
+      this.recipestate := 0   ; recipestate 0 ← x
+      this.bitmapstate := 3   ; bitmapstate x → 3 ← x
+      this.windowstate := 3   ; windowstate x → 3 ← x
+      return this
+   }
+
+   Draw(data := "", style1 := "", style2 := "") {
+
+      ; Prepare the bitmap for new drawings.
+      if (this.bitmapstate >= 3) {
+
+         ; recipestate 0 ← x - Deletes this.layers to prevent redrawing
+         this.Forget()
+
+         ; bitmapstate 1 ← 3 - Clear the bitmap and canvas and expire timers
+         this.Erase()
       }
 
-   ; Simple Questions and Tests
+      ; bitmapstate x → 1|2 ← x - Recover intermediate steps when screen changes
+      this.Redraw()
 
-      InBounds() { ; Requires memorystate 2 or greater
-         ; Check if canvas coordinates are inside bitmap coordinates.
-         return this.x >= this.BitmapLeft
-            and this.y >= this.BitmapTop
-            and this.x2 <= this.BitmapRight
-            and this.y2 <= this.BitmapBottom
+      ; recipestate x → 1 - Saves the data and styles to the layers
+      this.Remember(data, style1, style2)
+
+      ; bitmapstate 1 → 2 - Filling the memory with drawings is good!
+      this.DrawMemory(this.data, this.style1, this.style2)
+
+      this.bitmapstate := 2   ; bitmapstate x → 2 ← x
+      return this             ; recipestate x → 1
+   }
+
+   Render(terms*) {
+
+      ; recipestate x → 1 - Saves the data and styles to the layers
+      ; bitmapstate x → 2 ← x - Allocates memory and fills it with drawings
+      this.Draw(terms*)
+
+      ; bitmapstate 2 → 3 - Marks the memory for clearing after rendering
+      this.Resolve()
+
+      ; windowstate x → 2 ← x - Renders to bitmap data to screen
+      this.UpdateLayered()
+
+      ; windowstate 2 → 3 - Starts any timers
+      this.RenderWindow()
+
+      ; By not clearing any memory early, calls to Save() will not encounter a blank bitmap.
+      this.recipestate := 1   ; recipestate x → 1
+      this.bitmapstate := 3   ; bitmapstate x → 3 ← x
+      this.windowstate := 3   ; windowstate x → 3 ← x
+      return this
+   }
+
+   RenderWindow() {
+      this.TimeStamp()
+      this.TimeSetBlank(this.t)
+   }
+
+   Redraw() {
+      ; bitmapstate x → 1|2|3 ← x - The bitmap memory could be reallocated or remain the same
+      this.Reallocate()
+
+      ; recipestate 0 → ∅ - Dividing this into 2 conditional branches allows a better proof
+      if (this.recipestate == 0)
+         return this          ; bitmapstate x → 1|2|3 ← x  (1 of 2)
+
+      ; recipestate 1 → 1 - this.layers contains instructions on how to fill the memory
+      ; bitmapstate 1|2|3 → 2|3 - Restrict output to bitmapstate 2|3
+      this.Fill()
+
+      ; Preserve rendering state 3 to allow overwriting
+      return this             ; bitmapstate x → 2|3 ← x  (2 of 2)
+   }
+
+   Rerender(t) {
+      ; recipestate 0 → ∅ - Do nothing if this.layers is blank
+      if (this.recipestate <= 0)
+         return this
+
+      ; bitmapstate 0|1|2 → ∅ - There was nothing shown on screen
+      if (this.bitmapstate <= 2)
+         return this
+
+      ; windowstate 0 → ∅ - Assume the window has been destroyed on purpose
+      if (this.windowstate <= 0)
+         return this
+
+      ; bitmapstate 2|3 ← x - With recipestate = 1, bitmapstate 1 can be omitted
+      this.Redraw()
+
+      ; bitmapstate 2|3 → 3 - Mark the bitmap buffer as rendered.
+      this.Resolve()
+
+      ; windowstate 1|2|3 → 2 - Show the renders to the user's screen
+      this.UpdateLayered()
+
+      ; windowstate 2 → 3 - If screen resolution, dpi, or orientation changes
+      this.RerenderWindow(t)
+
+      this.windowstate := 3   ; windowstate 1|2|3 → 3
+      return this
+   }
+
+   RerenderWindow(t) {
+      this.TimeSetBlank(t)
+   }
+
+   ; Time Functions
+
+   TimeStamp() {
+      DllCall("QueryPerformanceCounter", "int64*", &start:=0)
+      return this.t0 := start
+   }
+
+   TimeElapsed() {
+      DllCall("QueryPerformanceFrequency", "int64*", &frequency:=0)
+      DllCall("QueryPerformanceCounter", "int64*", &end:=0)
+      return 1000 * (end - this.t0) / frequency
+   }
+
+   TimeRemaining() {
+      return max(0, this.t - this.TimeElapsed())
+   }
+
+   TimeExceeded() {
+      return min(0, this.TimeElapsed() - this.t)
+   }
+
+   ; Animation Functions
+
+   TimeSetBlank(t) {
+      ; Create a timer that eventually clears the canvas.
+      if (t > 0) {
+         ; Create a reference to the object held by a timer.
+         blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
+         SetTimer blank, -t ; Calls __Delete.
       }
+   }
 
-      Bounds() { ; Requires memorystate 2 or greater
-         return [this.x, this.y, this.x2, this.y2]
+   UpdateStatus() {
+      ; By having a random and a deterministic component the probablility of collisions drops significantly.
+      this.status += 1
+      if 0xFFFF & this.status == 0xFFFF {
+         h := Random(0x1000, 0xFFFF)
+         l := 0
+         this.status := h << 32 | l
       }
+   }
 
-      Rect() { ; Requires memorystate 2 or greater
-         return [this.x, this.y, this.w, this.h]
-      }
+   Wait(wait_time := 0) {
 
-   ; Renders and Effects
+      ; Waits out any remaining active timers.
+      ; if bitmapstate xxx
+      (wait_time <= 0) && wait_time := (this.HasProp("t") ? this.t : 0)
 
-      RenderAgain() {
-         if (this.memorystate < 3)
-            return this
+      ; Allow the user to override the original duration with a positive number.
+      if (wait_time > 0) {
+         ; Prevents the timer from blanking the canvas.
+         this.UpdateStatus() ; Block timers
 
+         ; Always use QPC over GetTickCount for finer time intervals.
          DllCall("QueryPerformanceFrequency", "int64*", &frequency:=0)
-         DllCall("QueryPerformanceCounter", "int64*", &end:=0)
-         time_elapsed := (end - this.t0) / frequency * 1000
-         remaining_time := this.t - time_elapsed
-         if (this.t == 0 || remaining_time > 0) {
-            this.UpdateMemory()
-            this.Redraw()
-            this.UpdateLayeredWindow()
-            ; Create a timer that eventually clears the canvas.
-            if (remaining_time > 0) {
-               ; Create a reference to the object held by a timer.
-               blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
-               SetTimer blank, -remaining_time ; Calls __Delete.
-            }
+
+         loop {
+            DllCall("QueryPerformanceCounter", "int64*", &end:=0)
+            elapsed_time := (end - this.t0) / frequency * 1000
+            remaining_time := wait_time - elapsed_time
+            if (remaining_time > 30)
+               Sleep 10
+            if (remaining_time <= 0)
+               break
          }
-         this.memorystate := 3
-         return this
       }
 
-      Render(terms*) {
+      return this ; Allow the next render call to update the current window.
+   }
 
-         this.Draw(terms*)
-
-         ; Reminder: Only the visible screen area will be rendered. Clipping will occur.
-         this.UpdateLayeredWindow()
-
-         ; Start Timestamp
-         DllCall("QueryPerformanceCounter", "int64*", &start:=0)
-         this.t0 := start
-
-         ; Create a timer that eventually clears the canvas.
-         if (this.t > 0) {
-            ; Create a reference to the object held by a timer.
-            blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
-            SetTimer blank, -this.t ; Calls __Delete.
-         }
-
-         ; Ensure that Flush() will be called at the start of a new drawing.
-         ; This approach keeps this.layers and the underlying graphics intact,
-         ; so that calls to Save() and Screenshot() will not encounter a blank canvas.
-         this.memorystate := 3
-         return this
+   Sleep(sleep_time := 0, wait_time := 0) {
+      this.Wait(wait_time)
+      if (sleep_time > 0) {
+         this.Hide()
+         this.bitmapstate := 3
+         Sleep sleep_time
       }
+      return this
+   }
+
 
       RenderOnScreen(terms*) {
 
@@ -272,7 +863,7 @@ class TextRender {
             SetTimer blank, -this.t ; Calls __Delete.
          }
 
-         this.memorystate := 3
+         this.bitmapstate := 3
          return this
       }
 
@@ -314,7 +905,7 @@ class TextRender {
                SetTimer fade, -this.t ; Calls __Delete.
             }
 
-            this.memorystate := 3
+            this.bitmapstate := 3
             return this
          }
 
@@ -337,222 +928,11 @@ class TextRender {
                DllCall("QueryPerformanceCounter", "int64*", &now:=0)
                duration := (now - start)/frequency * 1000
             }
-            this.UpdateLayeredWindow(0)
+            this.FadeWindow(0)
             return this
          }
       }
 
-   ; Basic Methods
-
-      Draw(data := "", style1 := "", style2 := "") {
-
-         ; Check if the screen or window or window size has changed.
-         this.UpdateMemory() ; Calls LoadMemory() if needed.
-
-         ; Redraw the canvas if any layers are present.
-         if (this.memorystate == 1)
-            this.Redraw()
-
-         ; Clear the canvas as it has been rendered to screen.
-         if (this.memorystate == 3)
-            this.Flush()
-
-         ; Use previous styles if blank.
-         (style1 = "" && style2 = "") && (style1 := this.style1, style2 := this.style2)
-
-         ; Save data and styles into layers.
-         this.data := data
-         this.style1 := style1, this.style2 := style2
-         this.layers.push([data, style1, style2])
-
-         this.Paint(data, style1, style2)
-
-         ; Create a unique signature for each call to Draw().
-         this.CanvasChanged()
-
-         this.memorystate := 2
-         return this
-      }
-
-      Paint(data := "", style1 := "", style2 := "") {
-         ; Drawing
-         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-         obj := this.DrawOnGraphics(this.Graphics, data, style1, style2
-            , this.ScaleWidth ? this.BitmapWidth : A_ScreenWidth
-            , this.ScaleHeight ? this.BitmapHeight : A_ScreenHeight)
-         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-
-         ; Set canvas coordinates.
-         this.t  := this.HasProp("t")  ? max(this.t, obj.t) : obj.t
-         this.x  := this.HasProp("x")  ? min(this.x, obj.x) : obj.x 
-         this.y  := this.HasProp("y")  ? min(this.y, obj.y) : obj.y
-         this.x2 := this.HasProp("x2") ? max(this.x2, obj.x2) : obj.x2
-         this.y2 := this.HasProp("y2") ? max(this.y2, obj.y2) : obj.y2
-         this.w  := this.x2 - this.x
-         this.h  := this.y2 - this.y
-         this.chars := obj.chars
-         this.words := obj.words
-         this.lines := obj.lines
-      }
-
-      Flush() {
-         if (this.memorystate < 2)
-            return this
-
-         DllCall("gdiplus\GdipSetClipRect", "ptr", this.Graphics, "float", this.x, "float", this.y, "float", this.w, "float", this.h, "int", 0)
-         DllCall("gdiplus\GdipGraphicsClear", "ptr", this.Graphics, "uint", 0x00FFFFFF) ; All colors are the same speed.
-         DllCall("gdiplus\GdipResetClip", "ptr", this.Graphics)
-         this.CanvasChanged()
-
-         try this.DeleteProp("t")
-         try this.DeleteProp("x")
-         try this.DeleteProp("y")
-         try this.DeleteProp("x2")
-         try this.DeleteProp("y2")
-         try this.DeleteProp("w")
-         try this.DeleteProp("h")
-         try this.DeleteProp("chars")
-         try this.DeleteProp("words")
-         try this.DeleteProp("lines")
-
-         ; Redraws are no longer possible!
-         this.layers := []
-
-         this.memorystate := 1
-         return this
-      }
-
-      Redraw() {
-         if (this.memorystate == 0)
-            this.UpdateMemory()
-
-         if (this.memorystate > 1)
-            return this
-
-         for i, layer in this.layers
-            this.Paint(layer*)
-
-         this.memorystate := 2
-         return this
-      }
-
-      Clear() {
-         this.Flush()
-         this.UpdateLayeredWindow(0)
-         return this
-      }
-
-      UpdateLayeredWindow(alpha := 255) {
-
-         if (this.memorystate == 1) {
-            ; Make the window completely invisible but preserves what was already on screen.
-            DllCall("UpdateLayeredWindow"
-                     ,    "ptr", this.hwnd                ; hWnd
-                     ,    "ptr", 0                        ; hdcDst
-                     ,    "ptr", 0                        ; *pptDst
-                     ,    "ptr", 0                        ; *psize
-                     ,    "ptr", 0                        ; hdcSrc
-                     ,    "ptr", 0                        ; *pptSrc
-                     ,   "uint", 0                        ; crKey
-                     ,  "uint*", 0 << 16 | 0x01 << 24     ; *pblend
-                     ,   "uint", 2                        ; dwFlags
-                     ,    "int")                          ; Success = 1
-         }
-
-         if (this.memorystate >= 2) {
-            ; Define the smaller of canvas and bitmap coordinates.
-            x  := this.WindowLeft   := max(this.BitmapLeft, this.x)
-            y  := this.WindowTop    := max(this.BitmapTop, this.y)
-            x2 := this.WindowRight  := min(this.BitmapRight, this.x2)
-            y2 := this.WindowBottom := min(this.BitmapBottom, this.y2)
-            w  := this.WindowWidth  := this.WindowRight - this.WindowLeft
-            h  := this.WindowHeight := this.WindowBottom - this.WindowTop
-
-            ; Changing x, y, w, h to be stationary does not provide a speed boost.
-            ; Nor does making the window opaque.
-
-            pptDst := x - this.OffsetLeft << 32 >>> 32 | y - this.OffsetTop << 32
-            pptSrc := x - this.BitmapLeft << 32 >>> 32 | y - this.BitmapTop << 32
-
-            DllCall("UpdateLayeredWindow"
-                     ,    "ptr", this.hwnd                ; hWnd
-                     ,    "ptr", 0                        ; hdcDst
-                     ,"uint64*", pptDst                   ; *pptDst
-                     ,"uint64*", w | h << 32              ; *psize
-                     ,    "ptr", this.hdc                 ; hdcSrc
-                     ,"uint64*", pptSrc                   ; *pptSrc
-                     ,   "uint", 0                        ; crKey
-                     ,  "uint*", alpha << 16 | 0x01 << 24 ; *pblend
-                     ,   "uint", 2                        ; dwFlags
-                     ,    "int")                          ; Success = 1
-
-            ; Fixes a long standing bug where Windows forgets which windows are on top.
-            ; Seems to happen mostly when connecting a laptop to an external monitor.
-            WinSetAlwaysOnTop True, this.hwnd
-         }
-
-         return this
-      }
-
-   ; Timers and Queues
-
-      Sleep(sleep_time := 0, wait_time := 0) {
-         this.Wait(wait_time)
-         if (sleep_time > 0) {
-            this.UpdateLayeredWindow(0)
-            this.memorystate := 3
-            Sleep sleep_time
-         }
-         return this
-      }
-
-      Wait(wait_time := 0) {
-
-         ; Allow the user to override the original duration with a positive number.
-         (wait_time <= 0) && wait_time := (this.HasProp("t") ? this.t : 0)
-
-         if (wait_time > 0) {
-            ; Prevents the timer from blanking the canvas.
-            this.UpdateStatus()
-
-            ; Always use QPC over GetTickCount for finer time intervals.
-            DllCall("QueryPerformanceFrequency", "int64*", &frequency:=0)
-
-            loop {
-               DllCall("QueryPerformanceCounter", "int64*", &end:=0)
-               elapsed_time := (end - this.t0) / frequency * 1000
-               remaining_time := wait_time - elapsed_time
-               if (remaining_time > 30)
-                  Sleep 10
-               if (remaining_time <= 0)
-                  break
-            }
-         }
-
-         return this ; Allow the next render call to update the current window.
-      }
-
-      CanvasChanged() {
-         this.UpdateStatus()
-         try if callback := this.events["CanvasChange"]
-            return (callback.MaxParams = 0) ? callback() : callback(this) ; Callbacks have a reference to "this".
-      }
-
-      UpdateStatus() {
-         this.status += 1
-         if 0xFFFF & this.status == 0xFFFF {
-            h := Random(0x1000, 0xFFFF)
-            l := 0
-            this.status := h << 32 | l
-         }
-      }
-
-      Blank(status) {
-         ; Check to see if the state of the canvas has changed before clearing and updating.
-         if (this.status = status) {
-            this.UpdateLayeredWindow(0)
-         }
-      }
 
    ; Drawing
 
@@ -648,7 +1028,7 @@ class TextRender {
             o  := ((___ := RegExReplace(style2, q1    "(o(utline)?)"       q2, "${value}")) != style2) ? ___ : ""
             q  := ((___ := RegExReplace(style2, q1    "(q(uality)?)"       q2, "${value}")) != style2) ? ___ : ""
          }
-         
+
          ; Set canvas boundaries. Although inifinite, this rectangle gives it an internal sense of scale.
          try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          ; Use the coordinates of the screen index.
@@ -656,7 +1036,7 @@ class TextRender {
             MonitorGet(_s, &CanvasLeft, &CanvasTop, &CanvasRight, &CanvasBottom)
             CanvasWidth  := CanvasRight - CanvasLeft
             CanvasHeight := CanvasBottom - CanvasTop
-         } 
+         }
          ; Use the coordinates of all screens.
          if (_s ~= "^\d+$" && _s == 0) {
             CanvasLeft   := DllCall("GetSystemMetrics", "int", 76, "int")
@@ -698,7 +1078,7 @@ class TextRender {
          (CanvasTop == "")    && CanvasTop    := NumGet(Graphics + 16 + A_PtrSize, "int")
          (CanvasWidth == "")  && CanvasWidth  := NumGet(Graphics + 20 + A_PtrSize, "int")
          (CanvasHeight == "") && CanvasHeight := NumGet(Graphics + 24 + A_PtrSize, "int")
-         
+
          ; Parse background color.
          _c := this.color(_c, 0xDD212121) ; Default color for background is transparent gray.
 
@@ -847,6 +1227,8 @@ class TextRender {
          ; And use those values for the background width and height.
          (_w == "") && _w := width
          (_h == "") && _h := height
+
+         ; THIS IS THE PART THAT CONTROLS WHETHER A ZERO WIDTH OBJECT IS RETURNED...
 
          ; Get margin. Default margin is 1vmin.
          m  := this.margin_and_padding( m, vw, vh)
@@ -1823,148 +2205,177 @@ class TextRender {
          DllCall("GlobalFree", "ptr", p)
       }
 
-   ; Events and Messages
+   ; Simple Questions and Tests
 
-      CreateWindow(title := "", style := 0x80000000, styleEx := 0x80088, parent := 0) {
-         ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
-         WS_POPUP                  := 0x80000000   ; Allow small windows.
-
-         ; Extended Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
-         WS_EX_TOPMOST             :=        0x8   ; Always on top.
-         WS_EX_TOOLWINDOW          :=       0x80   ; Hides from Alt+Tab menu. Removes small icon.
-         WS_EX_LAYERED             :=    0x80000   ; For UpdateLayeredWindow.
-
-         ; Start off hidden with WS_VISIBLE off and zero width/height coordinates.
+      GetParentCoordinates(&x, &y, &w, &h) {
          try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-         hwnd := DllCall("CreateWindowEx"
-                  ,   "uint", styleEx                  ; dwExStyle
-                  ,    "str", this.WindowClass()       ; lpClassName
-                  ,    "str", title                    ; lpWindowName
-                  ,   "uint", style                    ; dwStyle
-                  ,    "int", 0                        ; X
-                  ,    "int", 0                        ; Y
-                  ,    "int", 0                        ; nWidth
-                  ,    "int", 0                        ; nHeight
-                  ,    "ptr", parent                   ; hWndParent
-                  ,    "ptr", 0                        ; hMenu
-                  ,    "ptr", 0                        ; hInstance
-                  ,    "ptr", 0                        ; lpParam
-                  ,    "ptr")
+         if this.HasProp("parent") {
+            ; Get client window coordinates.
+            DllCall("GetClientRect", "ptr", this.parent, "ptr", rect := Buffer(16)) ; sizeof(RECT) = 16
+            x := this.OffsetLeft ; Default: 0
+            y := this.OffsetTop  ; Default: 0
+            w := NumGet(rect, 8, "int")
+            h := NumGet(rect, 12, "int")
+         } else {
+            ; Get true virtual screen coordinates.
+            x := DllCall("GetSystemMetrics", "int", 76, "int")
+            y := DllCall("GetSystemMetrics", "int", 77, "int")
+            w := DllCall("GetSystemMetrics", "int", 78, "int")
+            h := DllCall("GetSystemMetrics", "int", 79, "int")
+         }
          try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-
-         if (hwnd == 0)
-            throw Error("CreateWindow failed. If #MaxThreads is set to 1, increase it to at least 2.")
-
-         return hwnd
       }
 
-      DestroyWindow() {
-         if (this.hwnd)
-            DllCall("DestroyWindow", "ptr", this.hwnd) ; Sends WM_DESTROY
-         return this
+      InBounds() { ; Requires bitmapstate 2 or greater
+         ; Check if canvas coordinates are inside bitmap coordinates.
+         return this.x >= this.BitmapLeft
+            and this.y >= this.BitmapTop
+            and this.x2 <= this.BitmapRight
+            and this.y2 <= this.BitmapBottom
       }
 
-      ; Source: ImagePut 1.9.0 - WindowClass()
-      WindowClass(cls := "", style := 0) {
-         ; The window class shares the name of this class.
-         (cls == "") && cls := this.__class
-         wc := Buffer(A_PtrSize = 4 ? 48:80) ; sizeof(WNDCLASSEX) = 48, 80
+      Bounds() { ; Requires bitmapstate 2 or greater
+         return [this.x, this.y, this.x2, this.y2]
+      }
 
-         ; Check if the window class is already registered.
-         hInstance := DllCall("GetModuleHandle", "ptr", 0, "ptr")
-         if DllCall("GetClassInfoEx", "ptr", hInstance, "str", cls, "ptr", wc)
-            return cls
+      Rect() { ; Requires bitmapstate 2 or greater
+         return [this.x, this.y, this.w, this.h]
+      }
 
-         ; Create window data.
-         pWndProc := CallbackCreate(WindowProc)
-         hCursor := DllCall("LoadCursor", "ptr", 0, "ptr", 32512, "ptr") ; IDC_ARROW
-         hBrush := DllCall("GetStockObject", "int", 5, "ptr") ; Hollow_brush
 
-         ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
-         ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
-         _ := (A_PtrSize = 4)
-            NumPut(  "uint",     wc.size, wc,         0) ; cbSize
-            NumPut(  "uint",       style, wc,         4) ; style
-            NumPut(   "ptr",    pWndProc, wc,         8) ; lpfnWndProc
-            NumPut(   "int",           0, wc, _ ? 12:16) ; cbClsExtra
-            NumPut(   "int",          40, wc, _ ? 16:20) ; cbWndExtra
-            NumPut(   "ptr",           0, wc, _ ? 20:24) ; hInstance
-            NumPut(   "ptr",           0, wc, _ ? 24:32) ; hIcon
-            NumPut(   "ptr",     hCursor, wc, _ ? 28:40) ; hCursor
-            NumPut(   "ptr",      hBrush, wc, _ ? 32:48) ; hbrBackground
-            NumPut(   "ptr",           0, wc, _ ? 36:56) ; lpszMenuName
-            NumPut(   "ptr", StrPtr(cls), wc, _ ? 40:64) ; lpszClassName
-            NumPut(   "ptr",           0, wc, _ ? 44:72) ; hIconSm
+   Hash() {
+      return Format("{:08x}", DllCall("ntdll\RtlComputeCrc32", "uint", 0, "ptr", this.ptr, "uptr", this.size, "uint"))
+   }
 
-         ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
-         DllCall("RegisterClassEx", "ptr", wc, "ushort")
 
-         ; Return the class name as a string.
+   ; Events
+
+   ; Source: ImagePut 1.9.0 - WindowClass()
+   WindowClass(cls := "", style := 0) {
+      ; The window class shares the name of this class.
+      (cls == "") && cls := this.__class
+      wc := Buffer(A_PtrSize = 4 ? 48:80) ; sizeof(WNDCLASSEX) = 48, 80
+
+      ; Check if the window class is already registered.
+      hInstance := DllCall("GetModuleHandle", "ptr", 0, "ptr")
+      if DllCall("GetClassInfoEx", "ptr", hInstance, "str", cls, "ptr", wc)
          return cls
 
-         ; Define window behavior.
-         WindowProc(hwnd, uMsg, wParam, lParam) {
-            static ll := A_ListLines
-            ListLines 0
+      ; Create window data.
+      pWndProc := CallbackCreate(WindowProc)
+      hCursor := DllCall("LoadCursor", "ptr", 0, "ptr", 32512, "ptr") ; IDC_ARROW
+      hBrush := DllCall("GetStockObject", "int", 5, "ptr") ; Hollow_brush
 
-            ; Prevent the script from exiting early.
-            static active_windows := Persistent()
+      ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
+      ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
+      _ := (A_PtrSize = 4)
+         NumPut(  "uint",     wc.size, wc,         0) ; cbSize
+         NumPut(  "uint",       style, wc,         4) ; style
+         NumPut(   "ptr",    pWndProc, wc,         8) ; lpfnWndProc
+         NumPut(   "int",           0, wc, _ ? 12:16) ; cbClsExtra
+         NumPut(   "int",          40, wc, _ ? 16:20) ; cbWndExtra
+         NumPut(   "ptr",           0, wc, _ ? 20:24) ; hInstance
+         NumPut(   "ptr",           0, wc, _ ? 24:32) ; hIcon
+         NumPut(   "ptr",     hCursor, wc, _ ? 28:40) ; hCursor
+         NumPut(   "ptr",      hBrush, wc, _ ? 32:48) ; hbrBackground
+         NumPut(   "ptr",           0, wc, _ ? 36:56) ; lpszMenuName
+         NumPut(   "ptr", StrPtr(cls), wc, _ ? 40:64) ; lpszClassName
+         NumPut(   "ptr",           0, wc, _ ? 44:72) ; hIconSm
 
-            ; WM_CREATE
-            if (uMsg = 0x1)
-               Persistent(++active_windows)
+      ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
+      DllCall("RegisterClassEx", "ptr", wc, "ushort")
 
-            ; Exits window procedure early. Creates a reference to "this" from private window data.
-            if not DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 0, "ptr")
-               return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
-            self := ObjFromPtrAddRef(DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 0, "ptr"))
+      ; Return the class name as a string.
+      return cls
 
-            ; __Delete ? DestroyWindow ? WM_DESTROY ? FreeMemory ? Remove Persistence ? ExitApp
+      ; Define window behavior.
+      WindowProc(hwnd, uMsg, wParam, lParam) {
+         static ll := A_ListLines
+         ListLines 0
 
-            ; WM_DESTROY
-            if (uMsg = 0x2) {
-               self.FreeMemory()
-               self.hwnd := ""
-               Persistent(--active_windows)
-            }
+         ; Prevent the script from exiting early.
+         static active_windows := Persistent()
 
-            ; WM_DISPLAYCHANGE calls UpdateMemory() via Draw().
-            if (uMsg = 0x7E) {
-               self.RenderAgain()
-            }
+         ; WM_CREATE
+         if (uMsg = 0x1)
+            Persistent(++active_windows)
 
-            ; Match window messages to Rainmeter event names.
-            ; https://docs.rainmeter.net/manual/mouse-actions/
-            static dict :=
+         ; Exits window procedure early. Creates a reference to "this" from private window data.
+         if not DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 0, "ptr")
+            return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
+         self := ObjFromPtrAddRef(DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 0, "ptr"))
 
-            {
-               0x0201  : "LeftMouseDown",
-               0x0202  : "LeftMouseUp",
-               0x0203  : "LeftMouseDoubleClick",
-               0x0204  : "RightMouseDown",
-               0x0205  : "RightMouseUp",
-               0x0206  : "RightMouseDoubleClick",
-               0x0207  : "MiddleMouseDown",
-               0x0208  : "MiddleMouseUp",
-               0x0209  : "MiddleMouseDoubleClick",
-               0x02A1  : "MouseOver",
-               0x02A3  : "MouseLeave"
-            }
+         ; __Delete → DestroyWindow → WM_DESTROY → FreeMemory → Remove Persistence → ExitApp
 
-
-            ; Process windows messages by invoking the associated callback.
-            try for message, event in dict.OwnProps()
-               if (uMsg = message)
-                  try if callback := self.events[event] {
-                     consideration := (callback.MaxParams = 0) ? callback() : callback(self) ; Callbacks have a reference to "this".
-                     ListLines ll
-                     return consideration
-                  }
-
-            ; Default processing of window messages.
-            try return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
-            finally ListLines ll
+         ; WM_DESTROY
+         if (uMsg = 0x2) {
+            self.hwnd := ""
+            Persistent(--active_windows)
          }
+
+         ; WM_DISPLAYCHANGE calls Reallocate() via Draw().
+         if (uMsg = 0x7E) {
+            t := self.TimeRemaining()
+            if (self.t == 0 || t > 0) {
+               self.Rerender(t)
+            }
+         }
+
+         ; Match window messages to Rainmeter event names.
+         ; https://docs.rainmeter.net/manual/mouse-actions/
+         static dict :=
+
+         {
+            0x0201  : "LeftMouseDown",
+            0x0202  : "LeftMouseUp",
+            0x0203  : "LeftMouseDoubleClick",
+            0x0204  : "RightMouseDown",
+            0x0205  : "RightMouseUp",
+            0x0206  : "RightMouseDoubleClick",
+            0x0207  : "MiddleMouseDown",
+            0x0208  : "MiddleMouseUp",
+            0x0209  : "MiddleMouseDoubleClick",
+            0x02A1  : "MouseOver",
+            0x02A3  : "MouseLeave"
+         }
+
+
+         ; Process windows messages by invoking the associated callback.
+         try for message, event in dict.OwnProps()
+            if (uMsg = message)
+               try if callback := self.events[event] {
+                  consideration := (callback.MaxParams = 0) ? callback() : callback(self) ; Callbacks have a reference to "this".
+                  ListLines ll
+                  return consideration
+               }
+
+         ; Default processing of window messages.
+         try return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
+         finally ListLines ll
+      }
+   }
+
+
+      DefaultEvent() {
+         return this.DefaultEvents()
+      }
+
+      DefaultEvents() {
+         return this
+            .OnEvent("MiddleMouseDown", "")
+            .OnEvent("RightMouseDown", "")
+            .OnEvent("RightMouseUp", this.DestroyWindow)
+      }
+
+      NoEvent() {
+         return this.NoEvents()
+      }
+
+      NoEvents() {
+         return this
+            .OnEvent("LeftMouseDown", "")
+            .OnEvent("MiddleMouseDown", "")
+            .OnEvent("RightMouseDown", "")
       }
 
       OnEvent(event, callback := "") {
@@ -2017,191 +2428,10 @@ class TextRender {
          this.friend2.TopMost()
       }
 
-   ; Memory Management
-
-      UpdateMemory() {
-         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-         if (this.parent) {
-            ; Get client window coordinates.
-            DllCall("GetClientRect", "ptr", this.parent, "ptr", Rect := Buffer(16)) ; sizeof(RECT) = 16
-            x := this.OffsetLeft ; Default: 0
-            y := this.OffsetTop  ; Default: 0
-            w := NumGet(Rect, 8, "int")
-            h := NumGet(Rect, 12, "int")
-         } else {
-            ; Get true virtual screen coordinates.
-            x := DllCall("GetSystemMetrics", "int", 76, "int")
-            y := DllCall("GetSystemMetrics", "int", 77, "int")
-            w := DllCall("GetSystemMetrics", "int", 78, "int")
-            h := DllCall("GetSystemMetrics", "int", 79, "int")
-         }
-         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-
-         ; Check if the screen or window no longer matches the size of the internal bitmap.
-         if (this.memorystate > 0)
-            if (w = this.BitmapWidth && h = this.BitmapHeight)
-               return this
-
-         ; Deletes bitmap coordinates.
-         this.FreeMemory()
-
-         ; Set bitmap coordinates.
-         this.BitmapLeft := x
-         this.BitmapTop := y
-         this.BitmapRight := x + w
-         this.BitmapBottom := y + h
-         this.BitmapWidth := w
-         this.BitmapHeight := h
-
-         ; Uses bitmap coordinates.
-         this.LoadMemory()
-
-         return this
-      }
-
-      LoadMemory() {
-         if (this.memorystate > 0)
-            return
-
-         left := this.BitmapLeft, top := this.BitmapTop
-         width := this.BitmapWidth, height := this.BitmapHeight
-
-         ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
-         hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-         bi := Buffer(40, 0)                    ; sizeof(bi) = 40
-            NumPut(  "uint",        40, bi,  0) ; Size
-            NumPut(   "int",     width, bi,  4) ; Width
-            NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
-            NumPut("ushort",         1, bi, 12) ; Planes
-            NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
-         hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
-         obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-         DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", &Graphics:=0)
-         DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", Graphics, "float", -left, "float", -top, "int", 0)
-
-         this.hdc := hdc
-         this.hbm := hbm
-         this.obm := obm
-         this.ptr := pBits
-         this.size := 4 * width * height
-         this.Graphics := Graphics
-
-         this.memorystate := 1
-         return this
-      }
-
-      FreeMemory() {
-         if (this.memorystate == 0)
-            return
-
-         ; Cleanup
-         DllCall("gdiplus\GdipDeleteGraphics", "ptr", this.Graphics)
-         DllCall("SelectObject", "ptr", this.hdc, "ptr", this.obm)
-         DllCall("DeleteObject", "ptr", this.hbm)
-         DllCall("DeleteDC",     "ptr", this.hdc)
-
-         try this.DeleteProp("BitmapWidth")
-         try this.DeleteProp("BitmapHeight")
-         try this.DeleteProp("BitmapLeft")
-         try this.DeleteProp("BitmapTop")
-         try this.DeleteProp("BitmapRight")
-         try this.DeleteProp("BitmapBottom")
-
-         try this.DeleteProp("hdc")
-         try this.DeleteProp("hbm")
-         try this.DeleteProp("obm")
-         try this.DeleteProp("ptr")
-         try this.DeleteProp("size")
-         try this.DeleteProp("Graphics")
-
-         this.memorystate := 0
-         return this
-      }
-
-      FreeGraphics() {
-         try this.DeleteProp("status")
-
-         try this.DeleteProp("t")
-         try this.DeleteProp("x")
-         try this.DeleteProp("y")
-         try this.DeleteProp("x2")
-         try this.DeleteProp("y2")
-         try this.DeleteProp("w")
-         try this.DeleteProp("h")
-         try this.DeleteProp("chars")
-         try this.DeleteProp("words")
-         try this.DeleteProp("lines")
-
-         return this
-      }
-
-      DebugMemory() {
-         ; Using LockBits seems to bypass the need for DeleteGraphics to commit changes to this.ptr
-         left   := this.WindowLeft
-         top    := this.WindowTop
-         width  := this.WindowWidth
-         height := this.WindowHeight
-
-         if (width * height * 70**2 > 536870912) {
-            TextRender("Window is too large to debug.", "t:3000 c:#F9E486 r:10%")
-            return this
-         }
-
-         ; Allocate buffer.
-         size := 4 * width * height
-         buf := Buffer(size)
-
-         ; Create a Bitmap with 32-bit pre-multiplied ARGB. (Owned by this object!)
-         DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.BitmapWidth, "int", this.BitmapHeight
-            , "uint", 4 * this.BitmapWidth, "uint", 0xE200B, "ptr", this.ptr, "ptr*", &pBitmap:=0)
-
-         ; Specify that only a cropped bitmap portion will be copied.
-         Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
-            NumPut(   "int",    left, Rect,  0) ; X
-            NumPut(   "int",     top, Rect,  4) ; Y
-            NumPut(  "uint",   width, Rect,  8) ; Width
-            NumPut(  "uint",  height, Rect, 12) ; Height
-         BitmapData := Buffer(16+2*A_PtrSize, 0)       ; sizeof(BitmapData) = 24, 32
-            NumPut(   "int", 4*width, BitmapData,  8)  ; Stride
-            NumPut(   "ptr", buf.ptr, BitmapData, 16)  ; Scan0
-
-         ; Convert pARGB to ARGB using a writable buffer created by LockBits.
-         DllCall("gdiplus\GdipBitmapLockBits"
-                  ,    "ptr", pBitmap
-                  ,    "ptr", Rect
-                  ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
-                  ,    "int", 0x26200A     ; Format32bppArgb
-                  ,    "ptr", BitmapData)  ; Contains the buffer.
-         DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
-
-         ; Release reference to pBits.
-         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-
-         ; Draw an enlarged pixel grid layout with printed color hexes.
-         tr := TextRender()
-         loop height {
-            h := A_Index-1
-            loop width {
-               w := A_Index-1
-               offset := h * width + w
-               tr.Render("Progress: " Round(offset / (width * height) * 100, 2) "%", "y:67%")
-               pixel := Format("{:08X}", NumGet(buf, 4*offset, "uint"))
-               hex := RegExReplace(pixel, "(.{4})(.{4})", "$1`r`n$2")
-               this.Draw(hex, {x:70*w, y:70*h, w:70, h:70, m:0, c:pixel}, "s:24pt v:center")
-            }
-         }
-
-         ; Show the user using their built-in image viewer.
-         tr.Render("Writing to disk...", "y:67%")
-         Run this.save("TextRender.png")
-
-         ; Note that this is a slow function in general. I'm not entirely sure how it can be sped up.
-         return this
-      }
-
-      Hash() {
-         return Format("{:08x}", DllCall("ntdll\RtlComputeCrc32", "uint", 0, "ptr", this.ptr, "uptr", this.size, "uint"))
-      }
+   CanvasChanged() {
+      try if callback := this.events["CanvasChange"]
+         return (callback.MaxParams = 0) ? callback() : callback(this) ; Callbacks have a reference to "this".
+   }
 
    ; Export as Image Data
 
@@ -2308,19 +2538,41 @@ class TextRender {
          return pBitmap
       }
 
-      Save(filename := "", quality := "") {
-         this.Redraw()
-         pBitmap := this.InBounds() ? this.CopyToBitmap() : this.RenderToBitmap()
-         filepath := TextRender.BitmapToFile(pBitmap, filename, quality)
-         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-         return filepath
+   ; Window Styles
+
+
+      TopMost() {
+         WinSetAlwaysOnTop 1, "ahk_id" this.hwnd
+         return this
       }
 
-      Screenshot(filename := "", quality := "") {
-         pBitmap := TextRender.ScreenshotToBitmap([this.x, this.y, this.w, this.h])
-         filepath := TextRender.BitmapToFile(pBitmap, filename, quality)
-         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-         return filepath
+      AlwaysOnTop() {
+         WinSetAlwaysOnTop -1, "ahk_id" this.hwnd
+         return this
+      }
+
+      ClickThrough() {
+         return this.ToggleExStyle(0x20)
+      }
+
+      NoActivate() {
+         return this.ToggleExStyle(0x8000000)
+      }
+
+      ToggleStyle(long) {
+         return this.ToggleWindowLong(-16, long)
+      }
+
+      ToggleExStyle(long) {
+         return this.ToggleWindowLong(-20, long)
+      }
+
+      ToggleWindowLong(index, long) {
+         value := DllCall("GetWindowLong", "ptr", this.hwnd, "int", index, "int")
+         (value & long) == long
+            ? DllCall("SetWindowLong", "ptr", this.hwnd, "int", index, "int", value ^ long)
+            : DllCall("SetWindowLong", "ptr", this.hwnd, "int", index, "int", value | long)
+         return this
       }
 
    ; Source: ImagePut 1.11
@@ -2984,7 +3236,7 @@ class ImageRender extends TextRender {
 } ; End of ImageRender class.
 
 
-; |??????????????????????????????????????????????????|
+; |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾|
 ; | Double click TextRender.ahk or .exe to show GUI. |
 ; |__________________________________________________|
 if (A_LineFile == A_ScriptFullPath) {

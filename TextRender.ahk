@@ -2995,10 +2995,9 @@ class TextRender {
 
 
 TextRenderDesktop(text:="", background_style:="", text_style:="") {
-   static WS_CHILD := (A_OSVersion = "WIN_7") ? 0x80000000 : 0x40000000 ; Fallback to WS_POPUP for Win 7.
-   static WS_EX_LAYERED := 0x80000
-
-   desktop := WinExist("ahk_class Progman")
+   WS_CHILD := 0x40000000
+   WS_EX_LAYERED := 0x80000
+   WS_EX_TOOLWINDOW := 0x80
 
    ; Get true virtual screen coordinates.
    try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
@@ -3006,12 +3005,10 @@ TextRenderDesktop(text:="", background_style:="", text_style:="") {
    y := DllCall("GetSystemMetrics", "int", 77, "int")
    try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
-   try return {base: TextRender.prototype}.__New("", WS_CHILD, WS_EX_LAYERED, desktop, x, y).Render(text, background_style, text_style)
-   finally { ; Used to show the desktop creations immediately.
-      ; Post-Creator's Update Windows 10. WM_SPAWN_WORKER = 0x052C
-      DllCall("SendMessage", "ptr", desktop, "uint", 0x052C, "ptr", 0xD, "ptr", 0)
-      DllCall("SendMessage", "ptr", desktop, "uint", 0x052C, "ptr", 0xD, "ptr", 1)
-   }
+   return {base: TextRender.prototype}
+      .__New(x, y)
+      .Create("", WS_CHILD, WS_EX_LAYERED | WS_EX_TOOLWINDOW, DllCall("GetDesktopWindow", "ptr"))
+      .Render(text, background_style, text_style)
 }
 
 TextRenderWallpaper(text:="", background_style:="", text_style:="") {
@@ -3043,7 +3040,10 @@ TextRenderWallpaper(text:="", background_style:="", text_style:="") {
    y := DllCall("GetSystemMetrics", "int", 77, "int")
    try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
-   return {base: TextRender.prototype}.__New(, WS_CHILD,, WorkerW, x, y).Render(text, background_style, text_style)
+   return {base: TextRender.prototype}
+      .__New(x, y)
+      .Create("", WS_CHILD | WS_VISIBLE,, WorkerW) ; WS_EX_LAYERED
+      .Render(text, background_style, text_style)
 }
 
 

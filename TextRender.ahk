@@ -224,6 +224,7 @@ class TextRender {
    }
 
    InvalidateWindow() {
+      this.DeleteProp("WindowTime")
       this.DeleteProp("WindowLeft")
       this.DeleteProp("WindowTop")
       this.DeleteProp("WindowRight")
@@ -249,6 +250,7 @@ class TextRender {
 
    ValidateWindow() {
       WinGetPos(&x, &y, &w, &h, this.hwnd)
+      this.WindowTime := 0  ; Use a dummy variable here
       this.WindowLeft := x
       this.WindowTop := y
       this.WindowRight := x + w
@@ -285,8 +287,20 @@ class TextRender {
    }
 
    StartWindow() {
-      this.TimeStamp()
-      this.StartTimer()
+      this.TimeStamp()     ; Sets this.t0 to the current time
+      this.StartTimer()    ; Starts timer using this.WindowTime
+   }
+
+   Resume() {
+      ; windowstate (x → 1) → ∅ - Invalidated windows have had their WindowTime set to 0
+      if (this.windowstate <= 1)
+         return this
+
+      ; windowstate 2 → 3
+      this.ResumeWindow()
+
+      this.windowstate := 3      ; windowstate 2 → 3
+      return this
    }
 
    ResumeWindow() {
@@ -294,6 +308,10 @@ class TextRender {
    }
 
    UpdateLayered(alpha := 255) {
+      ; bitmapstate (x → 1) → ∅ - The bitmap and canvas coordinates must be defined
+      if (this.bitmapstate <= 1)
+         return this
+
       ; windowstate x → 1 - Previous state applies all previous changes
       if (this.windowstate <= 0)
          this.Create()
@@ -305,10 +323,13 @@ class TextRender {
       this.Stop()
 
       this.windowstate := 2      ; windowstate x → 2 ← x
-      return this
+      return this                ; bitmapstate 2|3
    }
 
    UpdateLayeredWindow(alpha := 255) {
+      ; Transfer the canvas time as the window duration.
+      t  := this.WindowTime   := this.t
+
       ; Define the smaller of canvas and bitmap coordinates.
       x  := this.WindowLeft   := max(this.BitmapLeft, this.x)
       y  := this.WindowTop    := max(this.BitmapTop, this.y)
@@ -455,13 +476,13 @@ class TextRender {
       this.DeleteProp("BitmapBottom")
    }
 
-   Allocate() {
+   Allocate(left := 0, top := 0, width := 0, height := 0) {
       ; bitmapstate (1 ← x) → ∅ - Ignore current and higher states
       if (this.bitmapstate >= 1)
          return this
 
       ; bitmapstate 0 → 1
-      this.AllocateBitmap()
+      this.AllocateBitmap(left := 0, top := 0, width := 0, height := 0)
 
       this.bitmapstate := 1      ; bitmapstate x → 1
       return this
@@ -543,11 +564,15 @@ class TextRender {
       ; bitmapstate x → 1 - Previous state applies all previous changes
       this.Allocate()
 
+      ; recipestate 0 → ∅ - Filling is not possible if no layers are present
+      if (this.recipestate <= 0)
+         return this
+
       ; bitmapstate 1 → 2
       this.FillBitmap()
 
-      this.bitmapstate := 2      ; bitmapstate x → 2
-      return this
+      this.bitmapstate := 2      ; bitmapstate x → 2 (if recipestate = 1)
+      return this                ; bitmapstate x → 1 (if recipestate = 0)
    }
 
    FillBitmap() {
@@ -589,11 +614,16 @@ class TextRender {
    }
 
    Resolve() {
-      ; bitmapstate x → 2 - Previous state applies all previous changes
+      ; bitmapstate x → 2 (if recipestate = 1)
+      ; bitmapstate x → 1 (if recipestate = 0)
       this.Fill()
 
-      this.bitmapstate := 3      ; bitmapstate x → 3
-      return this
+      ; bitmapstate 1 → 1 - The bitmap has not been filled so return early
+      if (this.bitmapstate == 1)
+         return this
+
+      this.bitmapstate := 3      ; bitmapstate x → 3 (if recipestate = 1)
+      return this                ; bitmapstate x → 1 (if recipestate = 0)
    }
 
    Reallocate() {
@@ -604,8 +634,7 @@ class TextRender {
       ; bitmapstate 1|2|3 ← x - Conditionally reallocate memory
       this.ReallocateBitmap()
 
-      this.bitmapstate := 1      ; bitmapstate x → 1|2|3 ← x
-      return this
+      return this                ; bitmapstate x → 1|2|3 ← x
    }
 
    ReallocateBitmap() {
@@ -619,20 +648,33 @@ class TextRender {
    }
 
    Save(filepath := "", quality := "") {
-      ; bitmapstate x → 1|2|3 ← x - The bitmap memory could be reallocated or remain the same.
-      this.Redraw()
 
-      ; bitmapstate (x → 1) → ∅ - Guard against saving a blank bitmap.
-      if (this.bitmapstate <= 1)
-         return this
+      ; Can recover out of bounds bitmap drawings by drawing to a separate bitmap buffer.
+      if (this.recipestate >= 1) {
+         ; bitmapstate x → 2|3 ← x 
+         this.Redraw()
 
-      ; Always try to render the bitmap even when off screen and invisible.
-      pBitmap := this.InBounds() ? this.CopyToBitmap() : this.RenderToBitmap()
+         ; recipestate 1
+         ; bitmapstate 2|3 - InBounds uses canvas coordinates
+         pBitmap := this.InBounds() ? this.CopyToBitmap() : this.RenderToBitmap()
+      }
+
+      ; Can only save what's currently present on the bitmap.
+      if (this.recipestate <= 0) {
+         ; bitmapstate (x → 1) → ∅ - Guard against saving a blank bitmap
+         if (this.bitmapstate <= 1)
+            return this
+
+         ; bitmapstate 2|3 - Underlying bitmap must be filled with drawings
+         pBitmap := this.CopyToBitmap()
+      }
+
       TextRender.BitmapToFile(pBitmap, filepath, quality)
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
       ; If the memory has been freed it is now reallocated.
-      return this                ; bitmapstate x → 1|2|3 ← x
+                                 ; bitmapstate 2|3 if recipestate = 0          (1 of 2)
+      return this                ; bitmapstate x → 2|3 ← x if recipestate = 1  (2 of 2)
    }
 
    ; Main Functions - Modifies recipe, window, and bitmap states
@@ -673,17 +715,18 @@ class TextRender {
    }
 
    Paint() {
-      if (this.recipestate <= 0) ; Ignore current and lower states
+      ; recipestate 0 → ∅ - Can't paint if there are no recipes!
+      if (this.recipestate <= 0)
          return this
 
       ; recipestate 0 ← x - Flushes all pending events and draws them immediately
       ; bitmapstate x → 2 ← x - The bitmap is filled with new drawings!
       this.Flush()
 
-      ; bitmapstate 2 → 3 -  Mark bitmap as completed to avoid more drawing
+      ; bitmapstate 2 → 3 - There are recipes so the bitmap has been drawn!
       this.Resolve()
 
-       ; windowstate x → 2 ← x - Renders the bitmap to screen
+       ; windowstate x → 2 ← x - Requires bitmapstate at 2|3
       this.UpdateLayered()
 
       ; windowstate 2 → 3 - Starts any timers
@@ -729,7 +772,7 @@ class TextRender {
       ; bitmapstate 2 → 3 - Marks the memory for clearing after rendering
       this.Resolve()
 
-      ; windowstate x → 2 ← x - Renders to bitmap data to screen
+      ; windowstate x → 2 ← x - Renders to bitmap data (2|3) to screen
       this.UpdateLayered()
 
       ; windowstate 2 → 3 - Starts any timers
@@ -748,18 +791,17 @@ class TextRender {
 
       ; recipestate 0 → ∅ - Dividing this into 2 conditional branches allows a better proof
       if (this.recipestate == 0)
-         return this             ; bitmapstate x → 1|2|3 ← x  (1 of 2)
+         return this             ; bitmapstate x → 1|2|3 ← x  (if recipestate = 0) (1 of 2)
 
-      ; recipestate 1 → 1 - this.layers contains instructions on how to fill the memory
-      ; bitmapstate 1|2|3 → 2|3 - Restrict output to bitmapstate 2|3
+      ; bitmapstate x → 2 (if recipestate = 1) - Fills bitmap with drawings from layers
       this.Fill()
 
-      ; Preserve rendering state 3 to allow overwriting
-      return this                ; bitmapstate x → 2|3 ← x  (2 of 2)
+      ; Often called after the screen size changes during a drawing so bitmapstate is not 3 yet.
+      return this                ; bitmapstate x → 2|3 ← x  (if recipestate = 1) (2 of 2)
    }
 
    Rerender() {
-      ; recipestate 0 → ∅ - Do nothing if this.layers is blank
+      ; recipestate 0 → ∅ - Does nothing if this.layers is blank
       if (this.recipestate <= 0)
          return this
 
@@ -780,11 +822,12 @@ class TextRender {
       ; windowstate 1|2|3 → 2 - Show the renders to the user's screen
       this.UpdateLayered()
 
-      ; windowstate 2 → 3 - If screen resolution, dpi, or orientation changes
-      this.ResumeWindow()
+      ; windowstate 2 → 3 - Resume any timers with the remaning time
+      this.Resume()
 
+                                 ; recipestate 1
       this.windowstate := 3      ; windowstate 1|2|3 → 3
-      return this
+      return this                ; bitmapstate 3
    }
 
    ; Timekeeping
@@ -801,17 +844,17 @@ class TextRender {
    }
 
    TimeRemaining() {
-      return max(0, this.t - this.TimeElapsed())
+      return max(0, this.WindowTime - this.TimeElapsed())
    }
 
    TimeExceeded() {
-      return min(0, this.TimeElapsed() - this.t)
+      return min(0, this.TimeElapsed() - this.WindowTime)
    }
 
    ; Timers!!!
 
    StartTimer() {
-      this.TimerBlank(this.t)
+      this.TimerBlank(this.WindowTime)
    }
 
    ResumeTimer() {
@@ -841,8 +884,8 @@ class TextRender {
 
    Wait(t := 0) {
       this.Cooldown()            ; windowstate 2 ← x
-      this.Pause(t)              ; windowstate x → x
-      return this
+      this.Pause(t)              ; windowstate x
+      return this                ; windowstate 2 ← x
    }
 
    Cooldown() {
@@ -868,7 +911,7 @@ class TextRender {
       ; Simply pauses the window for a brief duration.
       this.PauseWindow(t)
 
-      return this                ; windowstate x → x
+      return this                ; windowstate x
    }
 
    PauseWindow(t := 0) {
@@ -896,11 +939,14 @@ class TextRender {
       if (this.bitmapstate <= 1)
          return this
 
-      ; windowstate x → 1 - Create window before rendering!
-      this.Create()
-
       ; windowstate 2 ← x - Block existing timers
       this.Stop()
+
+      ; bitmapstate 2|3 → 3 - Prep bitmap for overwriting with Draw()
+      this.Resolve()
+
+      ; windowstate x → 1 - Can't use UpdateLayered because of custom animations
+      this.Create()
 
       ; windowstate 1 → 2
       this.AnimateWindow(t, keyframes)
@@ -918,12 +964,15 @@ class TextRender {
       if (this.bitmapstate <= 1)
          return this
 
-      ; windowstate (x → 1) → ∅ - Invalid window states are ignored
+      ; windowstate (x → 1) → ∅ - Ignore broken window states
       if (this.windowstate <= 1)
          return this
 
       ; windowstate 2 ← x - Block existing timers
       this.Stop()
+
+      ; bitmapstate 2|3 → 3 - Prep bitmap for overwriting with Draw()
+      this.Resolve()
 
       ; windowstate 1 → 2
       this.AnimateWindow(t, keyframes)
@@ -1362,15 +1411,17 @@ class TextRender {
       minimum := min(width, height)
       aspect := (height != 0) ? width / height : 0
 
+      ; THIS IS THE PART THAT CONTROLS WHETHER A ZERO WIDTH OBJECT IS RETURNED...
+      ; ALSO FIXES THE FKING ERROR WHERE THE MARGUNS ARE VEBG VEING SRYOUDDD
+
+      ; Get margin. Default margin is 1vmin.
+      m  := this.margin_and_padding( m, vw, vh)
+      _m := this.margin_and_padding(_m, vw, vh, (text != "" && m.void && (_w == "" || _w <= 0) &&  (_h == "" || _h <= 0)) ? "1vmin" : "")
+
       ; And use those values for the background width and height.
       (_w == "") && _w := width
       (_h == "") && _h := height
 
-      ; THIS IS THE PART THAT CONTROLS WHETHER A ZERO WIDTH OBJECT IS RETURNED...
-
-      ; Get margin. Default margin is 1vmin.
-      m  := this.margin_and_padding( m, vw, vh)
-      _m := this.margin_and_padding(_m, vw, vh, (text != "" && m.void && _w > 0 && _h > 0) ? "1vmin" : "")
 
       ; Modify _w, _h with margin and padding, increasing the size of the background.
       _w += m.2 + m.4

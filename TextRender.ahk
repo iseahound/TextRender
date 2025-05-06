@@ -249,7 +249,7 @@ class TextRender {
    }
 
    ValidateWindow() {
-      WinGetPos(&x, &y, &w, &h, this.hwnd)
+      WinGetPos &x, &y, &w, &h, this.hwnd
       this.WindowTime := 0  ; Use a dummy variable here
       this.WindowLeft := x
       this.WindowTop := y
@@ -363,8 +363,8 @@ class TextRender {
 
       ; Fixes a long standing bug where Windows forgets which windows are on top.
       ; Seems to happen mostly when connecting a laptop to an external monitor.
-      if WinGetExStyle(this.hwnd) & 0x8      ; WS_EX_TOPMOST
-         WinSetAlwaysOnTop True, this.hwnd   ; Set always on top again.
+      if WinGetExStyle(this.hwnd) & 0x8               ; WS_EX_TOPMOST
+         WinSetAlwaysOnTop True, this.hwnd            ; Set always on top again.
    }
 
    FadeWindow(alpha) {
@@ -576,7 +576,7 @@ class TextRender {
    }
 
    FillBitmap() {
-      for layer in this.layers
+      for i, layer in this.layers
          this.DrawBitmap(layer*)
    }
 
@@ -824,7 +824,6 @@ class TextRender {
 
       ; windowstate 2 → 3 - Resume any timers with the remaning time
       this.Resume()
-
                                  ; recipestate 1
       this.windowstate := 3      ; windowstate 1|2|3 → 3
       return this                ; bitmapstate 3
@@ -884,7 +883,7 @@ class TextRender {
 
    Wait(t := 0) {
       this.Cooldown()            ; windowstate 2 ← x
-      this.Pause(t)              ; windowstate x
+      this.Suspend(t)            ; windowstate x
       return this                ; windowstate 2 ← x
    }
 
@@ -904,17 +903,17 @@ class TextRender {
    }
 
    CooldownWindow() {
-      this.PauseWindow(this.TimeRemaining())
+      this.SuspendWindow(this.TimeRemaining())
    }
 
-   Pause(t := 0) {
-      ; Simply pauses the window for a brief duration.
-      this.PauseWindow(t)
+   Suspend(t := 0) {
+      ; Simply suspends the window for a brief duration.
+      this.SuspendWindow(t)
 
       return this                ; windowstate x
    }
 
-   PauseWindow(t := 0) {
+   SuspendWindow(t := 0) {
       if (t <= 0)
          return
 
@@ -1416,12 +1415,11 @@ class TextRender {
 
       ; Get margin. Default margin is 1vmin.
       m  := this.margin_and_padding( m, vw, vh)
-      _m := this.margin_and_padding(_m, vw, vh, (text != "" && m.void && (_w == "" || _w <= 0) &&  (_h == "" || _h <= 0)) ? "1vmin" : "")
+      _m := this.margin_and_padding(_m, vw, vh, (text != "" && m.void && (_w == "" || _w <= 0) && (_h == "" || _h <= 0)) ? "1vmin" : "")
 
       ; And use those values for the background width and height.
       (_w == "") && _w := width
       (_h == "") && _h := height
-
 
       ; Modify _w, _h with margin and padding, increasing the size of the background.
       _w += m.2 + m.4
@@ -2435,7 +2433,6 @@ class TextRender {
       return Format("{:08x}", DllCall("ntdll\RtlComputeCrc32", "uint", 0, "ptr", this.ptr, "uptr", this.size, "uint"))
    }
 
-
    ; Events
 
    ; Source: ImagePut 1.9.0 - WindowClass()
@@ -2493,13 +2490,9 @@ class TextRender {
             return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
          self := ObjFromPtrAddRef(DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 0, "ptr"))
 
-         ; __Delete → DestroyWindow → WM_DESTROY → FreeMemory → Remove Persistence → ExitApp
-
-         ; WM_DESTROY
-         if (uMsg = 0x2) {
-            self.hwnd := ""
+         ; WM_DESTROY - Processed by the default window procedure.
+         if (uMsg = 0x2)
             Persistent(--active_windows)
-         }
 
          ; WM_DISPLAYCHANGE calls Reallocate() via Draw().
          if (uMsg = 0x7E) {
@@ -3005,8 +2998,7 @@ TextRenderDesktop(text:="", background_style:="", text_style:="") {
    y := DllCall("GetSystemMetrics", "int", 77, "int")
    try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
-   return {base: TextRender.prototype}
-      .__New(x, y)
+   return {base: TextRender.prototype}.__New(x, y)
       .Create("", WS_CHILD, WS_EX_LAYERED | WS_EX_TOOLWINDOW, DllCall("GetDesktopWindow", "ptr"))
       .Render(text, background_style, text_style)
 }
@@ -3040,13 +3032,10 @@ TextRenderWallpaper(text:="", background_style:="", text_style:="") {
    y := DllCall("GetSystemMetrics", "int", 77, "int")
    try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
-   return {base: TextRender.prototype}
-      .__New(x, y)
-      .Create("", WS_CHILD | WS_VISIBLE,, WorkerW) ; WS_EX_LAYERED
+   return {base: TextRender.prototype}.__New(x, y)
+      .Create("", WS_CHILD | WS_VISIBLE,, WorkerW)
       .Render(text, background_style, text_style)
 }
-
-
 
 
 class ImageRender extends TextRender {

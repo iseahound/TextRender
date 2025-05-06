@@ -1142,7 +1142,7 @@ class TextRender {
 
       ; Extract styles to variables.
       if IsObject(style1) {
-         style1.base.__get := this.get ; Returns the empty string for unknown properties.
+         style1.__get := this.get ; Returns the empty string for unknown properties.
          _t  := (style1.time != "")     ? style1.time     : style1.t
          _s  := (style1.screen != "")   ? style1.screen   : style1.s
          _a  := (style1.anchor != "")   ? style1.anchor   : style1.a
@@ -1170,7 +1170,7 @@ class TextRender {
       }
 
       if IsObject(style2) {
-         style2.base.__get := this.get ; Returns the empty string for unknown properties.
+         style2.__get := this.get ; Returns the empty string for unknown properties.
          t  := (style2.time != "")        ? style2.time        : style2.t
          a  := (style2.anchor != "")      ? style2.anchor      : style2.a
          x  := (style2.left != "")        ? style2.left        : style2.x
@@ -2105,7 +2105,7 @@ class TextRender {
       vmin := min(vw, vh)
 
       if IsObject(d) {
-         d.base.__get := this.get ; Returns the empty string for unknown properties.
+         d.__get := this.get ; Returns the empty string for unknown properties.
          d.1 := (d.horizontal != "") ? d.horizontal : (d.h != "") ? d.h : d.1
          d.2 := (d.vertical   != "") ? d.vertical   : (d.v != "") ? d.h : d.2
          d.3 := (d.blur       != "") ? d.blur       : (d.b != "") ? d.h : d.3
@@ -2116,7 +2116,7 @@ class TextRender {
          _ := RegExReplace(d, ":\s+", ":")
          _ := RegExReplace(_, "\s+", " ")
          _ := StrSplit(_, " ")
-         _.base.__get := this.get ; Returns the empty string for unknown properties.
+         _.__get := this.get ; Returns the empty string for unknown properties.
          _.1 := ((___ := RegExReplace(d, q1    "(h(orizontal)?)"    q2, "${value}")) != d) ? ___ : _.1
          _.2 := ((___ := RegExReplace(d, q1    "(v(ertical)?)"      q2, "${value}")) != d) ? ___ : _.2
          _.3 := ((___ := RegExReplace(d, q1    "(b(lur)?)"          q2, "${value}")) != d) ? ___ : _.3
@@ -2177,7 +2177,7 @@ class TextRender {
       vmin := min(vw, vh)
 
       if IsObject(m) {
-         m.base.__get := this.get ; Returns the empty string for unknown properties.
+         m.__get := this.get ; Returns the empty string for unknown properties.
          m.1 := (m.top    != "") ? m.top    : (m.t != "") ? m.t : m.1
          m.2 := (m.right  != "") ? m.right  : (m.r != "") ? m.r : m.2
          m.3 := (m.bottom != "") ? m.bottom : (m.b != "") ? m.b : m.3
@@ -2186,7 +2186,7 @@ class TextRender {
          _ := RegExReplace(m, ":\s+", ":")
          _ := RegExReplace(_, "\s+", " ")
          _ := StrSplit(_, " ")
-         _.base.__get := this.get ; Returns the empty string for unknown properties.
+         _.__get := this.get ; Returns the empty string for unknown properties.
          _.1 := ((___ := RegExReplace(m, q1    "(t(op)?)"           q2, "${value}")) != m) ? ___ : _.1
          _.2 := ((___ := RegExReplace(m, q1    "(r(ight)?)"         q2, "${value}")) != m) ? ___ : _.2
          _.3 := ((___ := RegExReplace(m, q1    "(b(ottom)?)"        q2, "${value}")) != m) ? ___ : _.3
@@ -2194,7 +2194,7 @@ class TextRender {
          m := _
       } else if (default != "") {
          m := [default, default, default, default]
-         m.base.__get := this.get ; Returns the empty string for unknown properties.
+         m.__get := this.get ; Returns the empty string for unknown properties.
       } else {
          return {void:True, 1:0, 2:0, 3:0, 4:0}
       }
@@ -2237,7 +2237,7 @@ class TextRender {
       vmin := min(vw, vh)
 
       if IsObject(o) {
-         o.base.__get := this.get  ; Returns the empty string for unknown properties.
+         o.__get := this.get  ; Returns the empty string for unknown properties.
          o.1 := (o.stroke != "") ? o.stroke : (o.s != "") ? o.s : o.1
          o.2 := (o.color  != "") ? o.color  : (o.c != "") ? o.c : o.2
          o.3 := (o.glow   != "") ? o.glow   : (o.g != "") ? o.g : o.3
@@ -2246,7 +2246,7 @@ class TextRender {
          _ := RegExReplace(o, ":\s+", ":")
          _ := RegExReplace(_, "\s+", " ")
          _ := StrSplit(_, " ")
-         _.base.__get := this.get ; Returns the empty string for unknown properties.
+         _.__get := this.get ; Returns the empty string for unknown properties.
          _.1 := ((___ := RegExReplace(o, q1    "(s(troke)?)"        q2, "${value}")) != o) ? ___ : _.1
          _.2 := ((___ := RegExReplace(o, q1    "(c(olor)?)"         q2, "${value}")) != o) ? ___ : _.2
          _.3 := ((___ := RegExReplace(o, q1    "(g(low)?)"          q2, "${value}")) != o) ? ___ : _.3

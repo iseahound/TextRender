@@ -17,6 +17,7 @@ class TextRender {
       this.style1 := background_style
       this.style2 := text_style
 
+      ; Don't measure, just assume style1 and style2 are to be set when text is blank.
       if (text == "sentinel")
          return this
       else
@@ -456,6 +457,13 @@ class TextRender {
    }
 
    FreeBitmap() {
+      this.DeleteProp("BitmapWidth")
+      this.DeleteProp("BitmapHeight")
+      this.DeleteProp("BitmapLeft")
+      this.DeleteProp("BitmapTop")
+      this.DeleteProp("BitmapRight")
+      this.DeleteProp("BitmapBottom")
+
       DllCall("gdiplus\GdipDeleteGraphics", "ptr", this.Graphics)
       obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
       DllCall("SelectObject", "ptr", this.hdc, "ptr", obm)
@@ -467,13 +475,6 @@ class TextRender {
       this.DeleteProp("ptr")
       this.DeleteProp("size")
       this.DeleteProp("Graphics")
-
-      this.DeleteProp("BitmapWidth")
-      this.DeleteProp("BitmapHeight")
-      this.DeleteProp("BitmapLeft")
-      this.DeleteProp("BitmapTop")
-      this.DeleteProp("BitmapRight")
-      this.DeleteProp("BitmapBottom")
    }
 
    Allocate(left := 0, top := 0, width := 0, height := 0) {
@@ -651,7 +652,7 @@ class TextRender {
 
       ; Can recover out of bounds bitmap drawings by drawing to a separate bitmap buffer.
       if (this.recipestate >= 1) {
-         ; bitmapstate x → 2|3 ← x 
+         ; bitmapstate x → 2|3 ← x
          this.Redraw()
 
          ; recipestate 1
@@ -947,7 +948,7 @@ class TextRender {
       ; windowstate x → 1 - Can't use UpdateLayered because of custom animations
       this.Create()
 
-      ; windowstate 1 → 2
+      ; windowstate 1|2 → 2 - Calls UpdateLayeredWindow to set window coordinates
       this.AnimateWindow(t, keyframes)
 
       ; windowstate 2 → 3 - Start any timers
@@ -973,12 +974,11 @@ class TextRender {
       ; bitmapstate 2|3 → 3 - Prep bitmap for overwriting with Draw()
       this.Resolve()
 
-      ; windowstate 1 → 2
+      ; windowstate x → x - Visual changes only
       this.AnimateWindow(t, keyframes)
 
       this.bitmapstate := 3 ; bitmapstate 2|3 → 3
-      this.windowstate := 2 ; windowstate 2 ← x
-      return this
+      return this           ; windowstate 2|3 ← x
    }
 
    FadeIn(t := 250, keyframes := "") {
@@ -2561,7 +2561,7 @@ class TextRender {
    }
 
    EventDestroyWindow() {
-      this.DestroyWindow()
+      this.Destroy()
    }
 
    EventMoveWindow() {

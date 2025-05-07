@@ -1,4 +1,4 @@
-#include ..\TextRender.ahk
+﻿#include ..\TextRender.ahk
 
 
 ; Create new instances of the TextRender class.

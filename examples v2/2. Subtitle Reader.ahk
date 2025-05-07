@@ -1,4 +1,4 @@
-#include ..\TextRender.ahk
+﻿#include ..\TextRender.ahk
 
 
 srt := "..\media\sample.srt"
@@ -18,9 +18,10 @@ Loop Read, srt
 {
    ; State 0: Draw!
    if (A_LoopReadLine = "") && (state >= 4) {
-      tr.Sleep(time_pause)
+      tr.Hide()
+      tr.Suspend(time_pause)
       tr.Render(text, "r:1vmin y:83%")
-      tr.Wait(time_alive)
+      tr.Suspend(time_alive)
    }
 
    ; Increment the state
@@ -74,9 +75,10 @@ Loop Read, srt
 }
 
 ; Last cycle
-tr.Sleep(time_pause)
+tr.Hide()
+tr.Suspend(time_pause)
 tr.Render(text, "color:LemonChiffon", "s:5vmin")
-tr.Wait(time_alive)
+tr.Suspend(time_alive)
 tr.Clear()
 
 ExitApp

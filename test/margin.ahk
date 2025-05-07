@@ -1,4 +1,4 @@
-#include *i ..\TextRender%A_TrayMenu%.ahk
+﻿#include *i ..\TextRender%A_TrayMenu%.ahk
 #include *i ..\TextRender (for v%true%).ahk
 #singleinstance force
 

@@ -2,10 +2,10 @@
 #MaxThreads 10   ; Controls the maximum number of windows
 
 
-button1 := TextRender("Width", {y:"42vh", r:5, c:"DeepSkyBlue"})
-button2 := TextRender("Height", {x:"42vw", r:5, c:"DarkOrange"})
-button3 := TextRender("Exit", {x:"90vw", y:"90vh", r:5, c:"Red"})
-button4 := TextRender("Reload", {x:"83vw", y:"90vh", r:5, c:"Gold"})
+button1 := TextRender("Width", {y:"42vh", r:"1vmin", c:"DeepSkyBlue"})
+button2 := TextRender("Height", {x:"42vw", r:"1vmin", c:"DarkOrange"})
+button3 := TextRender("Exit", {x:"90vw", y:"90vh", r:"1vmin", c:"Red"})
+button4 := TextRender("Reload", {x:"83vw", y:"90vh", r:"1vmin", c:"Gold"})
 
 button1.OnEvent("LeftMouseDown", start_width)
 button2.OnEvent("LeftMouseDown", start_height)

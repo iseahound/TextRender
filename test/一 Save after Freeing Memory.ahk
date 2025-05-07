@@ -1,10 +1,10 @@
-#include *i ..\TextRender%A_TrayMenu%.ahk
+ï»¿#include *i ..\TextRender%A_TrayMenu%.ahk
 #include *i ..\TextRender (for v%true%).ahk
 #singleinstance force
 
 tr := TextRender()
 
-tr.Draw("Und über uns ziehen lila Wolken in die Nacht"
+tr.Draw("Und Ã¼ber uns ziehen lila Wolken in die Nacht"
    , {color: "#F9E27E"}
    , {font: "Century Gothic"
     , size: 60
@@ -16,9 +16,9 @@ tr.Draw("Und über uns ziehen lila Wolken in die Nacht"
                  , color: "#009DA7"}})
 
 tr.Render()
-tr.Save()
-tr.FreeMemory()
-tr.Save()            ; This call after the memory has been freed should work.
+tr.Save("1")
+tr.Free()
+tr.Save("2")            ; This call after the memory has been freed should work.
 
 TextRender("There should be two identical pictures in the folder.", "t:10000 y:83%")
 Sleep 10000

@@ -1,4 +1,4 @@
-#include ..\TextRender (for v1).ahk
+﻿#include ..\TextRender (for v1).ahk
 SetBatchLines -1 ; Mandatory for all v1 scripts
 
 ; Create new instances of the TextRender class.

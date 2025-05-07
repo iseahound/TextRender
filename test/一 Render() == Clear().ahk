@@ -2,8 +2,11 @@
 #include *i ..\TextRender (for v%true%).ahk
 #singleinstance force
 
-; After 3 seconds, this will disappear.
-tr := TextRender("Hey, I just met you", "time: 3000 color: MintCream", "s: 10vmin")
+tr := TextRender()
+tr.Render("hello world")
+tr.Suspend(2000)
+tr.Render()
+TextRender("The text should have been cleared by now.", "t:3000 y:83%")
 
 Sleep 10000
 ExitApp

@@ -627,25 +627,6 @@ class TextRender {
       return this                ; bitmapstate x → 1 (if recipestate = 0)
    }
 
-   Reallocate() {
-      ; bitmapstate x → 1 - Initalize memory buffer
-      this.Allocate()
-
-      ; Check if bitmap coordinates have changed.
-      this.GetParentCoordinates(&left, &top, &width, &height)
-
-      if !(width = this.BitmapWidth && height = this.BitmapHeight) {
-         ; bitmapstate 0 ← x - Delete memory
-         this.Free()
-
-         ; bitmapstate 0 → 1 - Allocate again
-         this.Allocate(left, top, width, height)
-      }
-                                 ; bitmapstate x → 1|2|3 ← x (conditions 1 and 2 combined)
-                                 ; bitmapstate x → 1 ← x if screen size has changed (1 of 2)
-      return this                ; bitmapstate x → 1|2|3 if screen size is the same (2 of 2)
-   }
-
    Save(filepath := "", quality := "") {
 
       ; Can recover out of bounds bitmap drawings by drawing to a separate bitmap buffer.
@@ -784,6 +765,25 @@ class TextRender {
       return this
    }
 
+   Reallocate() {
+      ; bitmapstate x → 1 - Initalize memory buffer
+      this.Allocate()
+
+      ; Check if bitmap coordinates have changed.
+      this.GetParentCoordinates(&left, &top, &width, &height)
+
+      if !(width = this.BitmapWidth && height = this.BitmapHeight) {
+         ; bitmapstate 0 ← x - Delete memory
+         this.Free()
+
+         ; bitmapstate 0 → 1 - Allocate again
+         this.Allocate(left, top, width, height)
+      }
+                                 ; bitmapstate x → 1|2|3 ← x (conditions 1 and 2 combined)
+                                 ; bitmapstate x → 1 ← x if screen size has changed (1 of 2)
+      return this                ; bitmapstate x → 1|2|3 if screen size is the same (2 of 2)
+   }
+
    Redraw() {
       ; bitmapstate x → 1|2|3 ← x - The bitmap memory could be reallocated or remain the same
       this.Reallocate()
@@ -887,8 +887,8 @@ class TextRender {
    }
 
    Cooldown() {
-      ; windowstate (x → 2) → ∅ - Ignore invalid states
-      if (this.windowstate <= 2)
+      ; windowstate (x → 1) → ∅ - Ignore invalid states
+      if (this.windowstate <= 1)
          return this
 
       ; windowstate 2 ← x - Block existing timers
@@ -897,7 +897,7 @@ class TextRender {
       ; Waits the time set originally as the "t" parameter.
       this.CooldownWindow()
 
-      this.windowstate := 2      ; windowstate 2 ← x
+      this.windowstate := 2      ; windowstate 1|2 ← x
       return this
    }
 
@@ -932,56 +932,34 @@ class TextRender {
 
    ; Animation Functions
 
-   AnimateIn(t, keyframes := "") {
+   Animate(t, keyframes := "") {
       ; bitmapstate (x → 1) → ∅ - Cannot render empty bitmap
       if (this.bitmapstate <= 1)
          return this
 
-      ; windowstate 2 ← x - Block existing timers
-      this.Stop()
-
       ; bitmapstate 2|3 → 3 - Prep bitmap for overwriting with Draw()
       this.Resolve()
+
+      ; windowstate 2 ← x - Block existing timers
+      this.Stop()
 
       ; windowstate x → 1 - Can't use UpdateLayered because of custom animations
       this.Create()
 
-      ; windowstate 1|2 → 2 - Calls UpdateLayeredWindow to set window coordinates
+      ; windowstate 1|2 → 2 - Must call UpdateLayeredWindow to set window coordinates
       this.AnimateWindow(t, keyframes)
 
-      ; windowstate 2 → 3 - Start any timers
-      this.Start()
+      ; Don't start a time, but set the global time variable to now.
+      this.TimeStamp()
 
       this.bitmapstate := 3 ; bitmapstate 2|3 → 3
-      this.windowstate := 3 ; windowstate x → 3 ← x
+      this.windowstate := 2 ; windowstate x → 2 ← x
       return this
-   }
-
-   AnimateOut(t, keyframes := "") {
-      ; bitmapstate (x → 1) → ∅ - Cannot render empty bitmap
-      if (this.bitmapstate <= 1)
-         return this
-
-      ; windowstate (x → 1) → ∅ - Ignore broken window states
-      if (this.windowstate <= 1)
-         return this
-
-      ; windowstate 2 ← x - Block existing timers
-      this.Stop()
-
-      ; bitmapstate 2|3 → 3 - Prep bitmap for overwriting with Draw()
-      this.Resolve()
-
-      ; windowstate x → x - Visual changes only
-      this.AnimateWindow(t, keyframes)
-
-      this.bitmapstate := 3 ; bitmapstate 2|3 → 3
-      return this           ; windowstate 2|3 ← x
    }
 
    FadeIn(t := 250, keyframes := "") {
       this.AnimateWindow := this.FadeInWindow
-      return this.AnimateIn(t, keyframes)
+      return this.Animate(t, keyframes)
    }
 
    FadeInWindow(t := 250, keyframes := "") {
@@ -1013,10 +991,12 @@ class TextRender {
 
    FadeOut(t := 250, keyframes := "") {
       this.AnimateWindow := this.FadeOutWindow
-      return this.AnimateOut(t, keyframes)
+      return this.Animate(t, keyframes)
    }
 
    FadeOutWindow(t := 250, keyframes := "") {
+      this.UpdateLayeredWindow(255)
+
       elapsed := 0
       current := -1
       ;count := 0

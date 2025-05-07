@@ -629,23 +629,21 @@ class TextRender {
 
    Reallocate() {
       ; bitmapstate x → 1 - Initalize memory buffer
-      if (this.bitmapstate <= 0)
-         return this.Allocate()
+      this.Allocate()
 
-      ; bitmapstate 1|2|3 ← x - Conditionally reallocate memory
-      this.ReallocateBitmap()
-
-      return this                ; bitmapstate x → 1|2|3 ← x
-   }
-
-   ReallocateBitmap() {
+      ; Check if bitmap coordinates have changed.
       this.GetParentCoordinates(&left, &top, &width, &height)
 
-      ; No need to reallocate if the width and height are the same.
       if !(width = this.BitmapWidth && height = this.BitmapHeight) {
-         this.FreeBitmap()
-         this.AllocateBitmap(left, top, width, height)
+         ; bitmapstate 0 ← x - Delete memory
+         this.Free()
+
+         ; bitmapstate 0 → 1 - Allocate again
+         this.Allocate(left, top, width, height)
       }
+                                 ; bitmapstate x → 1|2|3 ← x (conditions 1 and 2 combined)
+                                 ; bitmapstate x → 1 ← x if screen size has changed (1 of 2)
+      return this                ; bitmapstate x → 1|2|3 if screen size is the same (2 of 2)
    }
 
    Save(filepath := "", quality := "") {

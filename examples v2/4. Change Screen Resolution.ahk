@@ -1,23 +1,30 @@
-﻿#Include TextRender.ahk
+﻿#Include ..\TextRender.ahk
 
-TextRender("Press 1 or 2 to toggle screen resolution to 1080p and 720p", "color:random t:30000 s:3vmin m:3vmin y:12%")
+TextRender("Press 1 or 2 to toggle screen resolution to 1080p and 720p", "color:random t:30000 s:3vmin y:12%")
+tr := TextRender(, "s:10vmin")
 
 1:: {
-tr := TextRender("720p", "time:10000")
-ChangeDisplaySettings(32, 1280,  720, 60)
+tr.Render("720p", "time:10000")
+ChangeResolution(1280, 720)
 }
 
 2:: {
-tr := TextRender("1080p", "time:10000")
-ChangeDisplaySettings(32, 1920, 1080, 60)
+tr.Render("1080p", "time:10000")
+ChangeResolution(1920, 1080)
 }
 
-
-ChangeDisplaySettings( cD, sW, sH, rR ) {
-    dM := Buffer(156, 0), NumPut(36, 156, 2, dM.Ptr)
-    DllCall("EnumDisplaySettingsA", "UInt", 0, "UInt", -1, "UInt", dM.Ptr), NumPut("UPtr", 0x5c0000, dM, 40)
-    NumPut("UPtr", cD, dM, 104),  NumPut("UPtr", sW, dM, 108),  NumPut("UPtr", sH, dM, 112),  NumPut("UPtr", rR, dM, 120)
-    Return DllCall("ChangeDisplaySettingsA", "UInt", dM.Ptr, "UInt", 0)
+ChangeResolution(Screen_Width := 1920, Screen_Height := 1080, Refresh_Rate := "", Color_Depth := 32)
+{
+   Device_Mode := Buffer(156, 0)
+   NumPut("ushort", 156, Device_Mode, 36)
+   DllCall("EnumDisplaySettingsA", "uint", 0, "uint", -1, "ptr", Device_Mode)
+   NumPut("uint", 0x5c0000, Device_Mode, 40)
+   NumPut("uint", Color_Depth, Device_Mode, 104)
+   NumPut("uint", Screen_Width, Device_Mode, 108)
+   NumPut("uint", Screen_Height, Device_Mode, 112)
+   if Refresh_Rate
+      NumPut("uint", Refresh_Rate, Device_Mode, Refresh_Rate)
+   Return DllCall("ChangeDisplaySettingsA", "ptr", Device_Mode, "uint", 0)
 }
 
 Esc::ExitApp

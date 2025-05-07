@@ -1,14 +1,15 @@
-﻿#include TextRender (for v1).ahk
+﻿#include ..\TextRender (for v1).ahk
 
-TextRender("Press 1 or 2 to toggle screen resolution to 1080p and 720p", "color:random t:30000 s:3vmin m:3vmin y:12%")
+TextRender("Press 1 or 2 to toggle screen resolution to 1080p and 720p", "color:random t:30000 s:3vmin y:12%")
+tr := TextRender(, "s:10vmin")
 
 1::
-tr := TextRender("720p", "time:10000")
+tr.Render("720p", "time:10000")
 ChangeDisplaySettings(32, 1280,  720, 60)
 return
 
 2::
-tr := TextRender("1080p", "time:10000")
+tr.Render("1080p", "time:10000")
 ChangeDisplaySettings(32, 1920, 1080, 60)
 return
 

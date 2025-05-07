@@ -3,7 +3,6 @@
 * Standalone library with optional dependencies.
 * Draws beautiful images and text to the screen.
 * Features background color, text outline, and drop shadow.
-* Renders to the screen, desktop, or behind desktop icons as a wallpaper.
 * Supports events such as OnEvent("LeftMouseDown", callback).
 * Extremely fast and lightweight, capable of rendering at 300+ fps.
 * Redraws to scale when monitor resolution changes or new displays are connected.

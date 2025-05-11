@@ -50,7 +50,7 @@ class TextRender {
       this.Forget()              ; recipestate ? ← x
       this.Free()                ; bitmapstate ? ← x
       this.Destroy()             ; windowstate ? ← x
-
+      this.CallEvent("Delete")
       TextRender.gdiplusShutdown()
    }
 
@@ -96,6 +96,7 @@ class TextRender {
       this.RememberRecipe(data, style1, style2)
 
       this.recipestate := 1      ; recipestate x → 1
+      this.CallEvent("Remember")
       return this
    }
 
@@ -116,9 +117,9 @@ class TextRender {
    Forget(n := "sentinel") {
       this.ForgetRecipe(n)
 
-      _ :=!!this.layers.length() ; recipestate 0 ← x   (1 of 2)
-      this.recipestate := _      ; recipestate 0|1 ← x (2 of 2)
-      return this
+      this.recipestate := !!this.layers.length()
+      this.CallEvent("Forget")   ; recipestate 0 ← x   (1 of 2)
+      return this                ; recipestate 0|1 ← x (2 of 2)
    }
 
    ForgetRecipe(n := "sentinel") {
@@ -145,6 +146,7 @@ class TextRender {
       this.DestroyWindow()
 
       this.windowstate := 0      ; windowstate 0 ← x
+      this.CallEvent("Destroy")
       return this
    }
 
@@ -162,6 +164,7 @@ class TextRender {
       this.CreateWindow(title, style, styleEx, parent)
 
       this.windowstate := 1      ; windowstate x → 1
+      this.CallEvent("Create")
       return this
    }
 
@@ -221,6 +224,7 @@ class TextRender {
       this.InvalidateWindow()
 
       this.windowstate := 1      ; windowstate 1 ← x
+      this.CallEvent("Invalidate")
       return this
    }
 
@@ -246,6 +250,7 @@ class TextRender {
       this.ValidateWindow()
 
       this.windowstate := 2      ; windowstate x → 2
+      this.CallEvent("Validate")
       return this
    }
 
@@ -269,6 +274,7 @@ class TextRender {
       this.StopWindow()
 
       this.windowstate := 2      ; windowstate 2 ← x
+      this.CallEvent("Stop")
       return this
    }
 
@@ -284,6 +290,7 @@ class TextRender {
       this.StartWindow()
 
       this.windowstate := 3      ; windowstate x → 3
+      this.CallEvent("Start")
       return this
    }
 
@@ -293,7 +300,7 @@ class TextRender {
    }
 
    Resume() {
-      ; windowstate (x → 1) → ∅ - Invalidated windows have had their WindowTime set to 0
+      ; windowstate (x → 1) → ∅ - Invalidated windows do not have a WindowTime
       if (this.windowstate <= 1)
          return this
 
@@ -301,6 +308,7 @@ class TextRender {
       this.ResumeWindow()
 
       this.windowstate := 3      ; windowstate 2 → 3
+      this.CallEvent("Resume")
       return this
    }
 
@@ -324,7 +332,8 @@ class TextRender {
       this.Stop()
 
       this.windowstate := 2      ; windowstate x → 2 ← x
-      return this                ; bitmapstate 2|3
+      this.CallEvent(A_ThisFunc) ; bitmapstate 2|3
+      return this
    }
 
    UpdateLayeredWindow(alpha := 255) {
@@ -390,15 +399,11 @@ class TextRender {
       ; windowstate 1 ← x - Removes window coordinates and stops timers
       this.Invalidate()
 
-      ; Hidden status cannot be determined by WinExist or WinGetTransparent.
-      this.HideWindow()
-
-      return this                ; windowstate 1 ← x
-   }
-
-   HideWindow() {
       ; Make the window completely invisible but preserves what was already on screen.
       this.FadeWindow(0)
+
+      this.CallEvent("Hide")
+      return this                ; windowstate 1 ← x
    }
 
    Show() {
@@ -409,15 +414,11 @@ class TextRender {
       ; windowstate x → 2 - Adds window coordinates and creates window
       this.Validate()
 
-      ; Resets the alpha to 255. Note this will not stop timers.
-      this.ShowWindow()
-
-      return this                ; windowstate x → 2|3
-   }
-
-   ShowWindow() {
       ; Sets the alpha of the window back to 255 to restore visibility.
       this.FadeWindow(255)
+
+      this.CallEvent("Show")
+      return this                ; windowstate x → 2|3
    }
 
    ShowHide() {
@@ -436,6 +437,7 @@ class TextRender {
       TextRender.BitmapToFile(pBitmap, filepath, quality)
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
+      this.CallEvent("Screenshot")
       return this
    }
 
@@ -453,6 +455,7 @@ class TextRender {
       this.FreeBitmap()
 
       this.bitmapstate := 0      ; bitmapstate 0 ← x
+      this.CallEvent("Free")
       return this
    }
 
@@ -486,6 +489,7 @@ class TextRender {
       this.AllocateBitmap(left := 0, top := 0, width := 0, height := 0)
 
       this.bitmapstate := 1      ; bitmapstate x → 1
+      this.CallEvent("Allocate")
       return this
    }
 
@@ -532,6 +536,7 @@ class TextRender {
       this.EraseBitmap()
 
       this.bitmapstate := 1      ; bitmapstate 1 ← x
+      this.CallEvent("Erase")
       return this
    }
 
@@ -552,9 +557,6 @@ class TextRender {
       this.Delete("chars")
       this.Delete("words")
       this.Delete("lines")
-
-      ; Creates a unique signature for each change to the bitmap or canvas.
-      this.CanvasChanged()
    }
 
    Fill() {
@@ -573,7 +575,8 @@ class TextRender {
       this.FillBitmap()
 
       this.bitmapstate := 2      ; bitmapstate x → 2 (if recipestate = 1)
-      return this                ; bitmapstate x → 1 (if recipestate = 0)
+      this.CallEvent("Fill")     ; bitmapstate x → 1 (if recipestate = 0)
+      return this
    }
 
    FillBitmap() {
@@ -600,9 +603,6 @@ class TextRender {
       this.chars := obj.chars
       this.words := obj.words
       this.lines := obj.lines
-
-      ; Creates a unique signature for each change to the bitmap or canvas.
-      this.CanvasChanged()
    }
 
    Recycle() {
@@ -611,6 +611,7 @@ class TextRender {
          return this
 
       this.bitmapstate := 2      ; bitmapstate 2 ← x
+      this.CallEvent("Recycle")
       return this
    }
 
@@ -624,7 +625,8 @@ class TextRender {
          return this
 
       this.bitmapstate := 3      ; bitmapstate x → 3 (if recipestate = 1)
-      return this                ; bitmapstate x → 1 (if recipestate = 0)
+      this.CallEvent("Resolve")  ; bitmapstate x → 1 (if recipestate = 0)
+      return this
    }
 
    Save(filepath := "", quality := "") {
@@ -653,7 +655,7 @@ class TextRender {
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
       ; If the memory has been freed it is now reallocated.
-                                 ; bitmapstate 2|3 if recipestate = 0          (1 of 2)
+      this.CallEvent("Save")     ; bitmapstate 2|3 if recipestate = 0          (1 of 2)
       return this                ; bitmapstate x → 2|3 ← x if recipestate = 1  (2 of 2)
    }
 
@@ -663,13 +665,18 @@ class TextRender {
       this.Forget()              ; recipestate 0 ← x
       this.Erase()               ; bitmapstate 1 ← x
       this.Hide()                ; windowstate 1 ← x
+      this.OnEvent("Clear")
       return this
    }
 
-   Blank(status) {
+   Timeout(status) {
       ; Blocks timers from acting when bitmaps have changed.
-      if (this.status = status)  ; windowstate a:x = b:x
-         this.Destroy()          ; windowstate 0 ← x
+      if (this.status != status) ; windowstate a:x = b:x
+         return this
+
+      this.Destroy()             ; windowstate 0 ← x
+      this.CallEvent("Timeout")
+      return this
    }
 
    Flush() {
@@ -691,6 +698,7 @@ class TextRender {
 
       this.recipestate := 0      ; recipestate 0 ← x
       this.bitmapstate := 2      ; bitmapstate x → 2 ← x
+      this.CallEvent("Flush")
       return this
    }
 
@@ -715,6 +723,7 @@ class TextRender {
       this.recipestate := 0      ; recipestate 0 ← x
       this.bitmapstate := 3      ; bitmapstate x → 3 ← x
       this.windowstate := 3      ; windowstate x → 3 ← x
+      this.CallEvent("Paint")
       return this
    }
 
@@ -740,7 +749,8 @@ class TextRender {
       this.DrawBitmap(this.data, this.style1, this.style2)
 
       this.bitmapstate := 2      ; bitmapstate x → 2 ← x
-      return this                ; recipestate x → 1
+      this.CallEvent("Draw")     ; recipestate x → 1
+      return this
    }
 
    Render(terms*) {
@@ -762,6 +772,7 @@ class TextRender {
       this.recipestate := 1      ; recipestate x → 1
       this.bitmapstate := 3      ; bitmapstate x → 3 ← x
       this.windowstate := 3      ; windowstate x → 3 ← x
+      this.CallEvent("Render")
       return this
    }
 
@@ -780,7 +791,7 @@ class TextRender {
          this.Allocate(left, top, width, height)
       }
                                  ; bitmapstate x → 1|2|3 ← x (conditions 1 and 2 combined)
-                                 ; bitmapstate x → 1 ← x if screen size has changed (1 of 2)
+      this.CallEvent(A_ThisFunc) ; bitmapstate x → 1 ← x if screen size has changed (1 of 2)
       return this                ; bitmapstate x → 1|2|3 if screen size is the same (2 of 2)
    }
 
@@ -790,13 +801,14 @@ class TextRender {
 
       ; recipestate 0 → ∅ - Dividing this into 2 conditional branches allows a better proof
       if (this.recipestate == 0)
-         return this             ; bitmapstate x → 1|2|3 ← x  (if recipestate = 0) (1 of 2)
+         return this
 
       ; bitmapstate x → 2 (if recipestate = 1) - Fills bitmap with drawings from layers
       this.Fill()
 
       ; Often called after the screen size changes during a drawing so bitmapstate is not 3 yet.
-      return this                ; bitmapstate x → 2|3 ← x  (if recipestate = 1) (2 of 2)
+      this.CallEvent("Redraw")   ; bitmapstate x → 1|2|3 ← x if recipestate = 0 (1 of 2)
+      return this                ; bitmapstate x → 2|3 ← x   if recipestate = 1 (2 of 2)
    }
 
    Rerender() {
@@ -823,8 +835,9 @@ class TextRender {
 
       ; windowstate 2 → 3 - Resume any timers with the remaning time
       this.Resume()
-                                 ; recipestate 1
+
       this.windowstate := 3      ; windowstate 1|2|3 → 3
+      this.CallEvent("Rerender") ; recipestate 1
       return this                ; bitmapstate 3
    }
 
@@ -852,11 +865,11 @@ class TextRender {
    ; Timers!!!
 
    StartTimer() {
-      this.TimerBlank(this.WindowTime)
+      this.Timer(this.WindowTime)
    }
 
    ResumeTimer() {
-      this.TimerBlank(this.TimeRemaining())
+      this.Timer(this.TimeRemaining())
    }
 
    StopTimer() {
@@ -869,12 +882,12 @@ class TextRender {
       }
    }
 
-   TimerBlank(t) {
+   Timer(t, method := "Timeout") {
       ; Create a timer that eventually clears the canvas.
       if (this.t > 0) {
          ; Create a reference to the object held by a timer.
-         blank := ObjBindMethod(this, "blank", this.status) ; Calls Blank()
-         SetTimer % blank, % -this.t ; Calls __Delete.
+         f := ObjBindMethod(this, method, this.status) ; Calls TimeOut()
+         SetTimer % f, % -this.t ; Calls __Delete.
       }
    }
 
@@ -883,7 +896,8 @@ class TextRender {
    Wait(t := 0) {
       this.Cooldown()            ; windowstate 2 ← x
       this.Suspend(t)            ; windowstate x
-      return this                ; windowstate 2 ← x
+      this.CallEvent("Wait")
+      return this
    }
 
    Cooldown() {
@@ -898,6 +912,7 @@ class TextRender {
       this.CooldownWindow()
 
       this.windowstate := 2      ; windowstate 1|2 ← x
+      this.CallEvent("Cooldown")
       return this
    }
 
@@ -909,6 +924,7 @@ class TextRender {
       ; Simply suspends the window for a brief duration.
       this.SuspendWindow(t)
 
+      this.CallEvent("Suspend")
       return this                ; windowstate x
    }
 
@@ -949,17 +965,20 @@ class TextRender {
       ; windowstate 1|2 → 2 - Must call UpdateLayeredWindow to set window coordinates
       this.AnimateWindow(t, keyframes)
 
-      ; Don't start a time, but set the global time variable to now.
+      ; Don't start a timer, but set the global time variable to now.
       this.TimeStamp()
 
       this.bitmapstate := 3 ; bitmapstate 2|3 → 3
       this.windowstate := 2 ; windowstate x → 2 ← x
+      this.CallEvent("Animate")
       return this
    }
 
    FadeIn(t := 250, keyframes := "") {
       this.AnimateWindow := this.FadeInWindow
-      return this.Animate(t, keyframes)
+      this.Animate(t, keyframes)
+      this.CallEvent("FadeIn")
+      return this
    }
 
    FadeInWindow(t := 250, keyframes := "") {
@@ -991,7 +1010,9 @@ class TextRender {
 
    FadeOut(t := 250, keyframes := "") {
       this.AnimateWindow := this.FadeOutWindow
-      return this.Animate(t, keyframes)
+      this.Animate(t, keyframes)
+      this.CallEvent("FadeOut")
+      return this
    }
 
    FadeOutWindow(t := 250, keyframes := "") {
@@ -2500,9 +2521,9 @@ class TextRender {
          for message, event in dict
             if (uMsg = message)
                try if callback := self.events[event] {
-                  consideration := %callback%(self) ; Callbacks have a reference to "this".
-                  ListLines %ll%
-                  return consideration
+                  %callback%(self) ; Callbacks have a reference to "this".
+                  try return
+                  finally ListLines %ll%
                }
 
          ; Default processing of window messages.
@@ -2538,6 +2559,19 @@ class TextRender {
       return this
    }
 
+   __Call(name, ps*) {
+      if (name ~= "(?i)^On(?!Event$)") {
+         this.events[SubStr(name, 3)] := ps[1]
+         return this
+      }
+      ; NOTE: Using 'return' here would break this.__Call
+   }
+
+   CallEvent(event) {
+      try if callback := this.events[event]
+         return %callback%(this) ; Callbacks have a reference to "this".
+   }
+
    EventDestroyWindow() {
       this.Destroy()
    }
@@ -2549,43 +2583,36 @@ class TextRender {
 
    EventShowCoordinates() {
       ; Shows a bubble displaying the current window coordinates.
-      if not ObjHasKey(this, "friend1") {
-         this.friend1 := new TextRender(,,, this.hwnd)
-         this.friend1.OnEvent("MiddleMouseDown")
-      }
+      if not this.HasKey("friend1")
+         this.friend1 := TextRender()
+            .Create(,,, this.hwnd)
+            .OnEvent("MiddleMouseDown", "")
 
       ; Get position in screen coordinates.
       DllCall("GetCursorPos", "ptr", &point := VarSetCapacity(point, 8))
          , _x := NumGet(point, 0, "int")
          , _y := NumGet(point, 4, "int")
       WinGetPos x, y, w, h, % "ahk_id " this.hwnd
-      len := max(StrLen(x), StrLen(y), StrLen(w), StrLen(h)) + 1
-      coordinates := Format("x:{:" len "} w:{:" len "}`r`ny:{:" len "} h:{:" len "}", x, w, y, h)
+         x2 := x + w
+         y2 := y + h
+      l := 1 + max(StrLen(x), StrLen(y), StrLen(w), StrLen(h), StrLen(x2), StrLen(y2))
+      coordinates := Format("x:{:" l "} y:{:" l "}`nw:{:" l "} h:{:" l "}`n→:{:" l "} ↓:{:" l "}", x, y, w, h, x2, y2)
 
       this.friend1.Render(coordinates
          , {t: 7000, r: "0.5vmin", x: _x+20, y: _y+20}
          , "s:1.5vmin f:(Consolas) o:(0.5) m:0.5vmin j:right")
-      this.friend1.TopMost()
    }
 
    EventCopyData() {
       ; Copies the rendered text to clipboard.
-      if not ObjHasKey(this, "friend2") {
-         this.friend2 := new TextRender(,,, this.hwnd)
-         this.friend2.OnEvent("MiddleMouseDown", "")
-         this.friend2.OnEvent("RightMouseDown", "")
-      }
-      for i, layer in this.layers
-         if data := layer[1]
-            break
-      clipboard := data
-      this.friend2.Render("Saved text to clipboard.", "t:1250 c:#F9E486 y:75vh r:10%")
-      this.friend2.TopMost()
-   }
+      if not this.HasKey("friend2")
+         this.friend2 := TextRender()
+            .Create(,,, this.hwnd)
+            .OnEvent("MiddleMouseDown", "")
+            .OnEvent("RightMouseDown", "")
 
-   CanvasChanged() {
-      try if callback := this.events["CanvasChange"]
-         return %callback%(this) ; Callbacks have a reference to "this".
+      A_Clipboard := this.data
+      this.friend2.Render("Saved text to clipboard.", "t:1250 c:#F9E486 y:75vh r:1vmin")
    }
 
    ; Export as Image Data

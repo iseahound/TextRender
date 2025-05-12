@@ -892,7 +892,7 @@ class TextRender {
       }
    }
 
-   Timer(t, method := "TimeOut") {
+   Timer(t, method := "Timeout") {
       ; Create a timer that eventually clears the canvas.
       if (t > 0) {
          ; Create a reference to the object held by a timer.
@@ -1105,7 +1105,7 @@ class TextRender {
          DllCall("DeleteDC",     "ptr", hdc)
 
          ; Set Coordinates
-         WinGetPos &x, &y, &w, &h, "ahk_id " this.hwnd
+         WinGetPos &x, &y, &w, &h, this.hwnd
          this.WindowLeft := x
          this.WindowTop := y
          this.WindowWidth := w
@@ -2595,7 +2595,7 @@ class TextRender {
       ; Original window move functionality
       DllCall("DefWindowProc", "ptr", this.hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
       
-      WinGetPos &x, &y,,, "ahk_id " this.hwnd
+      WinGetPos &x, &y,,, this.hwnd
       this.CanvasLeft += x - this.WindowLeft
       this.CanvasTop += y - this.WindowTop
    }
@@ -2611,7 +2611,7 @@ class TextRender {
       DllCall("GetCursorPos", "ptr", point := Buffer(8))
          , _x := NumGet(point, 0, "int")
          , _y := NumGet(point, 4, "int")
-      WinGetPos &x, &y, &w, &h, "ahk_id " this.hwnd
+      WinGetPos &x, &y, &w, &h, this.hwnd
          x2 := x + w
          y2 := y + h
       l := 1 + max(StrLen(x), StrLen(y), StrLen(w), StrLen(h), StrLen(x2), StrLen(y2))
@@ -2742,12 +2742,12 @@ class TextRender {
    ; Window Styles
 
    TopMost() {
-      WinSetAlwaysOnTop 1, "ahk_id" this.hwnd
+      WinSetAlwaysOnTop 1, this.hwnd
       return this
    }
 
    AlwaysOnTop() {
-      WinSetAlwaysOnTop -1, "ahk_id" this.hwnd
+      WinSetAlwaysOnTop -1, this.hwnd
       return this
    }
 

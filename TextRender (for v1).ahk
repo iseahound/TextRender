@@ -894,10 +894,10 @@ class TextRender {
 
    Timer(t, method := "Timeout") {
       ; Create a timer that eventually clears the canvas.
-      if (this.t > 0) {
+      if (t > 0) {
          ; Create a reference to the object held by a timer.
-         f := ObjBindMethod(this, method, this.status) ; Calls TimeOut()
-         SetTimer % f, % -this.t ; Calls __Delete.
+         f := ObjBindMethod(this, method, this.status) ; Calls Timeout()
+         SetTimer % f, % -t ; Calls __Delete.
       }
    }
 

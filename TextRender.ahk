@@ -54,14 +54,24 @@ class TextRender {
       TextRender.gdiplusShutdown()
    }
 
-   __New(OffsetLeft := 0, OffsetTop := 0, ScaleWidth := False, ScaleHeight := False) {
+   __New(OffsetLeft := 0, OffsetTop := 0) {
       TextRender.gdiplusStartup()
 
-      ; User defined custom scaling
+      ; UpdateLayeredWindow uses these offsets to optionally isolate drawing on a single monitor.
       this.OffsetLeft := OffsetLeft
       this.OffsetTop := OffsetTop
-      this.ScaleWidth := ScaleWidth
-      this.ScaleHeight := ScaleHeight
+
+      ; Use the primary monitor as the baseline for scaling in the viewport.
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+      ScreenWidth := A_ScreenWidth
+      ScreenHeight := A_ScreenHeight
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+
+      ; The canvas is infinite so these are viewport coordinates.
+      this.CanvasTop := 0
+      this.CanvasLeft := 0
+      this.CanvasWidth := ScreenWidth
+      this.CanvasHeight := ScreenHeight
 
       ; Initalize default events.
       this.events := Map()
@@ -70,8 +80,8 @@ class TextRender {
       this.OnEvent("RightMouseDown", this.EventCopyData)
 
       ; These are global variables. Can cause infinite loops otherwise.
-      this.TimeStamp() ; Sets this.t0 to the current time.
-      this.status := 0xFFFF0001  ; Can never be unset
+      this.TimeStamp()  ; Sets this.t0 to the current time
+      this.status := 0xFFFF0001  ; Used to block timers
       this.layers := []
       this.data := ""
       this.style1 := ""
@@ -84,9 +94,6 @@ class TextRender {
       this.recipestate := 0      ; recipestate ? → 0
       this.bitmapstate := 0      ; bitmapstate ? → 0
       this.windowstate := 0      ; windowstate ? → 0
-
-      ; Aditional modalities or small dimensions.
-
       return this
    }
 
@@ -585,24 +592,27 @@ class TextRender {
    }
 
    DrawBitmap(data := "", style1 := "", style2 := "") {
-      ; Drawing
-      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-      obj := this.DrawOnGraphics(this.Graphics, data, style1, style2
-         , this.ScaleWidth ? this.BitmapWidth : A_ScreenWidth
-         , this.ScaleHeight ? this.BitmapHeight : A_ScreenHeight)
-      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+      ; Draw relative to the viewport (canvas coordinates).
+      that := this.DrawOnGraphics(this.Graphics
+         , data
+         , style1
+         , style2
+         , this.CanvasWidth
+         , this.CanvasHeight
+         , this.CanvasLeft
+         , this.CanvasTop)
 
       ; Set canvas coordinates. Ensure the starting coordinates are blank.
-      this.t  := this.HasProp("t")  ? max(this.t, obj.t) : obj.t
-      this.x  := this.HasProp("x")  ? min(this.x, obj.x) : obj.x
-      this.y  := this.HasProp("y")  ? min(this.y, obj.y) : obj.y
-      this.x2 := this.HasProp("x2") ? max(this.x2, obj.x2) : obj.x2
-      this.y2 := this.HasProp("y2") ? max(this.y2, obj.y2) : obj.y2
+      this.t  := this.HasProp("t")  ? max(this.t, that.t) : that.t
+      this.x  := this.HasProp("x")  ? min(this.x, that.x) : that.x
+      this.y  := this.HasProp("y")  ? min(this.y, that.y) : that.y
+      this.x2 := this.HasProp("x2") ? max(this.x2, that.x2) : that.x2
+      this.y2 := this.HasProp("y2") ? max(this.y2, that.y2) : that.y2
       this.w  := this.x2 - this.x
       this.h  := this.y2 - this.y
-      this.chars := obj.chars
-      this.words := obj.words
-      this.lines := obj.lines
+      this.chars := that.chars
+      this.words := that.words
+      this.lines := that.lines
    }
 
    Recycle() {
@@ -742,7 +752,7 @@ class TextRender {
       ; bitmapstate x → 1|2 ← x - Recover intermediate steps when screen changes
       this.Redraw()
 
-      ; recipestate x → 1 - Sets default styles and data, use before DrawMemory
+      ; recipestate x → 1 - Sets default styles and data, use before DrawBitmap
       this.Remember(data, style1, style2)
 
       ; bitmapstate 1 → 2 - Filling the memory with drawings is good!
@@ -2579,6 +2589,15 @@ class TextRender {
    EventMoveWindow() {
       ; Allows the user to drag to reposition the window.
       DllCall("DefWindowProc", "ptr", this.hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
+   }
+
+   EventMoveWindowStorePosition() {
+      ; Original window move functionality
+      DllCall("DefWindowProc", "ptr", this.hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
+      
+      WinGetPos &x, &y,,, "ahk_id " this.hwnd
+      this.CanvasLeft += x - this.WindowLeft
+      this.CanvasTop += y - this.WindowTop
    }
 
    EventShowCoordinates() {

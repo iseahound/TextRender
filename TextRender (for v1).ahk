@@ -2,8 +2,8 @@
 ; License:   MIT License
 ; Author:    Edison Hua (iseahound)
 ; Github:    https://github.com/iseahound/TextRender
-; Date:      2025-05-07
-; Version:   2.0.1
+; Date:      2025-05-12
+; Version:   2.1
 
 #Requires AutoHotkey v1.1.35+
 

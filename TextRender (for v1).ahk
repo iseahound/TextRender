@@ -2510,7 +2510,7 @@ class TextRender {
 
          ; Match window messages to Rainmeter event names.
          ; https://docs.rainmeter.net/manual/mouse-actions/
-         static dict :=
+         dict :=
          ( LTrim Join
          {
             0x0201  : "LeftMouseDown",

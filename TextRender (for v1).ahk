@@ -2530,8 +2530,8 @@ class TextRender {
          ; Process windows messages by invoking the associated callback.
          for message, event in dict
             if (uMsg = message)
-               try if callback := self.events[event] {
-                  %callback%(self) ; Callbacks have a reference to "this".
+               if callback := self.events[event] {
+                  %callback%(self) ; Callbacks have a reference to "self".
                   try return
                   finally ListLines %ll%
                }
@@ -2578,7 +2578,7 @@ class TextRender {
    }
 
    CallEvent(event) {
-      try if callback := this.events[event]
+      if callback := this.events[event]
          return %callback%(this) ; Callbacks have a reference to "this".
    }
 

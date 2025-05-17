@@ -2604,7 +2604,7 @@ class TextRender {
       ; Shows a bubble displaying the current window coordinates.
       if not this.HasOwnProp("friend1")
          this.friend1 := TextRender()
-            .Create(,,, this.hwnd)
+            .Create()
             .OnEvent("MiddleMouseDown", "")
 
       ; Get position in screen coordinates.
@@ -2626,7 +2626,7 @@ class TextRender {
       ; Copies the rendered text to clipboard.
       if not this.HasOwnProp("friend2")
          this.friend2 := TextRender()
-            .Create(,,, this.hwnd)
+            .Create()
             .OnEvent("MiddleMouseDown", "")
             .OnEvent("RightMouseDown", "")
 

@@ -323,6 +323,11 @@ class TextRender {
       this.ResumeTimer()
    }
 
+   Restart() {
+      this.Stop()
+      this.Start()
+   }
+
    UpdateLayered(alpha := 255) {
       ; bitmapstate (x → 1) → ∅ - The bitmap and canvas coordinates must be defined
       if (this.bitmapstate <= 1)

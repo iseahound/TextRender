@@ -2,6 +2,12 @@
 
 #### Simple lightweight minimalist graphics engine. Runs at 300+ fps.
 
+#### Folders
+
+* examples - Benchmarking and proof of concept
+* test - Testing scripts
+* media - Contains assets used by other folders
+
 #### Documentation
 
 * [Quick Start](https://github.com/iseahound/TextRender/wiki/Quick-Start)

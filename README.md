@@ -1,6 +1,6 @@
 # TextRender
 
-#### Simple lightweight minimalist graphics engine. Runs at 300+ fps.
+Simple lightweight minimalist graphics engine. Runs at 300+ fps.
 
 #### Folders
 

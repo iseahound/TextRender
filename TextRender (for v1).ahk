@@ -343,8 +343,9 @@ class TextRender {
       ; windowstate 2 ← x - Block existing timers
       this.Stop()
 
+      f := "UpdateLayered"
       this.windowstate := 2      ; windowstate x → 2 ← x
-      this.CallEvent(A_ThisFunc) ; bitmapstate 2|3
+      this.CallEvent(f)          ; bitmapstate 2|3
       return this
    }
 
@@ -805,8 +806,9 @@ class TextRender {
          ; bitmapstate 0 → 1 - Allocate again
          this.Allocate(left, top, width, height)
       }
-                                 ; bitmapstate x → 1|2|3 ← x (conditions 1 and 2 combined)
-      this.CallEvent(A_ThisFunc) ; bitmapstate x → 1 ← x if screen size has changed (1 of 2)
+
+      f := "Reallocate"          ; bitmapstate x → 1|2|3 ← x (conditions 1 and 2 combined)
+      this.CallEvent(f)          ; bitmapstate x → 1 ← x if screen size has changed (1 of 2)
       return this                ; bitmapstate x → 1|2|3 if screen size is the same (2 of 2)
    }
 

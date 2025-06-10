@@ -61,17 +61,13 @@ class TextRender {
       this.OffsetLeft := OffsetLeft
       this.OffsetTop := OffsetTop
 
-      ; Use the primary monitor as the baseline for scaling in the viewport.
-      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-      ScreenWidth := A_ScreenWidth
-      ScreenHeight := A_ScreenHeight
-      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-
       ; The canvas is infinite so these are viewport coordinates.
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       this.CanvasTop := 0
       this.CanvasLeft := 0
-      this.CanvasWidth := ScreenWidth
-      this.CanvasHeight := ScreenHeight
+      this.CanvasWidth := A_ScreenWidth   ; Use Primary Monitor
+      this.CanvasHeight := A_ScreenHeight
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; Initalize default events.
       this.events := {}
@@ -500,6 +496,10 @@ class TextRender {
 
       ; bitmapstate 0 → 1
       this.AllocateBitmap(left := 0, top := 0, width := 0, height := 0)
+
+      ; Update new canvas coordinates
+      this.CanvasWidth := this.BitmapWidth
+      this.CanvasHeight := this.BitmapHeight
 
       this.bitmapstate := 1      ; bitmapstate x → 1
       this.CallEvent("Allocate")
@@ -2601,7 +2601,7 @@ class TextRender {
    EventMoveWindowStorePosition() {
       ; Original window move functionality
       DllCall("DefWindowProc", "ptr", this.hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
-      
+
       WinGetPos x, y,,, % "ahk_id " this.hwnd
       this.CanvasLeft += x - this.WindowLeft
       this.CanvasTop += y - this.WindowTop

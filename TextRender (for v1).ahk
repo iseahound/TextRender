@@ -2512,6 +2512,13 @@ class TextRender {
 
          ; WM_DISPLAYCHANGE calls UpdateMemory() via Draw().
          if (uMsg = 0x7E) {
+            try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+            self.CanvasTop := 0
+            self.CanvasLeft := 0
+            self.CanvasWidth := A_ScreenWidth   ; Use Primary Monitor
+            self.CanvasHeight := A_ScreenHeight
+            try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+
             self.Rerender()
          }
 

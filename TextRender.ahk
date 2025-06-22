@@ -2733,8 +2733,14 @@ class TextRender {
          , "uint", 4 * this.BitmapWidth, "uint", 0xE200B, "ptr", this.ptr, "ptr*", &pBitmap:=0)
 
       ; Crop to fit and convert to 32-bit ARGB. (Managed impartially by GDI+)
-      DllCall("gdiplus\GdipCloneBitmapAreaI", "int", this.x, "int", this.y, "int", this.w, "int", this.h
-         , "uint", 0x26200A, "ptr", pBitmap, "ptr*", &pBitmapCrop:=0)
+      DllCall("gdiplus\GdipCloneBitmapAreaI"
+               ,  "int", this.x - this.BitmapLeft
+               ,  "int", this.y - this.BitmapTop
+               ,  "int", this.w
+               ,  "int", this.h
+               , "uint", 0x26200A
+               ,  "ptr", pBitmap
+               , "ptr*", &pBitmapCrop:=0)
 
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 

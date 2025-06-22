@@ -61,14 +61,6 @@ class TextRender {
       this.OffsetLeft := OffsetLeft
       this.OffsetTop := OffsetTop
 
-      ; The canvas is infinite so these are viewport coordinates.
-      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-      this.CanvasTop := 0
-      this.CanvasLeft := 0
-      this.CanvasWidth := A_ScreenWidth   ; Use Primary Monitor
-      this.CanvasHeight := A_ScreenHeight
-      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-
       ; Initalize default events.
       this.events := {}
       this.OnEvent("LeftMouseDown", this.EventMoveWindow)
@@ -493,6 +485,14 @@ class TextRender {
       ; bitmapstate (1 ← x) → ∅ - Ignore current and higher states
       if (this.bitmapstate >= 1)
          return this
+
+   ; Update the canvas to the new primary monitor!
+   try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+   self.CanvasTop := 0
+   self.CanvasLeft := 0
+   self.CanvasWidth := A_ScreenWidth   ; Use Primary Monitor
+   self.CanvasHeight := A_ScreenHeight
+   try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; bitmapstate 0 → 1
       this.AllocateBitmap(left := 0, top := 0, width := 0, height := 0)
@@ -2510,14 +2510,6 @@ class TextRender {
 
          ; WM_DISPLAYCHANGE calls UpdateMemory() via Draw().
          if (uMsg = 0x7E) {
-            ; Update the canvas to the new primary monitor!
-            try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-            self.CanvasTop := 0
-            self.CanvasLeft := 0
-            self.CanvasWidth := A_ScreenWidth   ; Use Primary Monitor
-            self.CanvasHeight := A_ScreenHeight
-            try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-
             self.Rerender()
          }
 

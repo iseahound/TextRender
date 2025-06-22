@@ -1260,9 +1260,11 @@ class TextRender {
       if IsSet(hMon) {
          MIEX := Buffer(40 + 64)
          NumPut("uint", MIEX.size, MIEX)
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          if !DllCall("GetMonitorInfo", "ptr", hMon, "ptr", MIEX)
             throw Error("The following value " _s " is not a correct screen parameter. ('s')")
-msgbox
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+
          CanvasLeft   := NumGet(MIEX, 4, "int")
          CanvasTop    := NumGet(MIEX, 8, "int")
          CanvasRight  := NumGet(MIEX, 12, "int")

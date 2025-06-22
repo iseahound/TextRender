@@ -2659,8 +2659,8 @@ class TextRender {
 
       ; Crop the bitmap.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut( this.x, Rect,  0,    "int") ; X
-         NumPut( this.y, Rect,  4,    "int") ; Y
+         NumPut( this.x - this.BitmapLeft, Rect,  0,    "int") ; X
+         NumPut( this.y - this.BitmapTop, Rect,  4,    "int") ; Y
          NumPut( this.w, Rect,  8,   "uint") ; Width
          NumPut( this.h, Rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32

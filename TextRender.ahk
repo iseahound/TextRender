@@ -2659,8 +2659,8 @@ class TextRender {
 
       ; Crop the bitmap.
       Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
-         NumPut(   "int",  this.x, Rect,  0) ; X
-         NumPut(   "int",  this.y, Rect,  4) ; Y
+         NumPut(   "int",  this.x - this.BitmapLeft, Rect,  0) ; X
+         NumPut(   "int",  this.y - this.BitmapTop, Rect,  4) ; Y
          NumPut(  "uint",  this.w, Rect,  8) ; Width
          NumPut(  "uint",  this.h, Rect, 12) ; Height
       BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32

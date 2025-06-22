@@ -497,10 +497,6 @@ class TextRender {
       ; bitmapstate 0 → 1
       this.AllocateBitmap(left := 0, top := 0, width := 0, height := 0)
 
-      ; Update new canvas coordinates
-      this.CanvasWidth := this.BitmapWidth
-      this.CanvasHeight := this.BitmapHeight
-
       this.bitmapstate := 1      ; bitmapstate x → 1
       this.CallEvent("Allocate")
       return this
@@ -1266,7 +1262,7 @@ class TextRender {
          NumPut("uint", MIEX.size, MIEX)
          if !DllCall("GetMonitorInfo", "ptr", hMon, "ptr", MIEX)
             throw Error("The following value " _s " is not a correct screen parameter. ('s')")
-
+msgbox
          CanvasLeft   := NumGet(MIEX, 4, "int")
          CanvasTop    := NumGet(MIEX, 8, "int")
          CanvasRight  := NumGet(MIEX, 12, "int")
@@ -2512,7 +2508,7 @@ class TextRender {
 
          ; WM_DISPLAYCHANGE calls Reallocate() via Draw().
          if (uMsg = 0x7E) {
-            ; The canvas is infinite so these are viewport coordinates.
+            ; Update the canvas to the new primary monitor!
             try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
             self.CanvasTop := 0
             self.CanvasLeft := 0
@@ -2601,7 +2597,7 @@ class TextRender {
       this.Destroy()
    }
 
-   EventMoveWindow() {
+	   EventMoveWindow() {
       ; Allows the user to drag to reposition the window.
       DllCall("DefWindowProc", "ptr", this.hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
    }

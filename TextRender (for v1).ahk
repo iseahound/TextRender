@@ -497,10 +497,6 @@ class TextRender {
       ; bitmapstate 0 → 1
       this.AllocateBitmap(left := 0, top := 0, width := 0, height := 0)
 
-      ; Update new canvas coordinates
-      this.CanvasWidth := this.BitmapWidth
-      this.CanvasHeight := this.BitmapHeight
-
       this.bitmapstate := 1      ; bitmapstate x → 1
       this.CallEvent("Allocate")
       return this
@@ -1264,8 +1260,10 @@ class TextRender {
       if IsSet(hMon) {
          VarSetCapacity(MIEX, 40 + (32 << !!A_IsUnicode))
          NumPut("uint", 40 + (32 << !!A_IsUnicode), MIEX)
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          if !DllCall("GetMonitorInfo", "ptr", hMon, "ptr", &MIEX)
             throw Exception("The following value " _s " is not a correct screen parameter. ('s')")
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
          CanvasLeft   := NumGet(MIEX, 4, "int")
          CanvasTop    := NumGet(MIEX, 8, "int")
@@ -2512,6 +2510,7 @@ class TextRender {
 
          ; WM_DISPLAYCHANGE calls UpdateMemory() via Draw().
          if (uMsg = 0x7E) {
+            ; Update the canvas to the new primary monitor!
             try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
             self.CanvasTop := 0
             self.CanvasLeft := 0

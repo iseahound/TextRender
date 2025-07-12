@@ -478,6 +478,8 @@ class TextRender {
       this.Delete("hbm")
       this.Delete("ptr")
       this.Delete("size")
+      this.Delete("width")
+      this.Delete("height")
       this.Delete("Graphics")
    }
 
@@ -530,6 +532,8 @@ class TextRender {
       this.hbm := hbm
       this.ptr := pBits
       this.size := 4 * width * height
+      this.width := width
+      this.height := height
       this.Graphics := Graphics
    }
 

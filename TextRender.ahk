@@ -2580,7 +2580,7 @@ class TextRender {
 
    __Call(name, ps) {
       if (name ~= "(?i)^On(?!Event$)") {
-         this.events[SubStr(name, 3)] := ps[1]
+         this.events[SubStr(name, 3)] := ps.has(1) ? ps[1] : ""
          return this
       }
       throw Error("This value of type TextRender has no method named " name ".")

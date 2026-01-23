@@ -1093,7 +1093,7 @@ class TextRender {
          DllCall("UpdateLayeredWindow"
                   ,    "ptr", this.hwnd                ; hWnd
                   ,    "ptr", 0                        ; hdcDst
-                  ,"uint64*", this.x | this.y << 32    ; *pptDst
+                  ,"uint64*", this.x << 32 >>> 32 | this.y << 32    ; *pptDst
                   ,"uint64*", this.w | this.h << 32    ; *psize
                   ,    "ptr", hdc                      ; hdcSrc
                   ,"uint64*", 0                        ; *pptSrc

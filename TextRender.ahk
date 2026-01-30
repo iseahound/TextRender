@@ -2556,10 +2556,8 @@ class TextRender {
    }
 
    DefaultEvents() {
+      this.events := Map("LeftMouseDown", this.EventMoveWindow, "RightMouseUp", this.DestroyWindow)
       return this
-         .OnEvent("MiddleMouseDown", "")
-         .OnEvent("RightMouseDown", "")
-         .OnEvent("RightMouseUp", this.DestroyWindow)
    }
 
    NoEvent() {
@@ -2567,10 +2565,8 @@ class TextRender {
    }
 
    NoEvents() {
+      this.events := Map()
       return this
-         .OnEvent("LeftMouseDown", "")
-         .OnEvent("MiddleMouseDown", "")
-         .OnEvent("RightMouseDown", "")
    }
 
    OnEvent(event, callback := "") {

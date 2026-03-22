@@ -2793,11 +2793,11 @@ class TextRender {
       return this.gdiplus(1)
    }
 
-   static gdiplusShutdown(cotype := "") {
-      return this.gdiplus(-1, cotype)
+   static gdiplusShutdown(codomain := "") {
+      return this.gdiplus(-1, codomain)
    }
 
-   static gdiplus(vary := 0, cotype := "") {
+   static gdiplus(vary := 0, codomain := "") {
       static pToken := 0 ; Takes advantage of the fact that objects contain identical methods.
       static instances := 0 ; And therefore static variables can share data across instances.
 
@@ -2823,7 +2823,7 @@ class TextRender {
          DllCall("FreeLibrary", "ptr", DllCall("GetModuleHandle", "str", "gdiplus", "ptr"))
 
          ; Otherwise GDI+ has been truly unloaded from the script and objects are out of scope.
-         if (cotype = "bitmap") {
+         if (codomain = "bitmap") {
 
             ; Check if GDI+ is still loaded. GdiplusNotInitialized = 18
             assert := (18 != DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", &ImageAttr:=0))
@@ -2852,90 +2852,81 @@ class TextRender {
    static BitmapToFile(pBitmap, filepath := "", quality := "") {
       extension := "png"
       this.select_filepath(&filepath, &extension)
-      this.select_codec(pBitmap, extension, quality, &pCodec, &ep)
+      this.select_encoder(pBitmap, extension, quality, &pCodec, &ep)
       DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "ptr", ep)
       return filepath
    }
 
-   static select_codec(pBitmap, extension, quality, &pCodec, &ep) {
-      extension := RegExReplace(extension, "^(\*?\.)?") ; Trim leading "*." or "." from the extension
-      extension :=  extension ~= "^(?i:avif|avifs)$"           ? "avif"
-                  : extension ~= "^(?i:bmp|dib|rle)$"          ? "bmp"
-                  : extension ~= "^(?i:gif)$"                  ? "gif"
-                  : extension ~= "^(?i:heic|heif|hif)$"        ? "heic"
-                  : extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"    ? "jpeg"
-                  : extension ~= "^(?i:png)$"                  ? "png"
-                  : extension ~= "^(?i:tif|tiff)$"             ? "tiff"
-                  : "png" ; Defaults to PNG
+   static select_encoder(pBitmap, extension, quality, &pCodec, &ep) {
 
-      pCodec := Buffer(16)
-
-      switch extension, "Off" {
-      case "avif": MsgBox("AVIF is not supported by GDI+.")
-      case "bmp":  DllCall("ole32\CLSIDFromString", "wstr", "{557CF400-1A04-11D3-9A73-0000F81EF32E}", "ptr", pCodec, "hresult")
-      case "gif":  DllCall("ole32\CLSIDFromString", "wstr", "{557CF402-1A04-11D3-9A73-0000F81EF32E}", "ptr", pCodec, "hresult")
-      case "heic": DllCall("ole32\CLSIDFromString", "wstr", "{557CF408-1A04-11D3-9A73-0000F81EF32E}", "ptr", pCodec, "hresult")
-      case "jpeg": DllCall("ole32\CLSIDFromString", "wstr", "{557CF401-1A04-11D3-9A73-0000F81EF32E}", "ptr", pCodec, "hresult")
-      case "png":  DllCall("ole32\CLSIDFromString", "wstr", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "ptr", pCodec, "hresult")
-      case "tiff": DllCall("ole32\CLSIDFromString", "wstr", "{557CF405-1A04-11D3-9A73-0000F81EF32E}", "ptr", pCodec, "hresult")
+      ; Trim leading "*." or "." from the extension
+      switch RegExReplace(extension, "^(\*?\.)?"), "Off" {
+      case "avif", "avifs":              MsgBox "AVIF is not supported by GDI+."
+      case "bmp", "dib", "rle":          clsid := "{557CF400-1A04-11D3-9A73-0000F81EF32E}"
+      case "gif":                        clsid := "{557CF402-1A04-11D3-9A73-0000F81EF32E}"
+      case "heic", "heif", "hif":        clsid := "{557CF408-1A04-11D3-9A73-0000F81EF32E}"
+      case "jpg", "jpeg", "jpe", "jfif": clsid := "{557CF401-1A04-11D3-9A73-0000F81EF32E}"
+      case "png":                        clsid := "{557CF406-1A04-11D3-9A73-0000F81EF32E}"
+      case "tif", "tiff":                clsid := "{557CF405-1A04-11D3-9A73-0000F81EF32E}"
+      default:                           clsid := "{557CF406-1A04-11D3-9A73-0000F81EF32E}"
       }
 
-      ; Default encoding parameter.
+      ; Convert the CLSID into its binary representation.
+      DllCall("ole32\CLSIDFromString", "wstr", clsid, "ptr", pCodec := Buffer(16), "hresult")
+
+      ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
+      ; enum ValueType - https://docs.microsoft.com/en-us/dotnet/api/system.drawing.imaging.encoderparametervaluetype
+      ; clsid Image Encoder Constants - http://www.jose.it-berater.org/gdiplus/reference/constants/gdipimageencoderconstants.htm
       ep := {ptr: 0}
 
       ; JPEG default quality is 75. Otherwise set a quality value from [0-100].
       if (extension = "jpeg") && (quality ~= "^\d+$") {
-         ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
-         ; enum ValueType - https://docs.microsoft.com/en-us/dotnet/api/system.drawing.imaging.encoderparametervaluetype
-         ; clsid Image Encoder Constants - http://www.jose.it-berater.org/gdiplus/reference/constants/gdipimageencoderconstants.htm
-         ep := Buffer(24+2*A_PtrSize + 4)                  ; sizeof(EncoderParameter) = ptr + n*(28, 32)
+         ep := Buffer(24+2*A_PtrSize + 4)                  ; sizeof(EncoderParameter) = n × (28, 32)
          offset := ep.ptr + 24+2*A_PtrSize                 ; Address of extra values appended to end
             NumPut(  "uptr",       1, ep,              0)  ; Count
             DllCall("ole32\CLSIDFromString", "wstr", "{1D5BE4B5-FA4A-452D-9CDD-5DB35105E7EB}", "ptr", ep.ptr+A_PtrSize, "hresult")
             NumPut(  "uint",       1, ep,   16+A_PtrSize)  ; Number of Values
             NumPut(  "uint",       4, ep,   20+A_PtrSize)  ; Type
             NumPut(   "ptr",  offset, ep,   24+A_PtrSize)  ; Value
-            NumPut(  "uint", quality, ep, 24+2*A_PtrSize)  ; Quality (extra value appended to end)
+            NumPut(  "uint", quality, ep, 24+2*A_PtrSize)  ; Quality (extra value not part of EncoderParameter)
       }
+
    }
 
    static select_filepath(&filepath, &extension) {
+
       ; Save default extension.
       default := extension
 
-      ; Split the filepath, convert forward slashes, strip invalid chars.
+      ; Convert forward slashes, strip invalid chars.
       filepath := RegExReplace(filepath, "/", "\")
       filepath := RegExReplace(filepath, "[*?\x22<>|\x00-\x1F]")
-      SplitPath filepath,, &directory, &extension, &filename
 
-      ; Check if the entire filepath is a directory.
-      if DirExist(filepath)                ; If the filepath refers to a directory,
-         directory := (directory != "")    ; then SplitPath wrongly assumes a directory to be a filename.
-            ? ((filename != "")
-               ? directory "\" filename    ; Combine directory + filename.
-               : directory)                ; Do nothing.
-            : (filepath ~= "^\\")
-               ? "\" filename              ; Root level directory.
-               : ".\" filename             ; Script level directory.
-         , filename := ""
+      ; Fix (1) "HARRY.POTTER" folder (2) "/folder" referring to "C:/folder" (3) Missing "\" at end of filepath
+      SplitPath filepath, &basename, &directory, &extension, &filename, &drive
+      DirExist(filepath) && (filename := basename, extension := "")
+      DirExist(filepath) && (directory == "" && filepath ~= "^\\") && (directory := "\" filename, filename := "")
+      DirExist(filepath) && (directory != "" && filename != "") && (directory .= "\" filename, filename := "")
 
-      ; Create a new directory if needed.
-      if (directory != "" && !DirExist(directory))
-         DirCreate(directory)
+      ; Default directory is the current working directory.
+      if (directory == "")
+         directory := "."
 
-      ; Default directory is a dot.
-      (directory == "") && directory := "."
+      ; Recursively creates new directories if needed.
+      DirCreate(directory)
 
-      ; Declare allowed extension outputs.
+      ; Declare allowed output extensions.
       outputs := "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$"
 
       ; Check if the filename is actually the extension.
-      if (extension == "" && filename ~= outputs)
-         extension := filename, filename := ""
+      if (extension == "" && filename ~= outputs) {
+         extension := filename
+         filename := ""
+      }
 
       ; An invalid extension is actually part of the filename.
       if !(extension ~= outputs) {
-         ; Avoid appending an extra period without an extension.
+         ; Avoid appending an extra period to filename if extension is blank.
          if (extension != "")
             filename .= "." extension
 
@@ -2943,7 +2934,7 @@ class TextRender {
          extension := default
       }
 
-      ; Create a filepath based on the timestamp.
+      ; Create a filepath based on the current timestamp.
       if (filename == "") {
          colon := Chr(0xA789)
          filename := FormatTime(, "yyyy-MM-dd HH" colon "mm" colon "ss")
@@ -2961,6 +2952,7 @@ class TextRender {
 
       ; Always overwrite specific filenames.
       else filepath := directory "\" filename "." extension
+
    }
 
    static ScreenshotToBitmap(image) {

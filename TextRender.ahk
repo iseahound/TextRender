@@ -488,14 +488,6 @@ class TextRender {
       if (this.bitmapstate >= 1)
          return this
 
-   ; Update the canvas to the new primary monitor!
-   try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-   this.ViewportTop := 0
-   this.ViewportLeft := 0
-   this.ViewportWidth := A_ScreenWidth
-   this.ViewportHeight := A_ScreenHeight
-   try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-
       ; bitmapstate 0 → 1
       this.AllocateBitmap(left := 0, top := 0, width := 0, height := 0)
 
@@ -505,6 +497,15 @@ class TextRender {
    }
 
    AllocateBitmap(left := 0, top := 0, width := 0, height := 0) {
+
+      ; Update the viewport to the new primary monitor!
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+      this.ViewportTop := 0
+      this.ViewportLeft := 0
+      this.ViewportWidth := A_ScreenWidth
+      this.ViewportHeight := A_ScreenHeight
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+
       if !(width && height)
          this.GetParentCoordinates(&left, &top, &width, &height)
 
@@ -598,7 +599,7 @@ class TextRender {
    }
 
    DrawBitmap(data := "", style1 := "", style2 := "") {
-      ; Draw relative to the viewport (canvas coordinates).
+      ; Draw relative to the viewport coordinates.
       that := this.DrawOnGraphics(this.Graphics
          , data
          , style1
@@ -1323,9 +1324,9 @@ class TextRender {
       static valid_positive := "^\s*((\d+(\.\d*)?)|(\.\d+))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
 
       ; Define viewport width and height. This is the visible canvas area.
-      vw := 0.01 * ViewportWidth         ; 1% of viewport width.
-      vh := 0.01 * ViewportHeight        ; 1% of viewport height.
-      vmin := min(vw, vh)              ; 1vw or 1vh, whichever is smaller.
+      vw := 0.01 * ViewportWidth           ; 1% of viewport width.
+      vh := 0.01 * ViewportHeight          ; 1% of viewport height.
+      vmin := min(vw, vh)                  ; 1vw or 1vh, whichever is smaller.
       vr := ViewportWidth / ViewportHeight ; Aspect ratio of the viewport.
 
       ; Get background width and height.
@@ -1587,7 +1588,8 @@ class TextRender {
       if (z) {
          if (width + x > ViewportWidth) {
             _redrawBecauseOfCondensedFont := True
-            return this.DrawOnGraphics(Graphics, text, style1, style2, ViewportWidth, ViewportHeight)
+            return this.DrawOnGraphics(Graphics, text, style1, style2, ViewportWidth, ViewportHeight, ViewportLeft, ViewportTop)
+
          }
       }
 

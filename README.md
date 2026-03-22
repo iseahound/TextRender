@@ -40,7 +40,7 @@ Another way:
 
 * This project is considered to be **complete** and will only receive long term support from now on.
 * Anyone can contribute! Not just to the codebase, but also with examples or just images as well!
-* It remains the fastest implementation as of 2024. So it's definitely hard to beat 😊.
+* It remains the fastest implementation as of 2026. So it's definitely hard to beat 😊.
 
 #### Donating
 * If for some reason you'd like to show extra appreciation: https://ko-fi.com/iseahound

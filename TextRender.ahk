@@ -1377,7 +1377,7 @@ class TextRender {
          f:=z, z:=0, _redrawBecauseOfCondensedFont := False
 
       ; Specifies whether to load an external font file, or to use an font already installed on the system.
-      if (f ~= "(ttf|otf)$") {
+      if (f ~= "\.(ttf|otf)$") {
          ; Temporarily load a font from file. This does not install the font.
          DllCall("gdiplus\GdipNewPrivateFontCollection", "ptr*", &hCollection:=0)
          DllCall("gdiplus\GdipPrivateAddFontFile", "ptr", hCollection, "wstr", f)
@@ -1390,7 +1390,7 @@ class TextRender {
          DllCall("gdiplus\GdipGetFamilyName", "ptr", pFontFamily, "str", FontName, "ushort", 1033) ; en-US
 
          ; Create a font family. For ANSI compatibility, use str as the output type and StrGet to pass wide chars.
-         DllCall("gdiplus\GdipCreateFontFamilyFromName", "wstr", StrGet(&FontName, "UTF-16"), "ptr", hCollection, "ptr*", &hFamily:=0)
+         DllCall("gdiplus\GdipCreateFontFamilyFromName", "wstr", StrGet(StrPtr(FontName), "UTF-16"), "ptr", hCollection, "ptr*", &hFamily:=0)
 
          ; Delete the private font collection. It is strange a pointer reference is used.
          DllCall("gdiplus\GdipDeletePrivateFontCollection", "ptr*", hCollection)

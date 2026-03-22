@@ -1377,7 +1377,7 @@ class TextRender {
          f:=z, z:=0, _redrawBecauseOfCondensedFont := False
 
       ; Specifies whether to load an external font file, or to use an font already installed on the system.
-      if (f ~= "(ttf|otf)$") {
+      if (f ~= "\.(ttf|otf)$") {
          ; Temporarily load a font from file. This does not install the font.
          DllCall("gdiplus\GdipNewPrivateFontCollection", "ptr*", hCollection:=0)
          DllCall("gdiplus\GdipPrivateAddFontFile", "ptr", hCollection, "wstr", f)

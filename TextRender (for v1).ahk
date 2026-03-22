@@ -490,10 +490,10 @@ class TextRender {
 
    ; Update the canvas to the new primary monitor!
    try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-   self.ViewportTop := 0
-   self.ViewportLeft := 0
-   self.ViewportWidth := A_ScreenWidth   ; Use Primary Monitor
-   self.ViewportHeight := A_ScreenHeight
+   this.ViewportTop := 0
+   this.ViewportLeft := 0
+   this.ViewportWidth := A_ScreenWidth   ; Use Primary Monitor
+   this.ViewportHeight := A_ScreenHeight
    try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; bitmapstate 0 → 1

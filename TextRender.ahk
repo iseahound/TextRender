@@ -490,10 +490,10 @@ class TextRender {
 
    ; Update the canvas to the new primary monitor!
    try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-   this.CanvasTop := 0
-   this.CanvasLeft := 0
-   this.CanvasWidth := A_ScreenWidth
-   this.CanvasHeight := A_ScreenHeight
+   this.ViewportTop := 0
+   this.ViewportLeft := 0
+   this.ViewportWidth := A_ScreenWidth
+   this.ViewportHeight := A_ScreenHeight
    try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; bitmapstate 0 → 1
@@ -603,10 +603,10 @@ class TextRender {
          , data
          , style1
          , style2
-         , this.CanvasWidth
-         , this.CanvasHeight
-         , this.CanvasLeft
-         , this.CanvasTop)
+         , this.ViewportWidth
+         , this.ViewportHeight
+         , this.ViewportLeft
+         , this.ViewportTop)
 
       ; Set canvas coordinates. Ensure the starting coordinates are blank.
       this.t  := this.HasProp("t")  ? max(this.t, that.t) : that.t
@@ -1151,7 +1151,7 @@ class TextRender {
       }
    }
 
-   DrawOnGraphics(Graphics, text := "", style1 := "", style2 := "", CanvasWidth := "", CanvasHeight := "", CanvasLeft := "", CanvasTop := "") {
+   DrawOnGraphics(Graphics, text := "", style1 := "", style2 := "", ViewportWidth := "", ViewportHeight := "", ViewportLeft := "", ViewportTop := "") {
       ; RegEx help? https://regex101.com/r/rNsP6n/1
       static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
       static q2 := "(?!(?>\([^()]*\)|[^()]*)*\))(:\s*)?\(?(?<value>(?<=\()([\\\/\s:#%_a-z\-\.\d]+|\([\\\/\s:#%_a-z\-\.\d]*\))*(?=\))|[#%_a-z\-\.\d]+).*$"
@@ -1235,16 +1235,16 @@ class TextRender {
       try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       ; Use the coordinates of the screen index.
       if (_s ~= "^\d+$" && _s > 0 && _s <= MonitorGetCount()) {
-         MonitorGet(_s, &CanvasLeft, &CanvasTop, &CanvasRight, &CanvasBottom)
-         CanvasWidth  := CanvasRight - CanvasLeft
-         CanvasHeight := CanvasBottom - CanvasTop
+         MonitorGet(_s, &ViewportLeft, &ViewportTop, &ViewportRight, &ViewportBottom)
+         ViewportWidth  := ViewportRight - ViewportLeft
+         ViewportHeight := ViewportBottom - ViewportTop
       }
       ; Use the coordinates of all screens.
       if (_s ~= "^\d+$" && _s == 0) {
-         CanvasLeft   := DllCall("GetSystemMetrics", "int", 76, "int")
-         CanvasTop    := DllCall("GetSystemMetrics", "int", 77, "int")
-         CanvasWidth  := DllCall("GetSystemMetrics", "int", 78, "int")
-         CanvasHeight := DllCall("GetSystemMetrics", "int", 79, "int")
+         ViewportLeft   := DllCall("GetSystemMetrics", "int", 76, "int")
+         ViewportTop    := DllCall("GetSystemMetrics", "int", 77, "int")
+         ViewportWidth  := DllCall("GetSystemMetrics", "int", 78, "int")
+         ViewportHeight := DllCall("GetSystemMetrics", "int", 79, "int")
       }
       try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
@@ -1269,19 +1269,19 @@ class TextRender {
             throw Error("The following value " _s " is not a correct screen parameter. ('s')")
          try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
-         CanvasLeft   := NumGet(MIEX, 4, "int")
-         CanvasTop    := NumGet(MIEX, 8, "int")
-         CanvasRight  := NumGet(MIEX, 12, "int")
-         CanvasBottom := NumGet(MIEX, 16, "int")
-         CanvasWidth  := CanvasRight - CanvasLeft
-         CanvasHeight := CanvasBottom - CanvasTop
+         ViewportLeft   := NumGet(MIEX, 4, "int")
+         ViewportTop    := NumGet(MIEX, 8, "int")
+         ViewportRight  := NumGet(MIEX, 12, "int")
+         ViewportBottom := NumGet(MIEX, 16, "int")
+         ViewportWidth  := ViewportRight - ViewportLeft
+         ViewportHeight := ViewportBottom - ViewportTop
       }
 
       ; Set default width and height from undocumented graphics pointer offset.
-      (CanvasLeft == "")   && CanvasLeft   := NumGet(Graphics + 12 + A_PtrSize, "int")
-      (CanvasTop == "")    && CanvasTop    := NumGet(Graphics + 16 + A_PtrSize, "int")
-      (CanvasWidth == "")  && CanvasWidth  := NumGet(Graphics + 20 + A_PtrSize, "int")
-      (CanvasHeight == "") && CanvasHeight := NumGet(Graphics + 24 + A_PtrSize, "int")
+      (ViewportLeft == "")   && ViewportLeft   := NumGet(Graphics + 12 + A_PtrSize, "int")
+      (ViewportTop == "")    && ViewportTop    := NumGet(Graphics + 16 + A_PtrSize, "int")
+      (ViewportWidth == "")  && ViewportWidth  := NumGet(Graphics + 20 + A_PtrSize, "int")
+      (ViewportHeight == "") && ViewportHeight := NumGet(Graphics + 24 + A_PtrSize, "int")
 
       ; Parse background color.
       _c := this.color(_c, 0xDD212121) ; Default color for background is transparent gray.
@@ -1323,10 +1323,10 @@ class TextRender {
       static valid_positive := "^\s*((\d+(\.\d*)?)|(\.\d+))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
 
       ; Define viewport width and height. This is the visible canvas area.
-      vw := 0.01 * CanvasWidth         ; 1% of viewport width.
-      vh := 0.01 * CanvasHeight        ; 1% of viewport height.
+      vw := 0.01 * ViewportWidth         ; 1% of viewport width.
+      vh := 0.01 * ViewportHeight        ; 1% of viewport height.
       vmin := min(vw, vh)              ; 1vw or 1vh, whichever is smaller.
-      vr := CanvasWidth / CanvasHeight ; Aspect ratio of the viewport.
+      vr := ViewportWidth / ViewportHeight ; Aspect ratio of the viewport.
 
       ; Get background width and height.
       _w := (_w ~= valid_positive) ? RegExReplace(_w, "\s") : ""
@@ -1464,8 +1464,8 @@ class TextRender {
          ; Default anchor is top-left (0).
 
       ; Convert English words to numbers. Don't mess with these values any further.
-      _x := (_x ~= "i)left") ? 0 : (_x ~= "i)cent(er|re)") ? 0.5*CanvasWidth : (_x ~= "i)right") ? CanvasWidth : _x
-      _y := (_y ~= "i)top") ? 0 : (_y ~= "i)cent(er|re)") ? 0.5*CanvasHeight : (_y ~= "i)bottom") ? CanvasHeight : _y
+      _x := (_x ~= "i)left") ? 0 : (_x ~= "i)cent(er|re)") ? 0.5*ViewportWidth : (_x ~= "i)right") ? ViewportWidth : _x
+      _y := (_y ~= "i)top") ? 0 : (_y ~= "i)cent(er|re)") ? 0.5*ViewportHeight : (_y ~= "i)bottom") ? ViewportHeight : _y
 
       ; Get _x and _y.
       _x := (_x ~= valid) ? RegExReplace(_x, "\s") : ""
@@ -1482,9 +1482,9 @@ class TextRender {
 
       ; Default x and y to center of the canvas. Default anchor to horizontal center and vertical center.
       if (_x == "")
-         _x := 0.5*CanvasWidth, _a := 1+(_a//3*3)
+         _x := 0.5*ViewportWidth, _a := 1+(_a//3*3)
       if (_y == "")
-         _y := 0.5*CanvasHeight, _a := 3+mod(_a,3)
+         _y := 0.5*ViewportHeight, _a := 3+mod(_a,3)
 
       ; Now let's modify the _x and _y values with the _anchor, so that the image has a new point of origin.
       ; We need our calculated _width and _height for this!
@@ -1492,8 +1492,8 @@ class TextRender {
       _y -= ((_a//3) == 0) ? 0 : ((_a//3) == 1) ? _h/2 : ((_a//3) == 2) ? _h : 0
 
       ; Offset with canvas boundaries.
-      _x += CanvasLeft
-      _y += CanvasTop
+      _x += ViewportLeft
+      _y += ViewportTop
 
       ; Prevent half-pixel rendering and keep image sharp.
       _w := Round(_x + _w) - Round(_x) ; Use real x2 coordinate to determine width.
@@ -1585,9 +1585,9 @@ class TextRender {
 
       ; Re-run: Condense Text using a Condensed Font if simulated text width exceeds screen width.
       if (z) {
-         if (width + x > CanvasWidth) {
+         if (width + x > ViewportWidth) {
             _redrawBecauseOfCondensedFont := True
-            return this.DrawOnGraphics(Graphics, text, style1, style2, CanvasWidth, CanvasHeight)
+            return this.DrawOnGraphics(Graphics, text, style1, style2, ViewportWidth, ViewportHeight)
          }
       }
 
@@ -2601,8 +2601,8 @@ class TextRender {
       DllCall("DefWindowProc", "ptr", this.hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
 
       WinGetPos &x, &y,,, this.hwnd
-      this.CanvasLeft += x - this.WindowLeft
-      this.CanvasTop += y - this.WindowTop
+      this.ViewportLeft += x - this.WindowLeft
+      this.ViewportTop += y - this.WindowTop
    }
 
    EventShowCoordinates() {
@@ -3081,7 +3081,7 @@ class ImageRender extends TextRender {
       }
    }
 
-   DrawOnGraphics(Graphics, image := "", style := "", polygons := "", CanvasWidth := "", CanvasHeight := "") {
+   DrawOnGraphics(Graphics, image := "", style := "", polygons := "", ViewportWidth := "", ViewportHeight := "") {
 
 /*
       ; Requires the ImagePut class for full features.
@@ -3102,8 +3102,8 @@ class ImageRender extends TextRender {
       ;}
 
       ; Get default width and height from undocumented graphics pointer offset.
-      (CanvasWidth == "") && CanvasWidth := NumGet(Graphics + 20 + A_PtrSize, "uint")
-      (CanvasHeight == "") && CanvasHeight := NumGet(Graphics + 24 + A_PtrSize, "uint")
+      (ViewportWidth == "") && ViewportWidth := NumGet(Graphics + 20 + A_PtrSize, "uint")
+      (ViewportHeight == "") && ViewportHeight := NumGet(Graphics + 24 + A_PtrSize, "uint")
 
       ; RegEx help? https://regex101.com/r/rNsP6n/1
       static q1 := "(?i)^.*?\b(?<!:|:\s)\b"
@@ -3142,10 +3142,10 @@ class ImageRender extends TextRender {
       static valid_positive := "^\s*((\d+(\.\d*)?)|(\.\d+))\s*(?i:%|pt|px|vh|vmin|vw)?\s*$"
 
       ; Define viewport width and height. This is the visible screen area.
-      vw := 0.01 * CanvasWidth         ; 1% of viewport width.
-      vh := 0.01 * CanvasHeight        ; 1% of viewport height.
+      vw := 0.01 * ViewportWidth         ; 1% of viewport width.
+      vh := 0.01 * ViewportHeight        ; 1% of viewport height.
       vmin := min(vw, vh)              ; 1vw or 1vh, whichever is smaller.
-      vr := CanvasWidth / CanvasHeight ; Aspect ratio of the viewport.
+      vr := ViewportWidth / ViewportHeight ; Aspect ratio of the viewport.
 
       ; Get original image width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
@@ -3181,7 +3181,7 @@ class ImageRender extends TextRender {
       ; If scale is "harmonic" automatically downscale by the harmonic series. Ex: 50%, 33%, 25%, 20%...
       if (s = "auto" || s = "fill" || s = "fit" || s = "harmonic" || s = "limit") {
          if (wh_unset == True)
-            w := CanvasWidth, h := CanvasHeight
+            w := ViewportWidth, h := ViewportHeight
          s := (s = "auto" || s = "limit")
             ? ((aspect > w / h) ? ((width > w) ? w / width : 1) : ((height > h) ? h / height : 1)) : s
          s := (s = "fill") ? ((aspect < w / h) ? w / width : h / height) : s
@@ -3211,7 +3211,7 @@ class ImageRender extends TextRender {
       ; Vertical asymptote at s := -1, which resolves to the empty string "".
       if (s < 0 && s != "") {
          if (wh_unset == True)
-            w := CanvasWidth, h := CanvasHeight
+            w := ViewportWidth, h := ViewportHeight
          s := (s < 0) ? ((aspect > w / h)
             ? (-s) ** ((log(width/w) // log(-1/s)) + 1) : (-s) ** ((log(height/h) // log(-1/s)) + 1)) : s
          w := width  ; width and height given were maximum values, not actual values.
@@ -3222,8 +3222,8 @@ class ImageRender extends TextRender {
       if (s == "") {
          s := (x == "" && y == "" && wh_unset == True)         ; shrink image if x,y,w,h,s are all unset.
             ? ((aspect > vr)                                   ; determine whether width or height exceeds screen.
-               ? ((width > CanvasWidth) ? CanvasWidth / width : 1)       ; scale will downscale image by its width.
-               : ((height > CanvasHeight) ? CanvasHeight / height : 1))  ; scale will downscale image by its height.
+               ? ((width > ViewportWidth) ? ViewportWidth / width : 1)       ; scale will downscale image by its width.
+               : ((height > ViewportHeight) ? ViewportHeight / height : 1))  ; scale will downscale image by its height.
             : 1                                                ; Default scale is 1.00.
       }
 
@@ -3245,8 +3245,8 @@ class ImageRender extends TextRender {
       a  := ( y ~= "i)top") ? 1+(mod( a,3)) : ( y ~= "i)cent(er|re)") ? 4+(mod( a,3)) : ( y ~= "i)bottom") ? 7+(mod( a,3)) :  a
 
       ; Convert English words to numbers. Don't mess with these values any further.
-      x  := ( x ~= "i)left") ? 0 : (x ~= "i)cent(er|re)") ? 0.5*CanvasWidth : (x ~= "i)right") ? CanvasWidth : x
-      y  := ( y ~= "i)top") ? 0 : (y ~= "i)cent(er|re)") ? 0.5*CanvasHeight : (y ~= "i)bottom") ? CanvasHeight : y
+      x  := ( x ~= "i)left") ? 0 : (x ~= "i)cent(er|re)") ? 0.5*ViewportWidth : (x ~= "i)right") ? ViewportWidth : x
+      y  := ( y ~= "i)top") ? 0 : (y ~= "i)cent(er|re)") ? 0.5*ViewportHeight : (y ~= "i)bottom") ? ViewportHeight : y
 
       ; Get x and y.
       x  := ( x ~= valid) ? RegExReplace(x, "\s") : ""
@@ -3263,9 +3263,9 @@ class ImageRender extends TextRender {
 
       ; Default x and y.
       if (x == "")
-         x := 0.5*CanvasWidth, a := 1+( a//3*3)
+         x := 0.5*ViewportWidth, a := 1+( a//3*3)
       if (y == "")
-         y := 0.5*CanvasHeight, a := 3+(mod( a,3))
+         y := 0.5*ViewportHeight, a := 3+(mod( a,3))
 
       ; Modify x and y values with the anchor, so that the image has a new point of origin.
       x  -= (mod(a,3) == 0) ? 0 : (mod(a,3) == 1) ? w/2 : (mod(a,3) == 2) ? w : 0

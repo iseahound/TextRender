@@ -1589,7 +1589,6 @@ class TextRender {
          if (width + x > ViewportWidth) {
             _redrawBecauseOfCondensedFont := True
             return this.DrawOnGraphics(Graphics, text, style1, style2, ViewportWidth, ViewportHeight, ViewportLeft, ViewportTop)
-
          }
       }
 

@@ -1085,8 +1085,8 @@ class TextRender {
          DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", Graphics, "float", -this.x, "float", -this.y, "int", 0)
 
          ; Redraw on the canvas.
-         for i, layer in this.layers
-            this.DrawOnGraphics(Graphics, layer[1], layer[2], layer[3], this.BitmapWidth, this.BitmapHeight)
+         for _, layer in this.layers
+            this.DrawOnGraphics(Graphics, layer[1], layer[2], layer[3], this.ViewportWidth, this.ViewportHeight, this.ViewportLeft, this.ViewportTop)
 
          ; Show the objects on screen.
          ; This suffers from a windows limitation in that windows will appear in places that do not match the intended coordinates.
@@ -2710,12 +2710,12 @@ class TextRender {
       DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc, "ptr*", Graphics:=0)
       DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", Graphics, "float", -this.x, "float", -this.y, "int", 0)
 
-      for i, layer in this.layers
-         this.DrawOnGraphics(Graphics, layer[1], layer[2], layer[3], this.BitmapWidth, this.BitmapHeight)
+      for _, layer in this.layers
+         this.DrawOnGraphics(Graphics, layer[1], layer[2], layer[3], this.ViewportWidth, this.ViewportHeight, this.ViewportLeft, this.ViewportTop)
 
       DllCall("gdiplus\GdipDeleteGraphics", "ptr", Graphics)
       DllCall("SelectObject", "ptr", hdc, "ptr", obm)
-      DllCall("DeleteDC",     "ptr", hdc)
+      DllCall("DeleteDC", "ptr", hdc)
 
       return hbm
    }
@@ -2745,8 +2745,8 @@ class TextRender {
          , "uint", 0, "uint", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
       DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", pBitmap, "ptr*", Graphics:=0)
       DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", Graphics, "float", -this.x, "float", -this.y, "int", 0)
-      for i, layer in this.layers
-         this.DrawOnGraphics(Graphics, layer[1], layer[2], layer[3], this.BitmapWidth, this.BitmapHeight)
+      for _, layer in this.layers
+         this.DrawOnGraphics(Graphics, layer[1], layer[2], layer[3], this.ViewportWidth, this.ViewportHeight, this.ViewportLeft, this.ViewportTop)
       DllCall("gdiplus\GdipDeleteGraphics", "ptr", Graphics)
       return pBitmap
    }

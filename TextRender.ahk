@@ -97,10 +97,11 @@ class TextRender {
 
    RememberRecipe(data := "", style1 := "", style2 := "") {
       ; Use previous styles if and only if both styles are blank.
-      if (data != "" && style1 = "" && style2 = "") {
-         style1 := this.style1
-         style2 := this.style2
-      }
+      if (data != "" && style1 = "" && style2 = "")
+         loop this.layers.length
+            i := -A_Index
+         until (style1 := this.layers[i][2])
+            or (style2 := this.layers[i][3])
 
       ; Global Variables
       this.data := data

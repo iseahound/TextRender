@@ -610,16 +610,16 @@ class TextRender {
          , this.ViewportTop)
 
       ; Set canvas coordinates. Ensure the starting coordinates are blank.
-      this.t  := this.HasKey("t")  ? max(this.t, that.t) : that.t
-      this.x  := this.HasKey("x")  ? min(this.x, that.x) : that.x
-      this.y  := this.HasKey("y")  ? min(this.y, that.y) : that.y
-      this.x2 := this.HasKey("x2") ? max(this.x2, that.x2) : that.x2
-      this.y2 := this.HasKey("y2") ? max(this.y2, that.y2) : that.y2
-      this.w  := this.x2 - this.x
-      this.h  := this.y2 - this.y
-      this.chars := that.chars
-      this.words := that.words
-      this.lines := that.lines
+      this.HasKey("t")  && that.HasKey("t")  ? this.t  := max(this.t, that.t) : that.HasKey("t") && this.t  := that.t
+      this.HasKey("x")  && that.HasKey("x")  ? this.x  := min(this.x, that.x) : that.HasKey("x") && this.x  := that.x
+      this.HasKey("y")  && that.HasKey("y")  ? this.y  := min(this.y, that.y) : that.HasKey("y") && this.y  := that.y
+      this.HasKey("x2") && that.HasKey("x2") ? this.x2 := max(this.x2, that.x2) : that.HasKey("x2") && this.x2 := that.x2
+      this.HasKey("y2") && that.HasKey("y2") ? this.y2 := max(this.y2, that.y2) : that.HasKey("y2") && this.y2 := that.y2
+      this.HasKey("x2") && this.HasKey("x") && this.w  := this.x2 - this.x
+      this.HasKey("y2") && this.HasKey("y") && this.h  := this.y2 - this.y
+      that.HasKey("chars") && this.chars := that.chars
+      that.HasKey("words") && this.words := that.words
+      that.HasKey("lines") && this.lines := that.lines
    }
 
    Recycle() {
@@ -1878,7 +1878,8 @@ class TextRender {
       x2_bound := max(x + w + d.1 + d_bound, x2_bound)
       y2_bound := max(y + h + d.2 + d_bound, y2_bound)
 
-      return {t: t_bound
+      return (_w && _h)
+         ?  { t: t_bound
             , s: _s
             , x: x_bound
             , y: y_bound
@@ -1889,6 +1890,7 @@ class TextRender {
             , chars: chars
             , words: words
             , lines: lines}
+         :  { t: t_bound }
    }
 
    DrawOnBitmap(pBitmap, text := "", style1 := "", style2 := "") {

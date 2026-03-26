@@ -97,7 +97,7 @@ class TextRender {
 
    RememberRecipe(data := "", style1 := "", style2 := "") {
       ; Use previous styles if and only if both styles are blank.
-      if (style1 = "" && style2 = "") {
+      if (data != "" && style1 = "" && style2 = "") {
          style1 := this.style1
          style2 := this.style2
       }
@@ -762,7 +762,7 @@ class TextRender {
       ; recipestate x → 1 - Sets default styles and data, use before DrawBitmap
       this.Remember(data, style1, style2)
 
-      ; bitmapstate 1 → 2 - Filling the memory with drawings is good!
+      ; bitmapstate 1 → 2 - Use previous styles iff both style1 and style2 are blank
       this.DrawBitmap(this.data, this.style1, this.style2)
 
       this.bitmapstate := 2      ; bitmapstate x → 2 ← x

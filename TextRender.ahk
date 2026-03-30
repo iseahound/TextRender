@@ -735,7 +735,7 @@ class TextRender {
       ; bitmapstate 2 → 3 - There are recipes so the bitmap has been drawn!
       this.Resolve()
 
-       ; windowstate x → 2 ← x - Requires bitmapstate at 2|3
+      ; windowstate x → 2 ← x - Requires bitmapstate at 2|3
       this.UpdateLayered()
 
       ; windowstate 2 → 3 - Starts any timers

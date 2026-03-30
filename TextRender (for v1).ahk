@@ -9,14 +9,14 @@
 
 
 ; TextRender() - Display custom text on screen.
-TextRender(text:="sentinel", background_style:="", text_style:="") {
+TextRender(text:="✿sentinel✿", background_style:="", text_style:="") {
    ; super is used to overshadow "this" to instantiate without infinite recursion.
    this := new TextRender
    this.style1 := background_style
    this.style2 := text_style
 
    ; Don't measure, just assume style1 and style2 are to be set when text is blank.
-   if (text == "sentinel")
+   if (text == "✿sentinel✿")
       return this
    else
       return this.Render(text, background_style, text_style)

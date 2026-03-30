@@ -785,6 +785,9 @@ class TextRender {
       if (this.recipestate = 0)
          throw Exception("RecipeState is 0: Please pass drawing parameters here")
 
+      ; bitmapstate x → 1|2|3 ← x - This is normally called within Draw()
+      this.Reallocate()
+
       ; bitmapstate x → 3 (if recipestate = 1) - Marks the memory for clearing after rendering
       this.Resolve()
 

@@ -8,10 +8,12 @@ a.DebugMemory := DebugMemory
 a.DebugMemory()
 
    DebugMemory(this) {
+      this.GetParentCoordinates(&monitor_left, &monitor_top, &monitor_width, &monitor_height)
+
       ; Using LockBits seems to bypass the need for DeleteGraphics to commit changes to this.ptr
-      left   := this.WindowLeft
-      top    := this.WindowTop
-      width  := this.WindowWidth
+      left := this.WindowLeft - monitor_left
+      top := this.WindowTop - monitor_top
+      width := this.WindowWidth
       height := this.WindowHeight
 
       if (width * height * 70**2 > 536870912) {

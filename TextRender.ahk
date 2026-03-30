@@ -621,8 +621,9 @@ class TextRender {
       that.HasProp("words") && this.words := that.words
       that.HasProp("lines") && this.lines := that.lines
 
-      if not this.HasProp("w") || not this.HasProp("h")
-         throw Error("Please draw something!")
+      ; Disable blank Draw() when called before any other drawings have been done... 
+      if !this.HasProp("w") || !this.HasProp("h")
+         throw Error("Contract Broken: User refused to cooperate with drawing something...")
    }
 
    Recycle() {

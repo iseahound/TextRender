@@ -620,6 +620,10 @@ class TextRender {
       that.HasKey("chars") && this.chars := that.chars
       that.HasKey("words") && this.words := that.words
       that.HasKey("lines") && this.lines := that.lines
+
+      ; Disable blank Draw() when called before any other drawings have been done... 
+      if !this.HasKey("w") || !this.HasKey("h")
+         throw Exception("Contract Broken: User refused to cooperate with drawing something...")      
    }
 
    Recycle() {

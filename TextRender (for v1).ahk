@@ -97,7 +97,7 @@ class TextRender {
 
    RememberRecipe(data := "", style1 := "", style2 := "") {
       ; Use previous styles if and only if both styles are blank.
-      if (data != "" && style1 = "" && style2 = "") {
+      if (style1 = "" && style2 = "") {
          style1 := this.style1
          style2 := this.style2
       }

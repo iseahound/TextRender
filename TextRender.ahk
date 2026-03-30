@@ -782,7 +782,7 @@ class TextRender {
          this.Draw(data, styles*)
 
       ; Enforce contract to prevent fork in Resolve().
-      if (recipestate = 0)
+      if (this.recipestate = 0)
          throw Error("RecipeState is 0: Please pass drawing parameters here")
 
       ; bitmapstate x → 3 (if recipestate = 1) - Marks the memory for clearing after rendering

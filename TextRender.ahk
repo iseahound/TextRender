@@ -109,7 +109,7 @@ class TextRender {
       this.layers.push([data, style1, style2])
    }
 
-   Forget(n := "sentinel") {
+   Forget(n := "✿sentinel✿") {
       this.ForgetRecipe(n)
 
       this.recipestate := !!this.layers.length
@@ -117,9 +117,9 @@ class TextRender {
       return this                ; recipestate 0|1 ← x (2 of 2)
    }
 
-   ForgetRecipe(n := "sentinel") {
+   ForgetRecipe(n := "✿sentinel✿") {
       ; Redraws are no longer possible!
-      if (n = "sentinel")
+      if (n = "✿sentinel✿")
          this.layers := []
 
       else

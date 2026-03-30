@@ -774,13 +774,18 @@ class TextRender {
       return this
    }
 
-   Render(terms*) {
+   Render(data := "✿sentinel✿", styles*) {
 
-      ; recipestate x → 1 - Saves the data and styles to the layers
-      ; bitmapstate x → 2 ← x - Allocates memory and fills it with drawings
-      this.Draw(terms*)
+      if (data != "✿sentinel✿")
+         ; recipestate x → 1 - Saves the data and styles to the layers
+         ; bitmapstate x → 2 ← x - Allocates memory and fills it with drawings
+         this.Draw(data, styles*)
 
-      ; bitmapstate 2 → 3 - Marks the memory for clearing after rendering
+      ; Enforce contract to prevent fork in Resolve().
+      if (recipestate = 0)
+         throw Error("RecipeState is 0: Please pass drawing parameters here")
+
+      ; bitmapstate x → 3 (if recipestate = 1) - Marks the memory for clearing after rendering
       this.Resolve()
 
       ; windowstate x → 2 ← x - Renders to bitmap data (2|3) to screen
@@ -791,7 +796,7 @@ class TextRender {
 
       ; By not clearing any memory early, calls to Save() will not encounter a blank bitmap.
       this.recipestate := 1      ; recipestate x → 1
-      this.bitmapstate := 3      ; bitmapstate x → 3 ← x
+      this.bitmapstate := 3      ; bitmapstate x → 3
       this.windowstate := 3      ; windowstate x → 3 ← x
       this.CallEvent("Render")
       return this

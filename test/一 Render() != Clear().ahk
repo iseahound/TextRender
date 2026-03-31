@@ -3,10 +3,12 @@
 #singleinstance force
 
 tr := TextRender()
-tr.Render("hello world")
-TextRender("There should be an error!", "t:3000 y:83%")
+tr.Render("hello")
+tr.Render() ; good
+tr.Clear()
 tr.Suspend(2000)
-tr.Render()
+TextRender("There should be an error!", "t:3000 y:83%")
+tr.Render() ; not good
 
 Sleep 10000
 ExitApp

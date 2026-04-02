@@ -978,7 +978,7 @@ class TextRender {
 
    ; Animation Functions
 
-   Animate(t, keyframes := "") {
+   Animate(f, t, keyframes := "") {
       ; bitmapstate (x → 1) → ∅ - Cannot render empty bitmap
       if (this.bitmapstate <= 1)
          return this
@@ -993,10 +993,7 @@ class TextRender {
       this.Create()
 
       ; windowstate 1|2 → 2 - Must call UpdateLayeredWindow to set window coordinates
-      this.AnimateWindow(t, keyframes)
-
-      ; Don't start a timer, but set the global time variable to now.
-      this.TimeStamp()
+      this.AnimateWindow(f, t, keyframes)
 
       this.bitmapstate := 3 ; bitmapstate 2|3 → 3
       this.windowstate := 2 ; windowstate x → 2 ← x
@@ -1004,9 +1001,13 @@ class TextRender {
       return this
    }
 
+   AnimateWindow(f, t, keyframes := "") {
+      ObjBindMethod(this, f "Window", t, keyframes)()
+      this.TimeStamp()  ; Sets this.t0 to the current time
+   }
+
    FadeIn(t := 250, keyframes := "") {
-      this.AnimateWindow := this.FadeInWindow
-      this.Animate(t, keyframes)
+      this.Animate("FadeIn", t, keyframes)
       this.CallEvent("FadeIn")
       return this
    }
@@ -1039,8 +1040,7 @@ class TextRender {
    }
 
    FadeOut(t := 250, keyframes := "") {
-      this.AnimateWindow := this.FadeOutWindow
-      this.Animate(t, keyframes)
+      this.Animate("FadeOut", t, keyframes)
       this.CallEvent("FadeOut")
       return this
    }

@@ -119,7 +119,7 @@ class TextRender {
 
    ForgetRecipe(n := "✿sentinel✿") {
       ; Redraws are no longer possible!
-      if (n = "✿sentinel✿")
+      if (n == "✿sentinel✿")
          this.layers := []
 
       else
@@ -776,7 +776,7 @@ class TextRender {
 
    Render(data := "✿sentinel✿", styles*) {
 
-      if (data != "✿sentinel✿")
+      if !(data == "✿sentinel✿")
          ; recipestate x → 1 - Saves the data and styles to the layers
          ; bitmapstate x → 2 ← x - Allocates memory and fills it with drawings
          this.Draw(data, styles*)

@@ -251,7 +251,7 @@ class TextRender {
 
    ValidateWindow() {
       WinGetPos &x, &y, &w, &h, this.hwnd
-      this.WindowTime := 0  ; Use a dummy variable here
+      this.HasProp("WindowTime") || this.WindowTime := 0  ; Use a dummy variable here
       this.WindowLeft := x
       this.WindowTop := y
       this.WindowRight := x + w

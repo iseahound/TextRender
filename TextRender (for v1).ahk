@@ -500,8 +500,8 @@ class TextRender {
 
       ; Update the viewport to the new primary monitor!
       try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-      this.ViewportTop := 0
       this.ViewportLeft := 0
+      this.ViewportTop := 0
       this.ViewportWidth := A_ScreenWidth   ; Use Primary Monitor
       this.ViewportHeight := A_ScreenHeight
       try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
@@ -571,6 +571,10 @@ class TextRender {
       this.Delete("chars")
       this.Delete("words")
       this.Delete("lines")
+      this.Delete("ViewportLeft")
+      this.Delete("ViewportTop")
+      this.Delete("ViewportWidth")
+      this.Delete("ViewportHeight")
    }
 
    Fill() {

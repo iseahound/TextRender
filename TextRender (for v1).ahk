@@ -434,6 +434,7 @@ class TextRender {
          return this
 
       ; Takes a picture even when the window is fully invisible!
+      this.ValidateWindow()  ; Refresh window coordinates
       pBitmap := TextRender.ScreenshotToBitmap([this.WindowLeft, this.WindowTop, this.WindowWidth, this.WindowHeight])
       TextRender.BitmapToFile(pBitmap, filepath, quality)
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)

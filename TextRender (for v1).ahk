@@ -2612,12 +2612,14 @@ class TextRender {
    }
 
    EventMoveWindowStorePosition() {
-      ; Original window move functionality
+      WinGetPos x1, y1,,, % "ahk_id " this.hwnd
+
+      ; Allows the user to drag to reposition the window.
       DllCall("DefWindowProc", "ptr", this.hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
 
-      WinGetPos x, y,,, % "ahk_id " this.hwnd
-      this.ViewportLeft += x - this.WindowLeft
-      this.ViewportTop += y - this.WindowTop
+      WinGetPos x2, y2,,, % "ahk_id " this.hwnd
+      this.ViewportLeft += x2 - x1
+      this.ViewportTop += y2 - y1
    }
 
    EventShowCoordinates() {

@@ -605,6 +605,10 @@ class TextRender {
    }
 
    DrawBitmap(data := "", style1 := "", style2 := "") {
+      ; (Pull) Corrects the drawing while the user is moving the window.
+      if this.HasProp("OriginLeft") || this.HasProp("OriginTop")
+         this.ValidateWindow()  ; Refresh window coordinates
+
       ; Draw relative to the viewport coordinates.
       that := this.DrawOnGraphics(this.Graphics
          , data
@@ -612,8 +616,8 @@ class TextRender {
          , style2
          , this.ViewportWidth
          , this.ViewportHeight
-         , this.ViewportLeft
-         , this.ViewportTop)
+         , this.ViewportLeft + (this.HasProp("OriginLeft") ? this.WindowLeft - this.OriginLeft : 0)
+         , this.ViewportTop + (this.HasProp("OriginTop") ? this.WindowTop - this.OriginTop : 0))
 
       ; Set canvas coordinates. Ensure the starting coordinates are blank.
       this.HasProp("t")  && that.HasProp("t")  ? this.t  := max(this.t, that.t) : that.HasProp("t") && this.t  := that.t
@@ -2613,16 +2617,35 @@ class TextRender {
    }
 
    EventMoveWindow() {
-      ; Allows the user to drag to reposition the window.
+      WinGetPos &x1, &y1,,, this.hwnd
+
+      ; (Pull) Temporary variables
+      this.OriginLeft := x1
+      this.OriginTop := y1
+
+      ; Blocks to allow the user to drag to reposition the window.
       DllCall("DefWindowProc", "ptr", this.hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
+
+      ; (Pull) Deletes temporary variables to disable pulling of new window positions.
+      this.DeleteProp("OriginLeft")
+      this.DeleteProp("OriginTop")
    }
 
    EventMoveWindowStorePosition() {
       WinGetPos &x1, &y1,,, this.hwnd
 
-      ; Allows the user to drag to reposition the window.
+      ; (Pull) Temporary variables
+      this.OriginLeft := x1
+      this.OriginTop := y1
+
+      ; Blocks to allow the user to drag to reposition the window.
       DllCall("DefWindowProc", "ptr", this.hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
 
+      ; (Pull) Deletes temporary variables to disable pulling of new window positions.
+      this.DeleteProp("OriginLeft")
+      this.DeleteProp("OriginTop")
+
+      ; (Push) Update Viewport Coordinates to allow repositioning during drawing.
       WinGetPos &x2, &y2,,, this.hwnd
       this.ViewportLeft += x2 - x1
       this.ViewportTop += y2 - y1

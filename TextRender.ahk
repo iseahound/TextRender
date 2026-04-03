@@ -2727,7 +2727,7 @@ class TextRender {
       DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", Graphics, "float", -this.x, "float", -this.y, "int", 0)
 
       for _, layer in this.layers
-         this.DrawOnGraphics(Graphics, layer[1], layer[2], layer[3], this.ViewportWidth, this.ViewportHeight, this.ViewportTop, this.ViewportLeft)
+         this.DrawOnGraphics(Graphics, layer[1], layer[2], layer[3], this.ViewportWidth, this.ViewportHeight, this.ViewportLeft, this.ViewportTop)
 
       DllCall("gdiplus\GdipDeleteGraphics", "ptr", Graphics)
       DllCall("SelectObject", "ptr", hdc, "ptr", obm)

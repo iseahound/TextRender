@@ -606,8 +606,12 @@ class TextRender {
 
    DrawBitmap(data := "", style1 := "", style2 := "") {
       ; (Pull) Corrects the drawing while the user is moving the window.
-      if this.HasProp("OriginLeft") || this.HasProp("OriginTop")
-         this.ValidateWindow()  ; Refresh window coordinates
+      dx := dy := 0
+      if this.HasProp("OriginLeft") && this.HasProp("OriginTop") {
+         WinGetPos &x, &y,,, this.hwnd
+         dx := x - this.OriginLeft
+         dy := y - this.OriginTop
+      }
 
       ; Draw relative to the viewport coordinates.
       that := this.DrawOnGraphics(this.Graphics
@@ -616,8 +620,8 @@ class TextRender {
          , style2
          , this.ViewportWidth
          , this.ViewportHeight
-         , this.ViewportLeft + (this.HasProp("OriginLeft") ? this.WindowLeft - this.OriginLeft : 0)
-         , this.ViewportTop + (this.HasProp("OriginTop") ? this.WindowTop - this.OriginTop : 0))
+         , this.ViewportLeft + dx
+         , this.ViewportTop + dy)
 
       ; Set canvas coordinates. Ensure the starting coordinates are blank.
       this.HasProp("t")  && that.HasProp("t")  ? this.t  := max(this.t, that.t) : that.HasProp("t") && this.t  := that.t

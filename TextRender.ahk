@@ -461,6 +461,11 @@ class TextRender {
    }
 
    FreeBitmap() {
+      this.DeleteProp("ViewportLeft")
+      this.DeleteProp("ViewportTop")
+      this.DeleteProp("ViewportWidth")
+      this.DeleteProp("ViewportHeight")
+
       this.DeleteProp("BitmapWidth")
       this.DeleteProp("BitmapHeight")
       this.DeleteProp("BitmapLeft")
@@ -571,10 +576,6 @@ class TextRender {
       this.DeleteProp("chars")
       this.DeleteProp("words")
       this.DeleteProp("lines")
-      this.DeleteProp("ViewportLeft")
-      this.DeleteProp("ViewportTop")
-      this.DeleteProp("ViewportWidth")
-      this.DeleteProp("ViewportHeight")
    }
 
    Fill() {

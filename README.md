@@ -8,6 +8,14 @@ Simple lightweight reliable text on screen. Runs at 300+ fps.
 * test - Testing scripts
 * media - Contains assets used by other folders
 
+#### Usecases
+
+* Displaying notifications that auto-adjust to screen resolution, dpi, rotation
+* Ability to specify which screen it renders to `{screen: 2}`
+* Endless customization:
+    * Render inside another application
+    * Complete control of rendering pipeline
+
 #### Documentation
 
 * [Quick Start](https://github.com/iseahound/TextRender/wiki/Quick-Start)

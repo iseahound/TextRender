@@ -11,7 +11,7 @@ Simple lightweight reliable text on screen. Runs at 300+ fps.
 #### Usecases
 
 * Displaying notifications that auto-adjust to screen resolution, dpi, rotation
-* Ability to specify which screen it renders to `{screen: 2}`
+* Ability to specify which screen it renders to `{screen: "cursor"}`
 * Endless customization:
     * Render inside another application
     * Complete control of rendering pipeline

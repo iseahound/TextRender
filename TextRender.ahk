@@ -608,9 +608,9 @@ class TextRender {
       ; (Pull) Corrects the drawing while the user is moving the window.
       dx := dy := 0
       if this.HasProp("OriginLeft") && this.HasProp("OriginTop") {
-         WinGetPos &x, &y,,, this.hwnd
-         dx := x - this.OriginLeft
-         dy := y - this.OriginTop
+         DllCall("GetCursorPos", "ptr", point := Buffer(8))
+         dx := NumGet(point, 0, "int") - this.OriginLeft
+         dy := NumGet(point, 4, "int") - this.OriginTop
       }
 
       ; Draw relative to the viewport coordinates.
@@ -2621,11 +2621,12 @@ class TextRender {
    }
 
    EventMoveWindow() {
-      WinGetPos &x1, &y1,,, this.hwnd
-
       ; (Pull) Temporary variables
-      this.OriginLeft := x1
-      this.OriginTop := y1
+      DllCall("GetCursorPos", "ptr", point := Buffer(8))
+         , x := NumGet(point, 0, "int")
+         , y := NumGet(point, 4, "int")
+      this.OriginLeft := x
+      this.OriginTop := y
 
       ; Blocks to allow the user to drag to reposition the window.
       DllCall("DefWindowProc", "ptr", this.hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
@@ -2633,26 +2634,19 @@ class TextRender {
       ; (Pull) Deletes temporary variables to disable pulling of new window positions.
       this.DeleteProp("OriginLeft")
       this.DeleteProp("OriginTop")
+
+      return {Left: x, Top: y}
    }
 
    EventMoveWindowStorePosition() {
-      WinGetPos &x1, &y1,,, this.hwnd
-
-      ; (Pull) Temporary variables
-      this.OriginLeft := x1
-      this.OriginTop := y1
-
-      ; Blocks to allow the user to drag to reposition the window.
-      DllCall("DefWindowProc", "ptr", this.hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
-
-      ; (Pull) Deletes temporary variables to disable pulling of new window positions.
-      this.DeleteProp("OriginLeft")
-      this.DeleteProp("OriginTop")
+      Origin := this.EventMoveWindow()
 
       ; (Push) Update Viewport Coordinates to allow repositioning during drawing.
-      WinGetPos &x2, &y2,,, this.hwnd
-      this.ViewportLeft += x2 - x1
-      this.ViewportTop += y2 - y1
+      DllCall("GetCursorPos", "ptr", point := Buffer(8))
+         , x := NumGet(point, 0, "int")
+         , y := NumGet(point, 4, "int")
+      this.ViewportLeft += x - Origin.Left
+      this.ViewportTop += y - Origin.Top
    }
 
    EventShowCoordinates() {

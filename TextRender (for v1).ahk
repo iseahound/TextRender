@@ -2647,6 +2647,13 @@ class TextRender {
          , y := NumGet(point, 4, "int")
       this.ViewportLeft += x - Origin.Left
       this.ViewportTop += y - Origin.Top
+
+      this.Erase()
+   }
+
+   EventMoveWindowStorePositionAndRender() {
+      this.EventMoveWindowStorePosition()
+      this.Render()
    }
 
    EventShowCoordinates() {

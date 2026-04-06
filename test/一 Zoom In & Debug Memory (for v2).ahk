@@ -3,7 +3,7 @@
 #singleinstance force
 
 a := TextRender()
-a.Render("a", "m0 c:random2")
+a.Render("abcdef", "m0 c:random2")
 a.DebugMemory := DebugMemory
 a.DebugMemory()
 
@@ -51,8 +51,10 @@ a.DebugMemory()
       ; Release reference to pBits.
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
-      ; Draw an enlarged pixel grid layout with printed color hexes.
+      ; Yes, TextRender can create it's own TextRender instance :)
       tr := TextRender()
+
+      ; Draw an enlarged pixel grid layout with printed color hexes.
       loop height {
          h := A_Index-1
          loop width {
@@ -70,9 +72,13 @@ a.DebugMemory()
       this.save("TextRender.png")
       Run "TextRender.png"
 
+      ; Renders the huge image on screen!!!
+      this.OnLeftMouseDown((this) => this.EventMoveWindowStorePositionAndRender())
+      this.render()
+      tr.Render("Press Esc to Exit", "y:16% t:30s")
+
       ; Note that this is a slow function in general. I'm not entirely sure how it can be sped up.
       return this
    }
 
-ExitApp
 Esc:: ExitApp

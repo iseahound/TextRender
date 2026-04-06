@@ -2648,7 +2648,9 @@ class TextRender {
       this.ViewportLeft += x - Origin.Left
       this.ViewportTop += y - Origin.Top
 
-      this.Erase()
+      ; Selectively invalidate the backbuffer as it is now out of sync.
+      if (this.recipestate = 1)
+         this.Erase()
    }
 
    EventMoveWindowStorePositionAndRender() {

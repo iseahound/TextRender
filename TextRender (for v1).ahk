@@ -2548,7 +2548,7 @@ class TextRender {
 
          ; Match window messages to Rainmeter event names.
          ; https://docs.rainmeter.net/manual/mouse-actions/
-         message_event :=
+         message_events :=
          ( LTrim Join
          {
             0x0201  : "LeftMouseDown",
@@ -2560,19 +2560,33 @@ class TextRender {
             0x0207  : "MiddleMouseDown",
             0x0208  : "MiddleMouseUp",
             0x0209  : "MiddleMouseDoubleClick",
+            0x020A  : ["MouseScrollUp", "MouseScrollDown"],
+            0x020B  : ["X1MouseDown", "X2MouseDown"],
+            0x020C  : ["X1MouseUp", "X2MouseUp"],
+            0x020D  : ["X1MouseDoubleClick", "X2MouseDoubleClick"],
+            0x020E  : ["MouseScrollLeft", "MouseScrollRight"],
             0x02A1  : "MouseOver",
             0x02A3  : "MouseLeave"
          }
          )
 
          ; Process windows messages by invoking the associated callback.
-         for message, event in message_event
-            if (uMsg = message)
+         for message, events in message_events
+            if (uMsg = message) {
+               switch uMsg {
+                  case 0x020A: event := (wParam & 0x80000000) ? events[2] : events[1]
+                  case 0x020B: event := (wParam & 0x10000) ? events[1] : events[2]
+                  case 0x020C: event := (wParam & 0x10000) ? events[1] : events[2]
+                  case 0x020D: event := (wParam & 0x10000) ? events[1] : events[2]
+                  case 0x020E: event := (wParam & 0x80000000) ? events[1] : events[2]
+                  default:     event := events
+               }
                if callback := self.events[event] {
                   %callback%(self) ; Callbacks have a reference to "self".
                   try return
                   finally ListLines %ll%
                }
+            }
 
          ; Default processing of window messages.
          try return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")

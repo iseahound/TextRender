@@ -2548,7 +2548,7 @@ class TextRender {
 
          ; Match window messages to Rainmeter event names.
          ; https://docs.rainmeter.net/manual/mouse-actions/
-         dict :=
+         message_event :=
 
          {
             0x0201  : "LeftMouseDown",
@@ -2566,7 +2566,7 @@ class TextRender {
 
 
          ; Process windows messages by invoking the associated callback.
-         for message, event in dict.OwnProps()
+         for message, event in message_event.OwnProps()
             if (uMsg = message)
                if callback := self.events.get(event, "") {
                   (callback.MinParams = 0) ? callback() : callback(self) ; Callbacks have a reference to "self".

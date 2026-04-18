@@ -2,6 +2,18 @@
 
 Simple lightweight reliable text on screen. Runs at 300+ fps.
 
+#### Example
+
+    #include TextRender.ahk
+    tr := TextRender("hello world!", "color: Aquamarine")
+
+![example](https://github.com/user-attachments/assets/9fcc377c-827f-4381-a251-8e85670ca789)
+
+That's it.
+
+> If you want an anonymous notification set the time.
+> `TextRender("hello world!", "t:3s color: Aquamarine")`
+
 #### Folders
 
 * examples - Benchmarking and proof of concept
@@ -22,18 +34,6 @@ Simple lightweight reliable text on screen. Runs at 300+ fps.
 * [Methods and Properties](https://github.com/iseahound/TextRender/wiki/Methods-and-Properties)
 * [Background and Text Styles](https://github.com/iseahound/TextRender/wiki/Styles)
 * [Tips & Tricks](https://github.com/iseahound/TextRender/wiki/Tips-&-Tricks)
-
-#### Example
-
-    #include TextRender.ahk
-    tr := TextRender("hello world!", "color: Aquamarine")
-
-![example](https://github.com/user-attachments/assets/9fcc377c-827f-4381-a251-8e85670ca789)
-
-That's it.
-
-> If you want an anonymous notification set the time.
-> `TextRender("hello world!", "t:3s color: Aquamarine")`
 
 #### Installation
 

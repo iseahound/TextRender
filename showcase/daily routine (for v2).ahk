@@ -5,7 +5,7 @@
 ; In reality no one has that much free time...
 
 ; Press Win + W to open. Click the arrows on the side to adjust your schedule for early / late waketimes
-; Press Space or NumpPadEnter or Left Click to open a custom calender app
+; Press Space or NumPadEnter or Left Click to open a custom calender app
 ; Press Esc or Right Click to exit
 
 Daily_Routine()

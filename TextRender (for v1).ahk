@@ -700,7 +700,7 @@ class TextRender {
       this.Forget()              ; recipestate 0 ← x
       this.Erase()               ; bitmapstate 1 ← x
       this.Hide()                ; windowstate 1 ← x
-      this.OnEvent("Clear")
+      this.CallEvent("Clear")
       return this
    }
 
@@ -2599,7 +2599,7 @@ class TextRender {
    }
 
    DefaultEvents() {
-      this.events := {"LeftMouseDown": this.EventMoveWindow, "RightMouseUp": this.DestroyWindow}
+      this.events := {LeftMouseDown: this.EventMoveWindow, RightMouseUp: this.DestroyWindow}
       return this
    }
 

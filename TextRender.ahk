@@ -62,7 +62,7 @@ class TextRender {
       this.OffsetTop := OffsetTop
 
       ; Initalize default events.
-      this.events := Map()
+      this.events := {}
       this.OnEvent("LeftMouseDown", this.EventMoveWindow)
       this.OnEvent("MiddleMouseDown", this.EventShowCoordinates)
       this.OnEvent("RightMouseDown", this.EventCopyData)
@@ -700,7 +700,7 @@ class TextRender {
       this.Forget()              ; recipestate 0 ← x
       this.Erase()               ; bitmapstate 1 ← x
       this.Hide()                ; windowstate 1 ← x
-      this.OnEvent("Clear")
+      this.CallEvent("Clear")
       return this
    }
 
@@ -2581,15 +2581,13 @@ class TextRender {
                   case 0x020E: event := (wParam & 0x80000000) ? events[1] : events[2]
                   default:     event := events
                }
-               if callback := self.events.get(event, "") {
+               if self.events.HasOwnProp(event) && callback := self.events.%event% {
                   (callback.MinParams = 0) ? callback() : callback(self) ; Callbacks have a reference to "self".
                   try return
                   finally ListLines ll
                }
             }
                   
-
-
          ; Default processing of window messages.
          try return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
          finally ListLines ll
@@ -2601,7 +2599,7 @@ class TextRender {
    }
 
    DefaultEvents() {
-      this.events := Map("LeftMouseDown", this.EventMoveWindow, "RightMouseUp", this.DestroyWindow)
+      this.events := {LeftMouseDown: this.EventMoveWindow, RightMouseUp: this.DestroyWindow}
       return this
    }
 
@@ -2610,25 +2608,25 @@ class TextRender {
    }
 
    NoEvents() {
-      this.events := Map()
+      this.events := {}
       return this
    }
 
    OnEvent(event, callback := "") {
-      this.events[event] := callback
+      this.events.%event% := callback
       return this
    }
 
    __Call(name, ps) {
       if (name ~= "(?i)^On(?!Event$)") {
-         this.events[SubStr(name, 3)] := ps.has(1) ? ps[1] : ""
+         this.events.%SubStr(name, 3)% := ps.has(1) ? ps[1] : ""
          return this
       }
       throw Error("This value of type TextRender has no method named " name ".")
    }
 
    CallEvent(event) {
-      if callback := this.events.get(event, "")
+      if this.events.HasOwnProp(event) && callback := this.events.%event%
          return (callback.MinParams = 0) ? callback() : callback(this) ; Callbacks have a reference to "this".
    }
 

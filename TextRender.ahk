@@ -495,7 +495,7 @@ class TextRender {
          return this
 
       ; bitmapstate 0 → 1
-      this.AllocateBitmap(left := 0, top := 0, width := 0, height := 0)
+      this.AllocateBitmap(left, top, width, height)
 
       this.bitmapstate := 1      ; bitmapstate x → 1
       this.CallEvent("Allocate")

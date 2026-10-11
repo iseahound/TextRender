@@ -1016,7 +1016,7 @@ class TextRender {
    }
 
    AnimateWindow(f, t, keyframes := "") {
-      ObjBindMethod(this, f "Window", t, keyframes)()
+      ObjBindMethod(this, f "Window", t, keyframes).call()
       this.TimeStamp()  ; Sets this.t0 to the current time
    }
 
